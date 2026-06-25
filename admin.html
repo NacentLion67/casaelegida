@@ -1,0 +1,1628 @@
+ADMIN
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>CASA ELEGIDA | Panel de Administración</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #FDFBF7; /* Lino Claro Orgánico */
+            margin: 0;
+            padding: 24px;
+            color: #3D312A; /* Moka Premium */
+            min-height: 100vh;
+            transition: all 0.3s;
+        }
+
+        body.dark-mode {
+            background: #29221F; /* Moka Suave Oscuro */
+            color: #FDFBF7;
+        }
+
+        .layout { display: grid; grid-template-columns: 1fr; gap: 24px; max-width: 1600px; margin: 0 auto; }
+        .layout-con-carrito { display: grid; grid-template-columns: 1fr 480px; gap: 24px; }
+
+        .panel {
+            background: #ffffff;
+            border-radius: 24px; /* Cambiado de 8px a 24px para mantener el estilo curvo */
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(61,49,42,0.03);
+            border: 1px solid #E6E1DA;
+            transition: all 0.3s;
+        }
+
+        body.dark-mode .panel {
+            background: rgba(35, 30, 27, 0.95);
+            border-color: rgba(197, 168, 128, 0.25);
+        }
+
+        .nav-tabs { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+
+        .tab-btn {
+            padding: 12px 28px;
+            border-radius: 9999px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            background: white;
+            transition: all 0.3s;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            color: #3D312A;
+        }
+
+        body.dark-mode .tab-btn { background: #29221F; color: #FDFBF7; }
+
+        .tab-btn.active {
+            background: #3D312A; /* Moka regular de la tienda */
+            color: white;
+            border-bottom: 2px solid #C5A880; /* Línea oro atenuado / champagne */
+            box-shadow: 0 8px 24px rgba(61,49,42,0.05);
+            transform: translateY(-1px);
+        }
+
+        .tab-btn:not(.active):hover {
+            background: #F6F3EA;
+            color: #3D312A;
+            transform: translateY(-1px);
+        }
+
+        body.dark-mode .tab-btn:not(.active):hover { background: #52433A; }
+
+        .btn-warning { background: #DE9B72; color: white; }
+        .btn-success { background: #4E7A62; color: white; }
+        .btn-danger { background: #D96B6B; color: white; }
+        .btn-info { background: #3D312A; color: white; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border: 1px solid #E6E1DA;
+        }
+
+        body.dark-mode .card { background: #29221F; border-color: #3D312A; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(197, 168, 128, 0.2); }
+
+        .producto-imagen-principal {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 4/5;
+            object-fit: contain;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            background: #F6F3EA;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .card h4 { font-size: 16px; font-weight: 700; margin: 8px 0; }
+        .precio-producto { font-size: 22px; font-weight: 800; margin: 8px 0; color: #3D312A; }
+        body.dark-mode .precio-producto { color: #C5A880; }
+        .precio-mayor { font-size: 12px; color: #8C7E74; margin-top: -4px; margin-bottom: 8px; }
+
+        .variante-seleccionada-info {
+            background: #C5A880;
+            color: #3D312A;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            cursor: default;
+        }
+
+        .btn-desplegar-variantes {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #3D312A, #52433A);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+
+        .btn-desplegar-variantes:hover {
+            background: linear-gradient(135deg, #52433A, #3D312A);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(61, 49, 42, 0.3);
+        }
+
+        .btn-desplegar-variantes.activo { background: linear-gradient(135deg, #D96B6B, #B85252); }
+
+        .variantes-grid-container {
+            background: #F6F3EA;
+            border-radius: 16px;
+            padding: 12px;
+            margin: 12px 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.3s ease, margin 0.3s ease;
+            opacity: 0;
+        }
+
+        body.dark-mode .variantes-grid-container { background: #1F1A17; }
+        .variantes-grid-container.desplegado { max-height: 400px; overflow-y: auto; opacity: 1; padding: 16px; margin: 16px 0; }
+        .variantes-grid-container::-webkit-scrollbar { width: 6px; }
+        .variantes-grid-container::-webkit-scrollbar-thumb { background: #C5A880; border-radius: 3px; }
+        .variantes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+
+        .variante-item-venta {
+            cursor: pointer;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 2px solid #E6E1DA;
+            transition: all 0.2s;
+            background: white;
+            text-align: center;
+            position: relative;
+        }
+
+        body.dark-mode .variante-item-venta { background: #29221F; border-color: #3D312A; }
+        .variante-item-venta:hover { border-color: #C5A880; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+        .variante-item-venta.activa { border-color: #3D312A !important; background: #FDFBF7; box-shadow: 0 4px 16px rgba(61, 49, 42, 0.15); transform: scale(1.05); }
+        body.dark-mode .variante-item-venta.activa { border-color: #C5A880 !important; background: #3D312A; }
+        .variante-item-venta.sin-stock { opacity: 0.5; pointer-events: none; }
+        .variante-item-venta img { width: 100%; height: 80px; object-fit: contain; display: block; background: #F6F3EA; }
+        .variante-item-venta .variante-nombre { font-size: 11px; font-weight: 600; padding: 6px 8px; color: #3D312A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        body.dark-mode .variante-item-venta .variante-nombre { color: #FDFBF7; }
+        .variante-item-venta .variante-stock { font-size: 10px; color: #8C7E74; padding: 3px 6px; background: #F6F3EA; display: block; font-weight: 600; }
+        .variante-item-venta.activa .variante-stock { background: #3D312A; color: white; }
+        body.dark-mode .variante-item-venta.activa .variante-stock { background: #C5A880; color: #3D312A; }
+
+        .cantidad-selector { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0; background: #F6F3EA; border-radius: 9999px; padding: 4px; width: fit-content; margin-left: auto; margin-right: auto; }
+        body.dark-mode .cantidad-selector { background: #1F1A17; }
+        .cantidad-btn { width: 40px; height: 40px; border-radius: 9999px; border: none; background: white; cursor: pointer; font-weight: 700; font-size: 20px; color: #3D312A; transition: all 0.2s; }
+        body.dark-mode .cantidad-btn { background: #29221F; color: white; }
+        .cantidad-btn:hover { background: #3D312A; color: white; transform: scale(1.1); }
+        .cantidad-input { width: 60px; text-align: center; font-size: 18px; font-weight: 600; border: 2px solid #E6E1DA; background: white; border-radius: 12px; padding: 6px; }
+        body.dark-mode .cantidad-input { background: #29221F; border-color: #3D312A; color: #FDFBF7; }
+
+        .btn-add {
+            width: 100%;
+            background: linear-gradient(135deg, #3D312A, #52433A);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 15px;
+        }
+
+        .btn-add:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(61, 49, 42, 0.3); }
+        .btn-add:disabled { background: #CBD5E1; cursor: not-allowed; transform: none; }
+
+        .cart-item { background: white; border-radius: 20px; padding: 12px; margin-bottom: 12px; display: flex; gap: 12px; align-items: center; border: 1px solid #E6E1DA; }
+        body.dark-mode .cart-item { background: #29221F; border-color: #3D312A; }
+        .cart-item.mayorista-applied { border-left: 4px solid #C5A880; background: linear-gradient(90deg, #FDFBF7 0%, #ffffff 100%); }
+        .cart-img { width: 52px; height: 52px; border-radius: 20px; object-fit: cover; background: #F6F3EA; }
+        .cart-info { flex: 1; } .cart-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; } .cart-info p { font-size: 11px; color: #8C7E74; }
+        .cart-controls { display: flex; align-items: center; gap: 8px; background: #F6F3EA; padding: 4px 12px; border-radius: 40px; }
+        body.dark-mode .cart-controls { background: #1F1A17; }
+        .cart-controls button { border: none; background: none; cursor: pointer; font-weight: 800; font-size: 18px; width: 28px; color: #3D312A; }
+        body.dark-mode .cart-controls button { color: white; }
+        .cart-precio { font-weight: 700; min-width: 80px; text-align: right; }
+        .btn-eliminar-cart { background: none; border: none; color: #8C7E74; cursor: pointer; font-size: 18px; } .btn-eliminar-cart:hover { color: #D96B6B; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .form-label { font-size: 12px; font-weight: 600; color: #3D312A; margin-bottom: 6px; display: block; }
+        .required:after { content: " *"; color: #D96B6B; }
+
+        input, select, textarea { padding: 12px 16px; border-radius: 20px; border: 1px solid #E6E1DA; width: 100%; font-family: inherit; font-size: 14px; transition: all 0.3s; background: #FDFBF7; color: #3D312A; }
+        body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background: #1F1A17; border-color: #3D312A; color: #FDFBF7; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #C5A880; box-shadow: 0 0 0 3px rgba(197, 168, 128, 0.15); }
+        textarea { resize: vertical; min-height: 70px; }
+
+        .total-container { background: linear-gradient(135deg, #ffffff, #FDFBF7); border-radius: 36px; padding: 24px; text-align: center; margin-top: 20px; border: 1px solid #E6E1DA; }
+        body.dark-mode .total-container { background: #1F1A17; }
+        .total-amount { font-size: 42px; font-weight: 800; color: #3D312A; margin: 10px 0; }
+        body.dark-mode .total-amount { color: #C5A880; }
+
+        .btn-confirm {
+            background: linear-gradient(135deg, #3D312A, #52433A);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 16px;
+            border-radius: 40px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-confirm:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(61, 49, 42, 0.2); }
+        .hidden { display: none; }
+        .empty-cart { text-align: center; color: #8C7E74; padding: 48px; background: #FDFBF7; border-radius: 20px; }
+
+        .pago-tabs, .entrega-tabs { display: flex; gap: 10px; margin: 12px 0; }
+        .pago-btn, .entrega-btn { flex: 1; padding: 12px; border-radius: 40px; border: 1px solid #E6E1DA; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; color: #3D312A; }
+        body.dark-mode .pago-btn, body.dark-mode .entrega-btn { background: #29221F; border-color: #3D312A; color: white; }
+        .pago-btn.active, .entrega-btn.active { background: #3D312A; color: white; border-color: #3D312A; }
+
+        .stock-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 40px; background: #F6F3EA; color: #3D312A; }
+        body.dark-mode .stock-badge { background: #1F1A17; color: white; }
+        .stock-bajo { background: #F6ECEB; color: #A94442; }
+
+        .btn-print { background: #3D312A; color: white; border: none; padding: 6px 12px; border-radius: 40px; cursor: pointer; font-size: 11px; font-weight: 600; margin: 0 4px; display: inline-flex; align-items: center; gap: 6px; }
+        .acciones-venta { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .producto-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 20px; border: 1px solid #E6E1DA; }
+        body.dark-mode .producto-card { background: #29221F; border-color: #3D312A; }
+        .producto-header { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+        .producto-imagen { flex-shrink: 0; } .producto-imagen img { width: 100%; height: 100px; object-fit: cover; border-radius: 20px; background: #F6F3EA; border: 1px solid #E6E1DA; }
+        .producto-info { flex: 1; min-width: 200px; }
+        .drag-handle { cursor: grab; color: #C5A880; font-size: 24px; padding: 0 10px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(61, 49, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 28px; padding: 28px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(61, 49, 42, 0.15); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #E6E1DA; }
+        .modal-header h3 { font-size: 20px; font-weight: 700; color: #3D312A; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #8C7E74; }
+        .modal-footer { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+
+        .config-section { background: white; border-radius: 28px; padding: 24px; margin-bottom: 24px; border: 1px solid #E6E1DA; }
+        body.dark-mode .config-section { background: #29221F; border-color: #3D312A; }
+        .config-section h3 { color: #3D312A; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        body.dark-mode .config-section h3 { color: #C5A880; }
+
+        .logo-preview { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px; background: #FDFBF7; border-radius: 20px; margin-bottom: 20px; }
+        .logo-preview img { max-width: 200px; max-height: 80px; object-fit: contain; border-radius: 12px; border: 1px solid #E6E1DA; padding: 8px; background: white; }
+        .logo-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .modo-option { flex: 1; padding: 16px; border-radius: 16px; background: #FDFBF7; border: 2px solid #E6E1DA; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .modo-option.active { border-color: #3D312A; background: #F6F3EA; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: white; border-radius: 24px; padding: 20px; text-align: center; border: 1px solid #E6E1DA; }
+        body.dark-mode .stat-card { background: #29221F; border-color: #3D312A; }
+        .stat-card i { font-size: 32px; margin-bottom: 8px; } .stat-card h3 { font-size: 28px; font-weight: 800; margin: 8px 0; color: #3D312A; }
+        body.dark-mode .stat-card h3 { color: #C5A880; }
+
+        .toast-notification { position: fixed; bottom: 24px; right: 24px; background: #3D312A; color: white; padding: 12px 24px; border-radius: 40px; font-weight: 600; z-index: 1002; animation: slideIn 0.3s ease-out; }
+        .toast-notification.error { background: #D96B6B; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .ventas-buscador { margin-bottom: 16px; } .ventas-buscador input { padding: 12px; border-radius: 20px; border: 1px solid #E6E1DA; width: 100%; }
+        .btn-excel { background: #3D312A; color: white; }
+        .notif-badge { position: absolute; top: -5px; right: -5px; background: #D96B6B; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .notif-panel { position: absolute; top: 50px; right: 0; width: 350px; max-height: 450px; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); overflow: hidden; z-index: 100; }
+        .notif-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #E6E1DA; }
+        .notif-list { max-height: 380px; overflow-y: auto; }
+        .notif-item { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #E6E1DA; cursor: pointer; }
+        .notif-item.no-leida { background: #FDFBF7; }
+        .notif-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .notif-icon.pedido { background: #F6F3EA; color: #3D312A; } .notif-icon.stock { background: #F6ECEB; color: #D96B6B; } .notif-icon.venta { background: #C5A880; color: white; }
+        .notif-content { flex: 1; } .notif-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; } .notif-desc { font-size: 11px; color: #8C7E74; } .notif-time { font-size: 10px; color: #8C7E74; margin-top: 4px; }
+
+        .estado-badge { padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .estado-pendiente { background: #FCF8E3; color: #8A6D3B; } .estado-confirmado { background: #F6F3EA; color: #3D312A; } .estado-abonado { background: #D9EDF7; color: #31708F; } .estado-enviado { background: #E6DCD2; color: #3D312A; } .estado-entregado { background: #E4EDE1; color: #3C763D; } .estado-cancelado { background: #F2DEDE; color: #A94442; }
+
+        .perfil-card { background: #FDFBF7; border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid #E6E1DA; display: flex; justify-content: space-between; align-items: center; }
+        .perfil-card h5 { font-size: 14px; margin-bottom: 4px; } .perfil-card p { font-size: 11px; color: #8C7E74; }
+        .variantes-panel { background: #FDFBF7; border-radius: 20px; padding: 20px; margin-top: 20px; }
+        .variante-item { background: white; border-radius: 16px; padding: 16px; border: 1px solid #E6E1DA; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .btn-toggle-variantes { margin-top: 12px; padding: 10px 20px; background: #3D312A; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        .btn-toggle-variantes:hover { background: #52433A; }
+
+        .theme-config { position: fixed; bottom: 20px; left: 20px; z-index: 999; }
+        .theme-config-btn { width: 50px; height: 50px; border-radius: 50%; background: #3D312A; color: white; border: none; cursor: pointer; font-size: 20px; box-shadow: 0 4px 20px rgba(61, 49, 42, 0.3); transition: all 0.3s; }
+        .theme-config-btn:hover { transform: scale(1.1); }
+        .theme-panel { position: absolute; bottom: 60px; left: 0; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); width: 300px; display: none; }
+        .theme-panel.active { display: block; }
+
+        .backup-hero { background: linear-gradient(135deg, #3D312A 0%, #52433A 100%); color: white; border-radius: 24px; padding: 32px; text-align: center; margin-bottom: 24px; }
+        .backup-hero-icon { font-size: 64px; margin-bottom: 16px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .btn-backup-master { padding: 18px 40px; background: linear-gradient(135deg, #C5A880, #E6E1DA); color: #3D312A; border: none; border-radius: 50px; font-size: 18px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; transition: all 0.3s; }
+        .btn-backup-master:hover { transform: translateY(-3px); }
+        .btn-backup-master:disabled { background: #8C7E74; cursor: not-allowed; }
+        .backup-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .backup-card-item { background: white; border-radius: 20px; padding: 28px; border: 2px solid #E6E1DA; transition: all 0.3s; cursor: pointer; }
+        body.dark-mode .backup-card-item { background: #29221F; border-color: #3D312A; }
+        .backup-card-item:hover { border-color: #C5A880; }
+        .backup-card-icon { width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 16px; }
+        .restore-zone { border: 2px dashed #C5A880; border-radius: 16px; padding: 40px; cursor: pointer; transition: all 0.3s; background: white; margin-bottom: 16px; }
+        .restore-zone:hover, .restore-zone.dragover { border-color: #3D312A; background: #FDFBF7; }
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table th { background: #F6F3EA; padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #3D312A; }
+        .history-table td { padding: 12px; border-bottom: 1px solid #E6E1DA; font-size: 13px; }
+
+        /* ==========================================================================
+           ESTILOS PREMIUM HIGH-PRESTIGE (CURVAS & ELEGANCIA)
+           ========================================================================== */
+        .login-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #FDFBF7; /* Fondo lino orgánico premium */
+            background-image: radial-gradient(var(--secondary) 0.75px, transparent 0);
+            background-size: 24px 24px;
+            opacity: 0.98;
+            padding: 24px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px); /* Efecto cristal de lujo */
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 32px; /* Super redondeado de prestigio */
+            padding: 50px 40px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 24px 64px rgba(61, 49, 42, 0.08), 
+                        0 8px 24px rgba(197, 168, 128, 0.04);
+            text-align: center;
+            animation: loginFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .login-logo-container {
+            width: 130px;
+            height: 130px;
+            margin: 0 auto 24px;
+            background: #ffffff;
+            border-radius: 50%; /* Contenedor de logo circular perfecto */
+            box-shadow: 0 12px 32px rgba(61, 49, 42, 0.05);
+            border: 1px solid rgba(197, 168, 128, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            transition: transform 0.4s ease;
+        }
+
+        .login-logo-container:hover {
+            transform: scale(1.05) rotate(2deg);
+        }
+
+        .login-logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .login-card h2 {
+            font-family: 'Playfair Display', serif;
+            color: #3D312A; /* Moka */
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            color: #C5A880; /* Oro atenuado */
+            text-transform: uppercase;
+            letter-spacing: 3px; /* Espaciado premium de marca de lujo */
+            font-weight: 600;
+            margin-bottom: 36px;
+        }
+
+        .login-input-group {
+            margin-bottom: 20px;
+        }
+
+        .login-input-group input {
+            width: 100%;
+            padding: 16px 24px;
+            border: 1px solid rgba(197, 168, 128, 0.3);
+            border-radius: 50px !important; /* Totalmente redondeado y suave */
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            background: rgba(255, 255, 255, 0.9);
+            color: #3D312A;
+            box-shadow: inset 0 2px 4px rgba(61, 49, 42, 0.02);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .login-input-group input:focus {
+            outline: none;
+            border-color: #3D312A;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(197, 168, 128, 0.15); /* Aura dorada de enfoque */
+        }
+
+        .login-submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #4A3B33 0%, #3D312A 100%);
+            color: white;
+            border: none;
+            border-radius: 50px !important; /* Botón cápsula súper elegante */
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(61, 49, 42, 0.2);
+            transition: all 0.3s ease;
+            margin-top: 16px;
+        }
+
+        .login-submit-btn:hover {
+            background: linear-gradient(135deg, #59483F 0%, #4A3B33 100%);
+            box-shadow: 0 12px 32px rgba(61, 49, 42, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .login-submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-error-msg {
+            color: #D96B6B;
+            margin-top: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        @keyframes loginFadeIn {
+            from {
+                opacity: 0;
+                vertical-align: middle;
+                transform: scale(0.95) translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @media(max-width:1024px){
+            body{padding:12px}
+            .layout-con-carrito{grid-template-columns:1fr}
+            .nav-tabs{gap:8px}
+            .tab-btn{padding:10px 16px;font-size:12px}
+            .grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+            .producto-imagen-principal{height:220px}
+            #v-cart{position:fixed!important;right:0!important;top:0!important;width:100%!important;max-width:420px!important;height:100vh!important;max-height:100vh!important;z-index:1001!important;border-radius:0!important}
+        }
+        @media(max-width:768px){
+            body{padding:8px}
+            .panel{padding:16px;border-radius:20px}
+            .nav-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:8px;gap:6px;-webkit-overflow-scrolling:touch}
+            .nav-tabs::-webkit-scrollbar{display:none}
+            .tab-btn{padding:8px 14px;font-size:11px;white-space:nowrap;flex-shrink:0}
+            .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+            .card{padding:10px;border-radius:16px}
+            .producto-imagen-principal{height:160px;border-radius:12px}
+            .card h4{font-size:13px}
+            .precio-producto{font-size:16px}
+            .variante-seleccionada-info{font-size:11px;padding:6px 10px}
+            .btn-desplegar-variantes{font-size:11px;padding:10px}
+            .variantes-grid {grid-template-columns:repeat(auto-fill,minmax(65px,1fr));gap:6px}
+            .variante-item-venta img{height:55px}
+            .variante-item-venta .variante-nombre{font-size:9px}
+            .cantidad-btn{width:32px;height:32px;font-size:16px}
+            .cantidad-input{width:45px;font-size:14px}
+            .btn-add{font-size:12px;padding:12px}
+            #v-cart{max-width:100%!important;width:100%!important}
+            .cart-item{padding:10px}
+            .form-row{grid-template-columns:1fr}
+            .modal-content{padding:16px;border-radius:20px;max-width:95%}
+            .producto-header{flex-direction:column}
+            .producto-imagen img{width:80px;height:80px}
+            .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+            .stat-card{padding:12px}
+            .stat-card h3{font-size:20px}
+            .backup-hero{padding:20px}
+            .backup-hero h2{font-size:20px}
+            .btn-backup-master{padding:14px 24px;font-size:14px}
+            .backup-cards{grid-template-columns:1fr}
+            .history-table{font-size:11px}
+            .history-table th,.history-table td{padding:6px}
+            .charts-container{grid-template-columns:1fr!important}
+            table{font-size:11px}
+            input,select,textarea{padding:10px 12px;font-size:13px}
+        }
+        @media(max-width:480px){
+            body{padding:4px}
+            .panel{padding:10px;border-radius:16px}
+            .tab-btn{padding:6px 10px;font-size:10px;gap:4px}
+            .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+            .producto-imagen-principal{height:130px}
+            .card h4{font-size:11px}
+            .precio-producto{font-size:14px}
+            .precio-mayor{font-size:10px}
+            .cantidad-btn{width:28px;height:28px;font-size:14px}
+            .cantidad-input{width:40px;font-size:13px;padding:4px}
+            .btn-add{font-size:11px;padding:10px}
+            .variantes-grid{grid-template-columns:repeat(auto-fill,minmax(55px,1fr));gap:4px}
+            .variante-item-venta img{height:45px}
+            .variante-item-venta .variante-nombre{font-size:8px}
+            .cart-item{gap:8px}
+            .cart-img{width:40px;height:40px;border-radius:14px}
+            .stats-grid{grid-template-columns:1fr 1fr;gap:6px}
+            .stat-card{padding:8px}
+            .stat-card i{font-size:20px}
+            .stat-card h3{font-size:16px}
+            .stat-card p{font-size:10px}
+        }
+    </style>
+</head>
+<body>
+<div id="login-screen" class="login-wrapper">
+    <div class="login-card">
+        <div class="login-logo-container">
+            <img src="" id="login-logo-img" alt="Casa Elegida" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22 fill=%22%23FAEDCD%22><rect width=%22200%22 height=%22100%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%233D312A%22 font-size=%2216%22 font-weight=%22bold%22>CASA ELEGIDA</text></svg>'">
+        </div>
+        <h2>CASA ELEGIDA</h2>
+        <p class="login-subtitle">Panel de Gestión Interna</p>
+        
+        <div class="login-input-group">
+            <input type="text" id="login-usuario" placeholder="Nombre de Usuario">
+        </div>
+        <div class="login-input-group">
+            <input type="password" id="login-password" placeholder="Contraseña Segura">
+        </div>
+        
+        <button class="login-submit-btn" onclick="loginAdmin()">Acceder al Sistema</button>
+        <p id="login-error" class="login-error-msg"></p>
+    </div>
+</div>
+<div id="main-screen" style="display:none">
+    <div class="nav-tabs" id="nav-tabs">
+        <button id="t-v" class="tab-btn active" data-permiso="ventas" onclick="tab('v')"><i class="fas fa-cash-register"></i> Ventas</button>
+        <button id="t-r" class="tab-btn" data-permiso="ventas" onclick="tab('r')"><i class="fas fa-list"></i> Listado</button>
+        <button id="t-a" class="tab-btn" data-permiso="stock" onclick="tab('a')"><i class="fas fa-boxes"></i> Stock</button>
+        <button id="t-dash" class="tab-btn" data-permiso="dashboard" onclick="tab('dash')"><i class="fas fa-chart-pie"></i> Estadísticas</button>
+        <button id="t-c" class="tab-btn" data-permiso="config" onclick="tab('c')"><i class="fas fa-sliders-h"></i> Config</button>
+        <button id="t-retiro" class="tab-btn btn-warning" data-permiso="ventas" onclick="tab('retiro')"><i class="fas fa-qrcode"></i> Retirar</button>
+        <button id="t-p" class="tab-btn" data-permiso="pedidos" onclick="tab('p')"><i class="fas fa-shopping-cart"></i> Pedidos</button>
+        <button id="t-perfiles" class="tab-btn btn-info" data-permiso="admin" onclick="tab('perfiles')"><i class="fas fa-users-cog"></i> Perfiles</button>
+        <button id="t-logs" class="tab-btn btn-info" data-permiso="logs" onclick="tab('logs')"><i class="fas fa-history"></i> Logs</button>
+        <button id="t-clientes" class="tab-btn btn-info" data-permiso="clientes" onclick="tab('clientes')"><i class="fas fa-users"></i> Clientes</button>
+        <button id="t-rendimiento" class="tab-btn btn-success" data-permiso="ventas" onclick="tab('rendimiento')"><i class="fas fa-chart-line"></i> Rendimiento</button>
+        <button id="t-web" class="tab-btn" data-permiso="web" onclick="tab('web')"><i class="fas fa-paint-brush"></i> Edición Web</button>
+        <button id="t-backup" class="tab-btn btn-warning" data-permiso="config" onclick="tab('backup')"><i class="fas fa-database"></i> Backup</button>
+        <div style="margin-left:auto;position:relative">
+            <button class="tab-btn" onclick="toggleNotificaciones()" style="position:relative"><i class="fas fa-bell"></i><span id="notif-count" class="notif-badge" style="display:none">0</span></button>
+            <div id="notif-panel" class="notif-panel" style="display:none"><div class="notif-header"><h4>Notificaciones</h4><button onclick="marcarTodasLeidas()" style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:12px">Todas leídas</button></div><div id="notif-list" class="notif-list"></div></div>
+        </div>
+        <button class="tab-btn" onclick="abrirModalCambiarPassword()"><i class="fas fa-key"></i></button>
+        <button class="tab-btn btn-danger" onclick="cerrarSesionAdmin()"><i class="fas fa-sign-out-alt"></i> Salir</button>
+    </div>
+    <div id="main-container" class="layout"></div>
+</div>
+
+<div id="v-cart" class="panel hidden" style="position:fixed;right:24px;top:120px;width:480px;max-height:calc(100vh - 140px);overflow-y:auto;z-index:50">
+    <h3>
+        <span><i class="fas fa-shopping-cart"></i> Pedido Actual</span>
+        <button type="button" onclick="toggleCartMobile()" class="tab-btn" style="padding:8px 14px; border-radius:50px; font-size:12px; display:none; align-items:center; gap:6px; background:#ef4444; color:white; border:none;" id="btn-minimize-cart"><i class="fas fa-compress-alt"></i> Minimizar</button>
+    </h3>
+    <div id="cart-items" style="max-height:320px;overflow-y:auto;margin-bottom:20px"></div>
+    
+    <label style="font-weight:600;margin-bottom:8px;display:block"><i class="fas fa-truck"></i> Entrega</label>
+    <div class="entrega-tabs">
+        <button type="button" id="l-local" class="entrega-btn active" onclick="setLog('local')"><i class="fas fa-store"></i> Retiro</button>
+        <button type="button" id="l-envio" class="entrega-btn" onclick="setLog('envio')"><i class="fas fa-shipping-fast"></i> Envío</button>
+    </div>
+    
+    <div id="form-envio" class="hidden">
+        <div class="form-envio-completo">
+            <div class="form-row">
+                <div><label class="form-label required">Nombre</label><input type="text" id="env-nombre"></div>
+                <div><label class="form-label required">DNI</label><input type="text" id="env-dni"></div>
+            </div>
+            <div class="form-row">
+                <div><label class="form-label required">Teléfono</label><input type="tel" id="env-celular"></div>
+                <div><label>Email</label><input type="email" id="env-email"></div>
+            </div>
+            <div class="form-row">
+                <div><label class="form-label required">CP</label><input type="text" id="env-cp"></div>
+                <div>
+                    <label class="form-label required">Provincia</label>
+                    <select id="env-provincia">
+                        <option value="">Seleccionar</option>
+                        <option>Buenos Aires</option>
+                        <option>CABA</option>
+                        <option>Córdoba</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div><label class="form-label required">Localidad</label><input type="text" id="env-localidad"></div>
+                <div><label class="form-label required">Domicilio</label><input type="text" id="env-domicilio"></div>
+            </div>
+            <div><label>Notas</label><textarea id="env-notas"></textarea></div>
+        </div>
+    </div>
+    
+    <label style="font-weight:600;margin:16px 0 8px;display:block"><i class="fas fa-credit-card"></i> Pago</label>
+    <div class="pago-tabs">
+        <button type="button" id="p-ef" class="pago-btn active" onclick="setMetodo('efectivo')"><i class="fas fa-money-bill-wave"></i> Efectivo</button>
+        <button type="button" id="p-tr" class="pago-btn" onclick="setMetodo('transferencia')"><i class="fas fa-exchange-alt"></i> Transf.</button>
+        <button type="button" id="p-mx" class="pago-btn" onclick="setMetodo('mixto')"><i class="fas fa-hand-holding-usd"></i> Mixto</button>
+    </div>
+    
+    <div class="total-container">
+        <div>Total a pagar</div>
+        <div id="total-txt" class="total-amount">$0</div>
+        
+        <button type="button" onclick="abrirModalGasto()" style="width:100%; margin-bottom:10px; background:#E0A899; color:white; border:none; padding:10px; border-radius:50px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <i class="fas fa-hand-holding-usd"></i> Anotar Gasto Caja
+        </button>
+        
+        <button type="button" class="btn-confirm" onclick="checkout()"><i class="fas fa-check-circle"></i> CONFIRMAR VENTA</button>
+    </div>
+</div>
+
+<button id="btn-cart-float" class="hidden" onclick="toggleCartMobile()" style="position:fixed; bottom:20px; right:20px; width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#D4A373,#E0A899); color:white; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 20px rgba(212,163,115,0.5); z-index:1002; display:flex; align-items:center; justify-content:center;">
+    <i class="fas fa-shopping-cart"></i>
+    <span id="cart-float-badge" style="position:absolute; top:-5px; right:-5px; background:#ef4444; color:white; border-radius:50%; width:22px; height:22px; font-size:11px; display:flex; align-items:center; justify-content:center; font-weight:700;">0</span>
+</button>
+
+<div style="position:fixed;bottom:20px;left:20px;z-index:999">
+    <button type="button" onclick="toggleThemePanel()" style="width:50px;height:50px;border-radius:50%;background:#3D312A;color:white;border:none;cursor:pointer;font-size:20px;box-shadow:0 4px 20px rgba(61,49,42,0.4)"><i class="fas fa-palette"></i></button>
+    <div id="theme-panel" style="display:none;position:absolute;bottom:60px;left:0;background:white;border-radius:20px;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,0.15);width:300px">
+        <h4 style="margin-bottom:12px"><i class="fas fa-palette"></i> Personalizar Tema</h4>
+        <div style="margin-bottom:12px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()"><span>🌙 Modo Oscuro</span>
+            </label>
+        </div>
+    </div>
+</div>
+
+<script>
+let adminToken = localStorage.getItem('adminToken');
+let adminActual = null;
+let productos = [], carrito = [], metodoPago = 'efectivo', logistica = 'local', totalVenta = 0;
+let ventasHistorial = [], pedidosTienda = [], categorias = [], metodosEnvio = [];
+let varianteSeleccionada = {}, configuracion = {}, mayoristaHabilitado = false, mayoristaModo = 'cantidad';
+let notificaciones = [], notificacionesNoLeidas = 0;
+let chartsInstances = {};
+const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
+
+function mostrarToast(msg, error=false) { const t = document.createElement('div'); t.className = `toast-notification ${error?'error':''}`; t.innerHTML = `<i class="fas ${error?'fa-exclamation-circle':'fa-check-circle'}"></i> ${msg}`; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
+function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+function formatearNumero(n) { if(!n) return '0'; return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function desformatearNumero(t) { if(!t) return 0; return parseInt(t.toString().replace(/\./g,''))||0; }
+function sanitizarUrl(url){ if(!url || url === '') return ''; if(url.startsWith('/uploads/') || url.startsWith('http://') || url.startsWith('https://')) return url; return url; }
+async function safeFetch(url, options={}) { if (adminToken) options.headers = { ...options.headers, 'Authorization': `Bearer ${adminToken}` }; try { const res = await fetch(url, options); if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || `HTTP ${res.status}`); return await res.json(); } catch(e) { mostrarToast(e.message, true); throw e; } }
+
+async function loginAdmin() { const usuario = document.getElementById('login-usuario').value.trim(); const password = document.getElementById('login-password').value; if (!usuario || !password) { document.getElementById('login-error').textContent = 'Completá todos los campos'; return; } try { const res = await fetch('/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({usuario,password}) }); const data = await res.json(); if (data.success) { localStorage.setItem('adminToken', data.token); adminToken = data.token; adminActual = data.perfil; document.getElementById('login-screen').style.display = 'none'; document.getElementById('main-screen').style.display = 'block'; tab('v'); } else { document.getElementById('login-error').textContent = data.error || 'Error'; } } catch(e) { document.getElementById('login-error').textContent = 'Error de conexión'; } }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch('/get-config', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.logo) {
+                const imgLogin = document.getElementById('login-logo-img');
+                if (imgLogin) imgLogin.src = data.logo;
+            }
+        }
+    } catch(e) { console.log("Cargando logo local por defecto..."); }
+});
+    
+function cerrarSesionAdmin() { localStorage.removeItem('adminToken'); localStorage.removeItem('pos_carrito'); adminToken = null; adminActual = null; location.reload(); }
+
+async function cargarConfiguracion() {
+    try {
+        const d = await safeFetch('/get-config', { method: 'POST' });
+        configuracion = d;
+        window.configuracion = d;
+        
+        if (d.logo) {
+            const img = document.getElementById('logo-preview-img');
+            if (img) { img.src = d.logo; img.style.display = 'block'; }
+            const placeholder = document.getElementById('logo-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+        } else {
+            const img = document.getElementById('logo-preview-img');
+            if (img) img.style.display = 'none';
+            const placeholder = document.getElementById('logo-placeholder');
+            if (placeholder) placeholder.style.display = 'block';
+        }
+        
+        if (d.empresa) {
+            let emp = typeof d.empresa === 'string' ? JSON.parse(d.empresa) : d.empresa;
+            if (document.getElementById('empresa-nombre')) document.getElementById('empresa-nombre').value = emp.nombre || '';
+            if (document.getElementById('empresa-slogan')) document.getElementById('empresa-slogan').value = emp.slogan || '';
+            if (document.getElementById('empresa-telefono')) document.getElementById('empresa-telefono').value = emp.telefono || '';
+            if (document.getElementById('empresa-email')) document.getElementById('empresa-email').value = emp.email || '';
+            if (document.getElementById('empresa-direccion')) document.getElementById('empresa-direccion').value = emp.direccion || '';
+        }
+        
+        if (d.horarios) {
+            let hor = typeof d.horarios === 'string' ? JSON.parse(d.horarios) : d.horarios;
+            if (document.getElementById('horario-lv')) document.getElementById('horario-lv').value = hor.lunesViernes || '';
+            if (document.getElementById('horario-sab')) document.getElementById('horario-sab').value = hor.sabados || '';
+            if (document.getElementById('horario-dom')) document.getElementById('horario-dom').value = hor.domingos || '';
+        }
+        
+        if (d.redes) {
+            let red = typeof d.redes === 'string' ? JSON.parse(d.redes) : d.redes;
+            if (document.getElementById('red-instagram')) document.getElementById('red-instagram').value = red.instagram || '';
+            if (document.getElementById('red-facebook')) document.getElementById('red-facebook').value = red.facebook || '';
+            if (document.getElementById('red-tiktok')) document.getElementById('red-tiktok').value = red.tiktok || '';
+            if (document.getElementById('red-whatsapp')) document.getElementById('red-whatsapp').value = red.whatsapp || '';
+        }
+        
+        if (d.pagos) {
+            let pag = typeof d.pagos === 'string' ? JSON.parse(d.pagos) : d.pagos;
+            if (document.getElementById('pago-alias')) document.getElementById('pago-alias').value = pag.alias || '';
+            if (document.getElementById('pago-cbu')) document.getElementById('pago-cbu').value = pag.cbu || '';
+            if (document.getElementById('pago-banco')) document.getElementById('pago-banco').value = pag.banco || '';
+            if (document.getElementById('pago-titular')) document.getElementById('pago-titular').value = pag.titular || '';
+        }
+        
+        if (d.diseno) {
+            let dis = typeof d.diseno === 'string' ? JSON.parse(d.diseno) : d.diseno;
+            if (document.getElementById('tienda-color-primary')) document.getElementById('tienda-color-primary').value = dis.colorPrimario || '#1a1a1a';
+            if (document.getElementById('tienda-color-secondary')) document.getElementById('tienda-color-secondary').value = dis.colorSecundario || '#c9a96e';
+            if (document.getElementById('tienda-color-bg')) document.getElementById('tienda-color-bg').value = dis.colorFondo || '#fafafa';
+            if (document.getElementById('tienda-color-text')) document.getElementById('tienda-color-text').value = dis.colorTexto || '#1a1a1a';
+        }
+        
+        if (d.tienda) {
+            let tnd = typeof d.tienda === 'string' ? JSON.parse(d.tienda) : d.tienda;
+            if (document.getElementById('tienda-titulo')) document.getElementById('tienda-titulo').value = tnd.titulo || '';
+            if (document.getElementById('tienda-mensaje')) document.getElementById('tienda-mensaje').value = tnd.mensajeBienvenida || '';
+            setTiendaHabilitada(tnd.habilitada !== false);
+        }
+        
+        if (d.mayorista) {
+            let may = typeof d.mayorista === 'string' ? JSON.parse(d.mayorista) : d.mayorista;
+            mayoristaHabilitado = may.habilitado || false;
+            mayoristaModo = may.modo || 'cantidad';
+            if (document.getElementById('mayoristaCantidad')) document.getElementById('mayoristaCantidad').value = may.valorCantidad || 3;
+            if (document.getElementById('mayoristaMonto')) document.getElementById('mayoristaMonto').value = formatearNumero(may.valorMonto || 80000);
+            selectMayoristaModo(mayoristaModo);
+            
+            const pnl = document.getElementById('mayoristaPanel');
+            const btn = document.getElementById('btnMayoristaToggle');
+            if (!mayoristaHabilitado) {
+                if (pnl) pnl.style.display = 'none';
+                if (btn) { btn.innerHTML = '<i class="fas fa-toggle-off"></i> Desactivado'; btn.style.background = '#64748b'; }
+            } else {
+                if (pnl) pnl.style.display = 'block';
+                if (btn) { btn.innerHTML = '<i class="fas fa-toggle-on"></i> Activado'; btn.style.background = '#10b981'; }
+            }
+        }
+        
+        if (window.metodosEnvio && document.getElementById('metodos-envio-lista')) {
+            document.getElementById('metodos-envio-lista').value = window.metodosEnvio.join('\n');
+        }
+    } catch (e) {
+        console.error('❌ Error en cargarConfiguracion:', e);
+    }
+}
+
+function tab(t) {
+    if (adminActual && adminActual.rol !== 'admin') {
+        const btn = document.querySelector(`[onclick="tab('${t}')"]`);
+        if (btn) {
+            const permiso = btn.getAttribute('data-permiso');
+            if (permiso && permiso !== 'admin' && !adminActual.permisos.includes(permiso)) {
+                mostrarToast('🔒 Sin autorización para acceder a esta sección', true);
+                return;
+            }
+        }
+    }
+    const container = document.getElementById('main-container'), cartPanel = document.getElementById('v-cart');
+    const floatBtn = document.getElementById('btn-cart-float');
+    if (floatBtn) floatBtn.classList.add('hidden');
+    
+    if (t==='v') { container.className='layout-con-carrito'; container.innerHTML=renderPaginaVentas(); cartPanel.classList.remove('hidden'); setTimeout(()=>{cargar();cargarMetodosEnvio();cargarNotificaciones();},100); }
+    else if (t==='r') { container.className='layout'; container.innerHTML=renderPaginaListadoVentas(); cartPanel.classList.add('hidden'); cargarVentas(); }
+    else if (t==='a') { container.className='layout'; container.innerHTML=renderPaginaGestionStock(); cartPanel.classList.add('hidden'); cargarCategorias(); setTimeout(cargarYRenderAdmin,100); }
+    else if (t==='dash') { container.className='layout'; container.innerHTML=renderPaginaEstadisticas(); cartPanel.classList.add('hidden'); setTimeout(cargarDashboard,100); }
+    else if (t==='c') { 
+        container.className='layout'; 
+        container.innerHTML=renderPaginaConfiguracion(); 
+        cartPanel.classList.add('hidden'); 
+        setTimeout(() => { 
+            cargarConfiguracion(); 
+            cargarMetodosEnvio(); 
+        }, 100); 
+    }
+    else if (t==='retiro') { container.className='layout'; container.innerHTML=renderPaginaRetiro(); cartPanel.classList.add('hidden'); }
+    else if (t==='p') { container.className='layout'; container.innerHTML=renderPaginaPedidosWeb(); cartPanel.classList.add('hidden'); cargarPedidosTienda(); }
+    else if (t==='perfiles') { container.className='layout'; container.innerHTML=renderPaginaPerfiles(); cartPanel.classList.add('hidden'); cargarPerfiles(); }
+    else if (t==='logs') { container.className='layout'; container.innerHTML=renderPaginaLogs(); cartPanel.classList.add('hidden'); cargarLogs(); }
+    else if (t==='clientes') { container.className='layout'; container.innerHTML=renderPaginaClientes(); cartPanel.classList.add('hidden'); cargarClientes(); }
+    else if (t==='rendimiento') { container.className='layout'; container.innerHTML=renderPaginaRendimiento(); cartPanel.classList.add('hidden'); cargarProductosRendimiento(); }
+    else if (t==='web') { container.className='layout'; container.innerHTML=renderPaginaEdicionWeb(); cartPanel.classList.add('hidden'); }
+    else if (t==='backup') { container.className='layout'; container.innerHTML=renderPaginaBackup(); cartPanel.classList.add('hidden'); setTimeout(cargarHistorialBackups,100); }
+    document.querySelectorAll('.nav-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`t-${t}`)?.classList.add('active');
+}
+    
+function renderPaginaVentas() { 
+    return `<div class="panel">
+        <div id="estado-caja"></div>
+        <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+            <input type="text" id="buscador" placeholder="🔍 Buscar..." onkeyup="buscarProductos()" style="flex:1;min-width:200px">
+            <button type="button" onclick="abrirBuscadorClientes()" class="tab-btn btn-info"><i class="fas fa-search"></i> Clientes</button>
+            <button type="button" onclick="agregarProductoManual()" class="tab-btn btn-warning"><i class="fas fa-hand-paper"></i> Manual</button>
+        </div>
+        <div id="grid-prods" class="grid"></div>
+    </div>`; 
+}
+
+function abrirModalGasto() {
+    const div = document.createElement('div');
+    div.id = 'modal-gasto-container';
+    div.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;font-family:inherit;';
+    div.innerHTML = `
+        <div style="background:#fff;padding:24px;border-radius:24px;width:340px;border:2px solid #E0A899;box-shadow:0 10px 30px rgba(0,0,0,0.1);box-sizing:border-box;">
+            <h4 style="margin-top:0;color:#4A3728;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                <i class="fas fa-money-bill-wave" style="color:#E0A899;"></i> Registrar Gasto Diario
+            </h4>
+            <div style="margin-bottom:12px;">
+                <label style="font-size:12px;font-weight:600;color:#4A3728;display:block;margin-bottom:4px;">Nombre del Gasto</label>
+                <input type="text" id="gasto-nombre" placeholder="Ej: Pago de Luz" style="width:100%;padding:10px;border:1px solid #FAEDCD;border-radius:12px;background:#FEFAE0;box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="font-size:12px;font-weight:600;color:#4A3728;display:block;margin-bottom:4px;">Monto ($)</label>
+                <input type="number" id="gasto-monto" placeholder="0" style="width:100%;padding:10px;border:1px solid #FAEDCD;border-radius:12px;background:#FEFAE0;box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:12px;font-weight:600;color:#4A3728;display:block;margin-bottom:6px;">Medio Utilizado</label>
+                <div style="display:flex;gap:10px;">
+                    <label style="flex:1;background:#FEFAE0;padding:10px;border-radius:12px;border:1px solid #FAEDCD;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;color:#4A3728;">
+                        <input type="radio" name="gasto-tipo" value="efectivo" checked> Efectivo
+                    </label>
+                    <label style="flex:1;background:#FEFAE0;padding:10px;border-radius:12px;border:1px solid #FAEDCD;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;color:#4A3728;">
+                        <input type="radio" name="gasto-tipo" value="transferencia"> Transf.
+                    </label>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="document.getElementById('modal-gasto-container').remove()" style="background:#64748b;color:#fff;border:none;padding:10px 16px;border-radius:50px;cursor:pointer;font-weight:600;font-size:13px;">Cancelar</button>
+                <button type="button" onclick="guardarGastoVentas()" style="background:#E0A899;color:#fff;border:none;padding:10px 20px;border-radius:50px;cursor:pointer;font-weight:700;font-size:13px;">Guardar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(div);
+}
+
+async function guardarGastoVentas() {
+    const nombre = document.getElementById('gasto-nombre').value.trim();
+    const monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
+    const tipo = document.querySelector('input[name="gasto-tipo"]:checked').value;
+    if(!nombre || monto <= 0) { alert('Por favor complete el nombre y monto correctamente.'); return; }
+    try {
+        const respuesta = await safeFetch('/admin/agregar-gasto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tipo, nombre, monto })
+        });
+        if (respuesta && respuesta.success === false) { mostrarToast(respuesta.error, true); return; }
+        if (respuesta && respuesta.success) {
+            mostrarToast('💸 Gasto guardado con éxito');
+            const modal = document.getElementById('modal-gasto-container');
+            if (modal) modal.remove();
+        }
+    } catch(e) { mostrarToast('Error de conexión al guardar el gasto', true); }
+}
+
+function toggleCartMobile() {
+    const cart = document.getElementById('v-cart');
+    const floatBtn = document.getElementById('btn-cart-float');
+    if (!cart || !floatBtn) return;
+    if (cart.classList.contains('hidden')) { cart.classList.remove('hidden'); floatBtn.classList.add('hidden'); } 
+    else { cart.classList.add('hidden'); floatBtn.classList.remove('hidden'); }
+}
+    
+function renderPaginaListadoVentas() { return `<div class="panel"><h3 style="display:flex;justify-content:space-between"><span><i class="fas fa-history"></i> Historial</span><button type="button" onclick="exportarVentasCSV()" class="tab-btn btn-excel"><i class="fas fa-file-csv"></i> Exportar</button></h3><div class="ventas-buscador"><input type="text" id="ventas-buscador" placeholder="🔍 Buscar..." onkeyup="filtrarVentas()"></div><table style="width:100%"><thead><tr><th>Fecha/ID</th><th>Cliente</th><th>Items</th><th>Total</th><th></th></tr></thead><tbody id="lista-ventas-body"></tbody></table></div>`; }
+function renderPaginaGestionStock() { return `<div class="panel"><div style="display:flex;gap:12px;margin-bottom:24px"><button type="button" onclick="nuevoProd()" class="tab-btn"><i class="fas fa-plus"></i> Nuevo</button><button type="button" onclick="cargarYRenderAdmin()" class="tab-btn"><i class="fas fa-sync-alt"></i> Recargar</button><button type="button" onclick="verStockBajo()" class="tab-btn btn-warning"><i class="fas fa-exclamation-triangle"></i> Stock Bajo</button><button type="button" onclick="abrirModalCategorias()" class="tab-btn btn-info"><i class="fas fa-folder-tree"></i> Categorías</button></div><div id="admin-lista"></div></div>`; }
+
+function renderPaginaEstadisticas() { 
+    return `<div class="panel">
+        <h3 style="color: #3D312A; font-family: 'Playfair Display', serif; font-weight: 800;"><i class="fas fa-chart-pie" style="color: #C5A880;"></i> Estadísticas Generales</h3>
+        <div id="estadisticas-avanzadas"></div>
+        <div class="charts-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px;margin:20px 0">
+            <div class="config-section">
+                <h4><i class="fas fa-chart-bar"></i> Ventas por Día</h4>
+                <canvas id="chart-ventas-dia"></canvas>
+            </div>
+            <div class="config-section">
+                <h4><i class="fas fa-chart-pie"></i> Productos Más Vendidos</h4>
+                <canvas id="chart-productos-top"></canvas>
+            </div>
+            <div class="config-section">
+                <h4><i class="fas fa-chart-line"></i> Métodos de Pago</h4>
+                <canvas id="chart-metodos-pago"></canvas>
+            </div>
+            <div class="config-section">
+                <h4><i class="fas fa-chart-doughnut"></i> Ventas por Categoría</h4>
+                <canvas id="chart-categorias"></canvas>
+            </div>
+        </div>
+        <div id="estadisticas-vendedor" class="config-section" style="margin-top:24px">
+            <h4><i class="fas fa-users"></i> Rendimiento por Vendedor</h4>
+        </div>
+        <div class="config-section" style="margin-top:24px">
+            <h4><i class="fas fa-history"></i> Historial de Cajas 
+                <input type="date" id="cajas-desde" style="width:140px;margin-left:12px" onchange="cargarHistorialCajas()">
+                <input type="date" id="cajas-hasta" style="width:140px;margin-left:8px" onchange="cargarHistorialCajas()">
+            </h4>
+            <div id="historial-cajas"></div>
+        </div>
+    </div>`; 
+}
+    
+function renderPaginaRetiro() { 
+    return `
+        <div class="panel" style="border: 2px solid #C5A880; max-width: 650px; margin: 0 auto;">
+            <h3 style="text-align:center; margin-bottom:10px;"><i class="fas fa-qrcode"></i> Retirar Pedido Tienda Web</h3>
+            <p style="text-align:center; font-size:13px; color:var(--text-light); margin-bottom:20px;">Ingresá el PIN de 4 dígitos proporcionado por la clienta para verificar su orden.</p>
+            <div style="max-width:400px; margin:0 auto; text-align:center">
+                <input type="text" id="pin-retiro-input" maxlength="4" placeholder="0000" 
+                       style="font-size:36px; text-align:center; width:160px; margin:10px auto; padding:12px; border-radius:16px; border:2px solid #C5A880; font-weight:800;">
+                <button type="button" onclick="verificarPINRetiro()" class="btn-confirm" style="margin-top:10px;"><i class="fas fa-search"></i> Buscar Pedido</button>
+                <div id="pin-retiro-resultado" style="margin-top:24px; text-align:left;"></div>
+            </div>
+        </div>`; 
+}
+    
+function renderPaginaPedidosWeb() { return `<div class="panel"><h3><i class="fas fa-shopping-cart"></i> Pedidos Web</h3><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th>Fecha/ID</th><th>Cliente</th><th>Items</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="lista-pedidos-body"></tbody></table></div></div>`; }
+function renderPaginaPerfiles() { return `<div class="panel"><h3 style="display:flex;justify-content:space-between"><span><i class="fas fa-users-cog"></i> Gestión de Perfiles</span><button type="button" onclick="abrirModalCrearPerfil()" class="tab-btn btn-success"><i class="fas fa-user-plus"></i> Nuevo Perfil</button></h3><div id="lista-perfiles"></div></div>`; }
+function renderPaginaLogs() { return `<div class="panel"><h3><i class="fas fa-history"></i> Registro de Actividad</h3><div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"><input type="text" id="logs-filtro" placeholder="🔍 Buscar..." style="flex:1;min-width:200px" onkeyup="cargarLogs()"><input type="date" id="logs-desde" style="width:150px" onchange="cargarLogs()"><input type="date" id="logs-hasta" style="width:150px" onchange="cargarLogs()"><button type="button" onclick="document.getElementById('logs-filtro').value='';document.getElementById('logs-desde').value='';document.getElementById('logs-hasta').value='';cargarLogs();" class="tab-btn">Limpiar</button></div><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th>Fecha</th><th>Admin</th><th>Acción</th><th>Detalles</th></tr></thead><tbody id="logs-body"></tbody></table></div></div>`; }
+function renderPaginaEdicionWeb() { return `<div class="panel"><h3><i class="fas fa-paint-brush"></i> Edición Web</h3><div class="config-section"><h4><i class="fas fa-swatchbook"></i> Plantillas de Tienda</h4><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px"><div class="plantilla-card" style="border:2px solid #3D312A;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('moderna')"><div style="background:linear-gradient(135deg,#1a1a1a,#333);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Moderna</strong></div><div class="plantilla-card" style="border:2px solid #e2e8f0;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('clasica')"><div style="background:linear-gradient(135deg,#3D312A,#52433A);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Clásica</strong></div><div class="plantilla-card" style="border:2px solid #e2e8f0;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('minimalista')"><div style="background:linear-gradient(135deg,#fafafa,#e2e8f0);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Minimalista</strong></div></div></div><div class="config-section"><h4><i class="fas fa-icons"></i> Íconos de la Tienda</h4><div style="display:flex;gap:12px;flex-wrap:wrap"><button type="button" class="tab-btn" onclick="cambiarIcono('store')"><i class="fas fa-store"></i> Tienda</button><button type="button" class="tab-btn" onclick="cambiarIcono('home')"><i class="fas fa-home"></i> Hogar</button><button type="button" class="tab-btn" onclick="cambiarIcono('star')"><i class="fas fa-star"></i> Premium</button><button type="button" class="tab-btn" onclick="cambiarIcono('gem')"><i class="fas fa-gem"></i> Lujo</button></div></div></div>`; }
+
+function renderPaginaConfiguracion() {
+    const html = `
+        <div class="panel" style="border: 1px solid #E6E1DA; background: #ffffff; padding: 36px;">
+            <div style="text-align: center; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 3px double #C5A880;">
+                <h3 style="color: #3D312A; font-size: 32px; font-family: 'Playfair Display', serif; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">
+                    <i class="fas fa-crown" style="color: #C5A880; margin-right: 12px;"></i> Panel de Control
+                </h3>
+                <p style="font-size: 12px; color: #8C7E74; letter-spacing: 3px; text-transform: uppercase; font-weight: 700; margin-top: 6px;">Identidad Corporativa & Blanquería Premium</p>
+            </div>
+            
+            <div class="config-section" style="border: 1px solid #E6E1DA; border-radius: 28px; padding: 28px; background: #FDFBF7; margin-bottom: 28px;">
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-image" style="color: #C5A880;"></i> Imagen de Marca (Logo)
+                </h4>
+                <div class="logo-preview" style="background: #ffffff; border: 1px solid #E6E1DA; border-radius: 24px; padding: 24px; min-height: 140px; display: flex; align-items: center; justify-content: center;">
+                    <img id="logo-preview-img" src="" style="display:none; max-width:260px; max-height:100px; object-fit:contain;">
+                    <span id="logo-placeholder" style="text-align: center; color: #8C7E74;"><i class="fas fa-feather-alt" style="font-size:36px; color:#C5A880; margin-bottom: 12px;"></i><br><small style="font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:1px;">Línea Estética Boutique</small></span>
+                </div>
+                <div class="logo-actions" style="margin-top: 20px; display: flex; gap: 16px; justify-content: center;">
+                    <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="subirLogo(this)">
+                    <button type="button" onclick="document.getElementById('logo-input').click()" class="tab-btn" style="background: #3D312A; color: white; border-radius: 9999px;">Actualizar Logo</button>
+                    <button type="button" onclick="eliminarLogo()" class="tab-btn btn-danger" style="border-radius: 9999px;">Remover</button>
+                </div>
+            </div>
+
+            <div class="config-section" style="border: 1px solid #E6E1DA; border-radius: 28px; padding: 28px; background: #fff; margin-bottom: 28px;">
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-signature" style="color: #C5A880;"></i> Ficha de la Empresa
+                </h4>
+                <div class="form-row">
+                    <div><label class="form-label">Nombre Comercial</label><input type="text" id="empresa-nombre" placeholder="CASA ELEGIDA"></div>
+                    <div><label class="form-label">Slogan Comercial</label><input type="text" id="empresa-slogan" placeholder="CALIDAD Y CONFORT"></div>
+                </div>
+                <div class="form-row" style="margin-top:16px;">
+                    <div><label class="form-label">WhatsApp Comercial</label><input type="text" id="empresa-telefono"></div>
+                    <div><label class="form-label">Email de Contacto</label><input type="email" id="empresa-email"></div>
+                </div>
+                <div class="form-row" style="margin-top: 16px; grid-template-columns: 1fr;">
+                    <div><label class="form-label">Dirección Física / Showroom</label><input type="text" id="empresa-direccion"></div>
+                </div>
+                
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; margin-top: 28px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-clock" style="color: #C5A880;"></i> Horarios de Atención
+                </h4>
+                <div class="form-row">
+                    <div><label class="form-label">Lunes a Viernes</label><input type="text" id="horario-lv"></div>
+                    <div><label class="form-label">Sábados</label><input type="text" id="horario-sab"></div>
+                </div>
+                <div class="form-row" style="margin-top: 16px;">
+                    <div><label class="form-label">Domingos</label><input type="text" id="horario-dom"></div>
+                </div>
+
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; margin-top: 28px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-share-alt" style="color: #C5A880;"></i> Redes Sociales
+                </h4>
+                <div class="form-row">
+                    <div><label class="form-label">Instagram (sin @)</label><input type="text" id="red-instagram"></div>
+                    <div><label class="form-label">Facebook</label><input type="text" id="red-facebook"></div>
+                </div>
+                <div class="form-row" style="margin-top:16px;">
+                    <div><label class="form-label">TikTok</label><input type="text" id="red-tiktok"></div>
+                    <div><label class="form-label">WhatsApp Enlace</label><input type="text" id="red-whatsapp"></div>
+                </div>
+
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; margin-top: 28px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-money-check-alt" style="color: #C5A880;"></i> Datos de Cobro / Transferencias
+                </h4>
+                <div class="form-row">
+                    <div><label class="form-label">Alias de Cuenta</label><input type="text" id="pago-alias"></div>
+                    <div><label class="form-label">CBU / CVU</label><input type="text" id="pago-cbu"></div>
+                </div>
+                <div class="form-row" style="margin-top: 16px;">
+                    <div><label class="form-label">Banco</label><input type="text" id="pago-banco"></div>
+                    <div><label class="form-label">Titular de la Cuenta</label><input type="text" id="pago-titular"></div>
+                </div>
+                
+                <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top: 24px; background: #3D312A;"><i class="fas fa-save"></i> Guardar Configuración General</button>
+            </div>
+
+            <div class="config-section" style="border: 1px solid #E6E1DA; border-radius: 28px; padding: 28px; background: #fff; margin-bottom: 28px;">
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-globe" style="color: #C5A880;"></i> Salón Virtual Web
+                </h4>
+                <label class="form-label">Estado de la Tienda Web</label>
+                <div class="entrega-tabs" style="margin-bottom: 20px; max-width: 320px; background: #F6F3EA; padding: 4px; border-radius: 40px;">
+                    <button type="button" id="tienda-on" class="entrega-btn" onclick="setTiendaHabilitada(true)">Online</button>
+                    <button type="button" id="tienda-off" class="entrega-btn" onclick="setTiendaHabilitada(false)">Pausada</button>
+                </div>
+                <div class="form-row">
+                    <div><label class="form-label">Título Principal (Home)</label><input type="text" id="tienda-titulo"></div>
+                    <div><label class="form-label">Eslogan de Bienvenida</label><input type="text" id="tienda-mensaje"></div>
+                </div>
+                <button type="button" onclick="guardarConfiguracionTienda()" class="btn-confirm" style="margin-top: 24px;"><i class="fas fa-heading"></i> Actualizar Textos Web</button>
+            </div>
+
+            <div class="config-section" style="border: 1px solid #E6E1DA; border-radius: 28px; padding: 28px; background: #fff; margin-bottom: 28px;">
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-palette" style="color: #C5A880;"></i> Paleta de Colores de la Tienda
+                </h4>
+                <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px;">
+                    <div><label class="form-label">Tono Principal</label><input type="color" id="tienda-color-primary"></div>
+                    <div><label class="form-label">Tono Secundario</label><input type="color" id="tienda-color-secondary"></div>
+                    <div><label class="form-label">Fondo Soft</label><input type="color" id="tienda-color-bg"></div>
+                    <div><label class="form-label">Texto Oscuro</label><input type="color" id="tienda-color-text"></div>
+                </div>
+                <button type="button" onclick="guardarDisenoTienda()" class="btn-confirm" style="margin-top: 24px;"><i class="fas fa-magic"></i> Vestir Tienda Online</button>
+            </div>
+
+            <div class="config-section" style="border: 1px solid #E6E1DA; border-radius: 28px; padding: 28px; background: #fff; margin-bottom: 28px;">
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-tags" style="color: #C5A880;"></i> Descuento Mayorista Exclusivo
+                </h4>
+                <button type="button" id="btnMayoristaToggle" onclick="toggleMayorista()" class="tab-btn" style="margin-bottom:20px; border-radius:40px;">Configurar</button>
+                <div id="mayoristaPanel" style="background: #FDFBF7; padding: 20px; border-radius: 20px; border: 1px solid #E6E1DA;">
+                    <label class="form-label">Activar Descuento Según:</label>
+                    <div class="pago-tabs" style="margin-bottom: 20px; gap: 12px;">
+                        <div class="modo-option" data-modo="cantidad" onclick="selectMayoristaModo('cantidad')">Mínimo de Prendas</div>
+                        <div class="modo-option" data-modo="monto" onclick="selectMayoristaModo('monto')">Monto Total Límite ($)</div>
+                        <div class="modo-option" data-modo="ambas" onclick="selectMayoristaModo('ambas')">Ambas Reglas</div>
+                    </div>
+                    <div class="form-row">
+                        <div id="configCantidad"><label class="form-label">Mínimo de Unidades</label><input type="number" id="mayoristaCantidad" value="3"></div>
+                        <div id="configMonto"><label class="form-label">Monto Mínimo de Compra ($)</label><input type="text" id="mayoristaMonto" value="80.000"></div>
+                    </div>
+                    <button type="button" onclick="guardarMayorista()" class="btn-confirm" style="margin-top: 20px; background: #3D312A;"><i class="fas fa-check"></i> Fijar Reglas Mayoristas</button>
+                </div>
+            </div>
+
+            <div class="config-section" style="border: 1px solid #E6E1DA; border-radius: 28px; padding: 28px; background: #fff;">
+                <h4 style="color: #3D312A; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E6E1DA; padding-bottom: 8px;">
+                    <i class="fas fa-truck" style="color: #C5A880;"></i> Canales de Envío Ofertados
+                </h4>
+                <textarea id="metodos-envio-lista" rows="5" placeholder="Via Cargo&#10;Correo Argentino"></textarea>
+                <button type="button" onclick="guardarMetodosEnvio()" class="btn-confirm" style="margin-top: 20px; background: #3D312A;"><i class="fas fa-truck"></i> Guardar Logística</button>
+            </div>
+        </div>`;
+    setTimeout(() => { cargarConfiguracion(); cargarMetodosEnvio(); }, 50);
+    return html;
+}
+
+function renderPaginaBackup() { return `<div class="panel"><div class="backup-hero"><div class="backup-hero-icon">💾</div><h2>Sistema de Backup Total</h2><p>Protegé absolutamente todos tus datos.</p><button type="button" onclick="iniciarBackupTotal()" class="btn-backup-master" id="btn-backup-total"><i class="fas fa-shield-alt"></i> Crear Backup Completo</button></div><div class="backup-cards"><div class="backup-card-item" onclick="iniciarBackupTotal()"><div class="backup-card-icon" style="background:#eef2ff;color:#3D312A"><i class="fas fa-database"></i></div><h4>Backup Completo</h4><p>Incluye absolutamente todo.</p></div><div class="backup-card-item" onclick="document.getElementById('restore-section').scrollIntoView({behavior:'smooth'})"><div class="backup-card-icon" style="background:#fef3c7;color:#f59e0b"><i class="fas fa-undo-alt"></i></div><h4>Restaurar Sistema</h4><p>Restaurá todo desde un archivo.</p></div></div><div class="config-section"><h3><i class="fas fa-history"></i> Historial <button type="button" onclick="cargarHistorialBackups()" class="tab-btn" style="float:right"><i class="fas fa-sync-alt"></i></button></h3><table class="history-table"><thead><tr><th>Fecha</th><th>Tamaño</th><th>Acciones</th></tr></thead><tbody id="backup-history-body"><tr><td colspan="3" style="text-align:center">Cargando...</td></tr></tbody></table></div><div class="config-section" style="border:2px solid #f59e0b" id="restore-section"><h3 style="color:#f59e0b"><i class="fas fa-upload"></i> Restaurar</h3><div class="restore-zone" onclick="document.getElementById('restore-file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="manejarDropRestore(event)"><i class="fas fa-cloud-upload-alt" style="font-size:48px;color:#f59e0b"></i><h4>Arrastrá el backup aquí</h4></div><input type="file" id="restore-file-input" accept=".backup,.zip" style="display:none" onchange="procesarArchivoRestore(this)"><button type="button" onclick="confirmarRestauracionTotal()" class="btn-backup-master" style="width:100%;background:#f59e0b;margin-top:16px;display:none" id="btn-restaurar"><i class="fas fa-exclamation-triangle"></i> Restaurar</button></div></div>`; }
+
+async function cargar() { try { const d=await safeFetch('/listar',{method:'POST'}); productos=d.lista||[]; renderProductosVenta(); actualizarEstadisticasRapidas(); } catch(e){} }
+async function cargarYRenderAdmin() { try { const d=await safeFetch('/listar',{method:'POST'}); productos=d.lista||[]; renderAdmin(); } catch(e){} }
+async function cargarVentas() { try { const d=await safeFetch('/listar-ventas',{method:'POST'}); ventasHistorial=d.lista||[]; renderVentas(); } catch(e){} }
+async function cargarCategorias() { try { const d=await safeFetch('/listar-categorias',{method:'POST'}); categorias=d.lista||[]; } catch(e){} }
+
+async function cargarMetodosEnvio() { 
+    try { 
+        const d = await safeFetch('/listar-metodos-envio', { method: 'POST' }); 
+        metodosEnvio = d.lista || []; 
+        const el = document.getElementById('metodos-envio-lista');
+        if (el) { el.value = metodosEnvio.length > 0 ? metodosEnvio.join('\n') : ''; }
+    } catch(e) {} 
+}
+
+function renderProductosVenta() { 
+    const g = document.getElementById('grid-prods'); 
+    if (!g) return; 
+    g.innerHTML = ''; 
+
+    productos.forEach(p => { 
+        if (!p.variantes || p.variantes.length === 0) p.variantes = [{ nombre: "Única", stock: 0, foto: "" }]; 
+        
+        if (varianteSeleccionada[p.id] === undefined) {
+            varianteSeleccionada[p.id] = p.variantes.findIndex(v => v.stock > 0);
+        }
+        if (varianteSeleccionada[p.id] === -1) varianteSeleccionada[p.id] = 0; 
+        
+        let idx = varianteSeleccionada[p.id]; 
+        let v = p.variantes[idx] || p.variantes[0]; 
+
+        // Renderizado limpio de variantes una debajo de la otra
+        let variantesHTML = '<div style="display:flex; flex-direction:column; gap:8px; width:100%;">';
+        p.variantes.forEach((vr, i) => {
+            const tieneImagen = vr.foto && vr.foto.trim() !== '';
+            variantesHTML += `
+                <div onclick="seleccionarVarianteVisual(${p.id}, ${i})" 
+                     class="variante-item-venta ${idx === i ? 'activa' : ''} ${vr.stock === 0 ? 'sin-stock' : ''}" 
+                     id="variante-${p.id}-${i}" 
+                     data-index="${i}" 
+                     style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:16px; border:2px solid #E6E1DA; background:white; text-align:left; width:100%;">
+                    
+                    <!-- Formato rectangular horizontal para la miniatura de la sábana -->
+                    <div style="width:60px; height:45px; border-radius:10px; background:#F6F3EA; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:1px solid rgba(197,168,128,0.15);">
+                        <img src="${tieneImagen ? sanitizarUrl(vr.foto) : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2245%22 fill=%22%23FAEDCD%22><rect width=%2260%22 height=%2245%22/><text x=%2250%%22 y=%2260%%22 text-anchor=%22middle%22 fill=%22%23D4A373%22 font-size=%2214%22>🛏️</text></svg>'}" 
+                             style="width:100%; height:100%; object-fit:cover;">
+                    </div>
+                    
+                    <div style="flex:1; display:flex; flex-direction:column; gap:2px;">
+                        <span class="variante-nombre" style="font-size:12px; font-weight:600; color:#3D312A; padding:0;">${escapeHtml(vr.nombre)}</span>
+                        <span class="variante-stock" style="font-size:11px; color:#8C7E74; background:none; padding:0; text-align:left;">
+                            ${vr.stock === 0 ? '<span style="color:#D96B6B; font-weight:600;">Sin stock</span>' : `Stock: <strong>${vr.stock} u.</strong>`}
+                        </span>
+                    </div>
+                </div>`;
+        });
+        variantesHTML += '</div>';
+
+        g.innerHTML += `
+            <div class="card" data-nombre="${p.nombre.toLowerCase()}" data-id="${p.id}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+                    <span class="stock-badge ${v.stock <= 5 ? 'stock-bajo' : ''}" id="stock-badge-${p.id}"><i class="fas fa-box"></i> Stock: ${v.stock}</span>
+                    ${p.precioMayor > 0 ? `<span style="background:#E4EDE1; color:#3C763D; font-size:10px; padding:4px 10px; border-radius:40px; font-weight:600">MAYORISTA</span>` : ''}
+                </div>
+                
+                <!-- Ajustado aspect-ratio a 4/3 para fotos de sábanas/empaques sin cortes verticales -->
+                <img id="img-principal-${p.id}" src="${sanitizarUrl(v.foto)}" 
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 fill=%22%23F6F3EA%22><rect width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%233D312A%22 font-size=%2216%22>Casa Elegida Blanquería</text></svg>'" 
+                     class="producto-imagen-principal" 
+                     style="aspect-ratio: 4/3 !important; object-fit: cover; width:100%; border-radius:16px; background:#F6F3EA;" 
+                     alt="${escapeHtml(p.nombre)}">
+                
+                <h4 style="font-family:'Poppins', sans-serif; font-size:15px; color:#3D312A; margin-top:12px;">${escapeHtml(p.nombre)}</h4>
+                <div class="precio-producto">${fmt.format(p.precio)}</div>
+                ${p.precioMayor > 0 ? `<div class="precio-mayor">💰 Mayorista: ${fmt.format(p.precioMayor)}</div>` : ''}
+                
+                <button type="button" class="btn-desplegar-variantes" id="btn-desplegar-${p.id}" onclick="toggleVariantesVenta(${p.id})">
+                    <i class="fas fa-layer-group"></i> 
+                    <span id="btn-texto-${p.id}">Ver opciones disponibles (${p.variantes.length})</span>
+                    <i class="fas fa-chevron-down" id="btn-icono-${p.id}"></i>
+                </button>
+                
+                <div class="variantes-grid-container" id="variantes-container-${p.id}">
+                    ${variantesHTML}
+                </div>
+                
+                <div class="cantidad-selector">
+                    <button type="button" class="cantidad-btn" onclick="cambiarCantidad(${p.id},-1)">−</button>
+                    <input type="number" id="q-${p.id}" value="1" min="1" max="${v.stock}" class="cantidad-input" onchange="validarCantidad(${p.id})">
+                    <button type="button" class="cantidad-btn" onclick="cambiarCantidad(${p.id},1)">+</button>
+                </div>
+                <button type="button" class="btn-add" onclick="addAlCarrito(${p.id})" ${v.stock === 0 ? 'disabled' : ''} id="btn-add-${p.id}">
+                    <i class="fas fa-cart-plus"></i> ${v.stock === 0 ? 'Sin Stock' : 'Agregar al Pedido'}
+                </button>
+            </div>`; 
+    }); 
+}
+    
+function toggleVariantesVenta(id){ const c=document.getElementById(`variantes-container-${id}`); const b=document.getElementById(`btn-desplegar-${id}`); const t=document.getElementById(`btn-texto-${id}`); const ic=document.getElementById(`btn-icono-${id}`); if(!c||!b)return; if(c.classList.contains('desplegado')){c.classList.remove('desplegado');b.classList.remove('activo');t.textContent=`Desplegar variantes (${productos.find(p=>p.id==id)?.variantes.length||0})`;ic.className='fas fa-chevron-down';}else{c.classList.add('desplegado');b.classList.add('activo');t.textContent='Ocultar variantes';ic.className='fas fa-chevron-up';setTimeout(()=>{const a=c.querySelector('.variante-item-venta.activa');if(a)a.scrollIntoView({behavior:'smooth',block:'nearest'});},100);} }
+
+function seleccionarVarianteVisual(id, idx){ 
+    const p = productos.find(x => x.id == id); if (!p) return; const v = p.variantes[idx]; if (v.stock === 0) { mostrarToast('⚠️ Sin stock', true); return; } varianteSeleccionada[id] = idx; 
+    document.querySelectorAll(`#variantes-container-${id} .variante-item-venta`).forEach(el => {
+        const i = parseInt(el.getAttribute('data-index') || el.id.split('-').pop());
+        el.classList.toggle('activa', i === idx); el.classList.toggle('sin-stock', p.variantes[i]?.stock === 0);
+    });
+    const img = document.getElementById(`img-principal-${id}`); if (img) { img.style.opacity = '0.4'; setTimeout(() => { img.src = sanitizarUrl(v.foto); img.style.opacity = '1'; }, 150); }
+    const inp = document.getElementById(`q-${id}`); if (inp) { inp.max = v.stock; if (parseInt(inp.value) > v.stock) inp.value = v.stock; }
+    const badge = document.getElementById(`stock-badge-${id}`); if (badge) { badge.innerHTML = `<i class="fas fa-box"></i> Stock: ${v.stock}`; badge.className = `stock-badge ${v.stock <= 5 ? 'stock-bajo' : ''}`; }
+    const btn = document.getElementById(`btn-add-${id}`); if (btn) { btn.disabled = v.stock === 0; btn.innerHTML = v.stock === 0 ? '<i class="fas fa-cart-plus"></i> Sin Stock' : '<i class="fas fa-cart-plus"></i> Agregar al Pedido'; }
+}
+    
+function validarCantidad(id){ const i=document.getElementById(`q-${id}`); if(!i)return; const m=parseInt(i.max)||999; const v=parseInt(i.value)||1; if(v>m)i.value=m; if(v<1)i.value=1; }
+function cambiarCantidad(id,d){ const i=document.getElementById('q-'+id); if(i){let n=(parseInt(i.value)||1)+d;n=Math.max(1,Math.min(n,parseInt(i.max)||999));i.value=n;} }
+
+async function addAlCarrito(id){ let p=productos.find(x=>x.id==id); if(!p)return; let idx=varianteSeleccionada[id]||0; let v=p.variantes[idx]; if(!v)return; let c=parseInt(document.getElementById('q-'+id).value); try{const res=await fetch('/verificar-stock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({productoId:id,varianteNombre:v.nombre})});const data=await res.json();if(data.stock!==undefined){v.stock=data.stock;seleccionarVarianteVisual(id,idx);}}catch(e){} if(v.stock<c){mostrarToast('❌ Stock insuficiente. Disponible: '+v.stock,true);return;} let e=carrito.find(i=>i.pId===id&&i.vNom===v.nombre&&!i.esManual); if(e){if(v.stock<e.cant+c){mostrarToast('❌ Stock insuficiente',true);return;}e.cant+=c;}else{carrito.push({pId:id,pNom:p.nombre,vNom:v.nombre,vFoto:v.foto||'',precio:p.precio,precioMayor:p.precioMayor||0,cant:c,esManual:false});} calcularPreciosMayoristaEnVivo(); renderCart(); localStorage.setItem('pos_carrito',JSON.stringify(carrito)); mostrarToast('✅ Agregado'); }
+
+function calcularPreciosMayoristaEnVivo(){ 
+    let confMayorista = configuracion.mayorista; if (typeof confMayorista === 'string') { try { confMayorista = JSON.parse(confMayorista); } catch(e) { confMayorista = {}; } }
+    if(!confMayorista || !confMayorista.habilitado){ carrito.forEach(i=>{ if(i.precioOriginal){ i.precio=i.precioOriginal; delete i.precioOriginal; } }); renderCart(); return; }
+    const modo = confMayorista.modo || 'cantidad', valorCantidad = parseInt(confMayorista.valorCantidad) || 3, valorMonto = parseFloat(confMayorista.valorMonto) || 80000;
+    const cT = carrito.reduce((s,i)=>s+i.cant,0); 
+    const montoTotalMayorista = carrito.reduce((s,i)=>{ const p=productos.find(x=>x.id==i.pId); const precioAUsar = (p && p.precioMayor > 0) ? p.precioMayor : (i.precioOriginal || i.precio); return s + (precioAUsar * i.cant); },0);
+    let cumple = false; if (modo === 'cantidad') cumple = cT >= valorCantidad; else if (modo === 'monto') cumple = montoTotalMayorista >= valorMonto; else if (modo === 'ambas') cumple = (cT >= valorCantidad && montoTotalMayorista >= valorMonto);
+    carrito.forEach(i=>{ if(i.esManual)return; const p=productos.find(x=>x.id==i.pId); if(!p||!p.precioMayor)return; if(cumple){ if(!i.precioOriginal) i.precioOriginal=i.precio; i.precio=p.precioMayor; }else if(i.precioOriginal){ i.precio=i.precioOriginal; delete i.precioOriginal; } }); renderCart(); 
+}
+
+function renderCart(){ 
+    let d=document.getElementById('cart-items'); if(!d)return; totalVenta=0; d.innerHTML=''; 
+    if(!carrito.length) d.innerHTML='<div class="empty-cart"><i class="fas fa-shopping-cart"></i><br>Vacío</div>'; 
+    else carrito.forEach((it,i)=>{ totalVenta+=it.precio*it.cant; d.innerHTML+=`<div class="cart-item ${it.precioOriginal&&it.precio<it.precioOriginal?'mayorista-applied':''}"><img src="${sanitizarUrl(it.vFoto)}" class="cart-img"><div class="cart-info"><h4>${escapeHtml(it.pNom)} ${it.precioOriginal&&it.precio<it.precioOriginal?'<span style="background:#10b981;color:white;padding:2px 6px;border-radius:10px;font-size:9px;margin-left:4px">MAY</span>':''}</h4><p>${escapeHtml(it.vNom)} • ${fmt.format(it.precio)} c/u</p></div><div class="cart-controls"><button type="button" onclick="modificarCantidadCarrito(${i},-1)">-</button><span>${it.cant}</span><button type="button" onclick="modificarCantidadCarrito(${i},1)">+</button></div><div class="cart-precio"><strong>${fmt.format(it.precio*it.cant)}</strong></div><button type="button" class="btn-eliminar-cart" onclick="eliminarDelCarrito(${i})"><i class="fas fa-trash-alt"></i></button></div>`; }); 
+    document.getElementById('total-txt').innerHTML=fmt.format(totalVenta);
+    const floatBadge = document.getElementById('cart-float-badge'); if (floatBadge) floatBadge.textContent = carrito.reduce((acc, item) => acc + item.cant, 0);
+}
+
+function modificarCantidadCarrito(i,d){ if(!carrito[i])return; let nc=carrito[i].cant+d; if(nc<1){eliminarDelCarrito(i);return;} carrito[i].cant=nc; calcularPreciosMayoristaEnVivo(); renderCart(); localStorage.setItem('pos_carrito',JSON.stringify(carrito)); }
+function eliminarDelCarrito(i){ carrito.splice(i,1); calcularPreciosMayoristaEnVivo(); renderCart(); localStorage.setItem('pos_carrito',JSON.stringify(carrito)); }
+function setLog(t){ logistica=t; document.getElementById('form-envio').classList.toggle('hidden',t!=='envio'); document.querySelectorAll('.entrega-btn').forEach(b=>b.classList.remove('active')); document.getElementById(`l-${t}`).classList.add('active'); }
+function setMetodo(m){ metodoPago=m; document.querySelectorAll('.pago-btn').forEach(b=>b.classList.remove('active')); document.getElementById(m==='efectivo'?'p-ef':m==='transferencia'?'p-tr':'p-mx').classList.add('active'); }
+
+async function checkout(){ 
+    if(!carrito.length){mostrarToast('Carrito vacío',true);return;}
+    try { const caja = await safeFetch('/admin/estado-caja-profesional', {method:'POST'}); if (!caja.abierta) { mostrarToast('🔒 Debes abrir la caja antes de realizar ventas', true); return; } } catch(e) {}
+    let cd={nombre:'Mostrador'}; if(logistica==='envio'){ let n=document.getElementById('env-nombre').value.trim(), dni=document.getElementById('env-dni').value.trim(), c=document.getElementById('env-celular').value.trim(); if(!n||!dni||!c){mostrarToast('Completá datos',true);return;} cd={nombre:n,dni:dni,celular:c}; } 
+    let data=await safeFetch('/confirmar-venta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({carrito,pago:{total:totalVenta,metodo:metodoPago},logistica,cliente:cd,mayoristaConfig:{habilitado:mayoristaHabilitado}})}); 
+    if(data.success){mostrarToast(`✅ Venta ${data.ventaId}`);carrito=[];renderCart();localStorage.removeItem('pos_carrito');cargar();cargarVentas();} 
+}
+function buscarProductos(){ let b=document.getElementById('buscador').value.toLowerCase(); document.querySelectorAll('#grid-prods .card').forEach(c=>c.style.display=c.getAttribute('data-nombre').includes(b)?'':'none'); }
+
+function renderAdmin(){
+    const a = document.getElementById('admin-lista'); 
+    if(!a) return; 
+    a.innerHTML = '';
+
+    if (!productos || productos.length === 0) {
+        a.innerHTML = `
+            <div style="text-align:center; padding:40px; color:#8C7E74; opacity:0.7;">
+                <i class="fas fa-box-open" style="font-size:48px; margin-bottom:16px;"></i>
+                <p>No hay productos cargados en el sistema.</p>
+            </div>`;
+        return;
+    }
+
+    productos.forEach(p => {
+        if(!p.variantes || p.variantes.length === 0) {
+            p.variantes = [{nombre: "Única", stock: 0, foto: ""}];
+        }
+        
+        const card = document.createElement('div'); 
+        card.className = 'producto-card'; 
+        card.setAttribute('data-id', p.id);
+
+        const fotoPreview = p.variantes[0]?.foto || '';
+
+        card.innerHTML = `
+            <div class="producto-header">
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <div class="producto-imagen">
+                    <img src="${sanitizarUrl(fotoPreview)}" style="width:100px; height:75px; object-fit:cover; border-radius:12px; border:1px solid #E6E1DA;" onerror="this.style.display='none'">
+                </div>
+                <div class="producto-info">
+                    <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px">
+                        <input type="text" id="en-${p.id}" value="${escapeHtml(p.nombre)}" placeholder="Nombre" style="flex:1; padding:14px; border-radius:16px; border:1px solid #E6E1DA; font-size:16px; font-weight:600;">
+                        <button type="button" onclick="saveEdit('${p.id}')" class="btn-confirm" style="width:auto; padding:14px 24px"><i class="fas fa-save"></i> Guardar</button>
+                        <button type="button" onclick="eliminarProducto('${p.id}')" class="tab-btn btn-danger" style="padding:14px; border-radius:16px;"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div class="form-row">
+                        <div><label class="form-label">💰 Precio Menor</label><input type="number" id="ep-${p.id}" value="${p.precio || 0}" step="0.01"></div>
+                        <div><label class="form-label">🏷️ Precio Mayorista</label><input type="number" id="epm-${p.id}" value="${p.precioMayor || 0}" step="0.01"></div>
+                    </div>
+                    <div class="form-row">
+                        <div>
+                            <label class="form-label">📁 Categoría</label>
+                            <select id="cat-${p.id}" style="border-radius:16px" onchange="actualizarSubcategorias('${p.id}')">
+                                <option value="">Sin categoría</option>
+                                ${categorias.map(c => `<option value="${c.id}" ${p.categoriaId == c.id ? 'selected' : ''}>${escapeHtml(c.nombre)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">📂 Subcategoría</label>
+                            <select id="subcat-${p.id}" style="border-radius:16px">
+                                <option value="">Sin subcategoría</option>
+                                ${(() => {
+                                    const cat = categorias.find(c => c.id == p.categoriaId);
+                                    if (cat?.subcategorias?.length) {
+                                        return cat.subcategorias.map(s => `<option value="${escapeHtml(s)}" ${p.subcategoria == s ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('');
+                                    }
+                                    return '';
+                                })()}
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px">
+                        <label class="form-label">📝 Descripción</label>
+                        <textarea id="desc-${p.id}" rows="2" style="border-radius:16px">${escapeHtml(p.descripcion || '')}</textarea>
+                    </div>
+                    <button type="button" onclick="toggleVariantes('${p.id}')" id="btn-toggle-${p.id}" class="btn-toggle-variantes">
+                        <i class="fas fa-layer-group"></i> Opciones de Stock (${p.variantes.length}) <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="variantes-panel-${p.id}" class="variantes-panel" style="display:none">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h4 style="margin:0; color:#3D312A">Variantes Reales (${p.variantes.length})</h4>
+                    <div style="display:flex; gap:8px">
+                        <button type="button" onclick="aplicarStockATodas('${p.id}')" class="tab-btn" style="padding:8px 16px; font-size:12px"><i class="fas fa-copy"></i> Mismo stock</button>
+                        <button type="button" class="tab-btn btn-success" onclick="agregarVarianteFilaNueva('${p.id}')" style="padding:8px 16px; font-size:12px"><i class="fas fa-plus"></i> Añadir Variante</button>
+                    </div>
+                </div>
+                <div id="contenedor-filas-variantes-${p.id}" style="display:flex; flex-direction:column; gap:12px">
+                    ${p.variantes.map((v, i) => {
+                        const tieneFoto = v.foto && v.foto.trim() !== '';
+                        return `
+                        <div class="variante-item row-variante-accion" style="display:grid; grid-template-columns: 2.5fr 1fr auto auto; gap:12px; align-items:center;">
+                            <input type="text" class="v-input-nombre" placeholder="Ej: 1 Plaza" value="${escapeHtml(v.nombre)}" style="border-radius:50px; padding:10px 14px;">
+                            <input type="number" class="v-input-stock" placeholder="Cantidad" value="${v.stock || 0}" min="0" style="border-radius:50px; padding:10px 14px; text-align:center;">
+                            
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <div style="width:48px; height:38px; border-radius:8px; background:#F6F3EA; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:1px solid #E6E1DA;">
+                                    <img id="prev-v-${p.id}-${i}" src="${tieneFoto ? sanitizarUrl(v.foto) : ''}" 
+                                         style="width:100%; height:100%; object-fit:cover; ${tieneFoto ? '' : 'display:none;'}">
+                                    <span id="icon-v-${p.id}-${i}" style="font-size:14px; color:#D4A373; ${tieneFoto ? 'display:none;' : ''}">🖼️</span>
+                                </div>
+                                
+                                <input type="text" class="v-input-foto" value="${escapeHtml(v.foto || '')}" style="display:none;">
+                                
+                                <button type="button" onclick="document.getElementById('file-v-${p.id}-${i}').click()" style="background:#3D312A; color:white; border:none; border-radius:50%; width:36px; height:36px; flex-shrink:0; cursor:pointer;"><i class="fas fa-cloud-upload-alt"></i></button>
+                                <input type="file" id="file-v-${p.id}-${i}" accept="image/*" style="display:none" onchange="subirFotoVarianteNativa(this,'${p.id}',${i})">
+                            </div>
+                            
+                            <button type="button" onclick="this.closest('.row-variante-accion').remove()" style="background:none; border:none; color:#D96B6B; cursor:pointer; padding:0 8px;"><i class="fas fa-trash-alt"></i></button>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        a.appendChild(card);
+    });
+
+    if(window.Sortable) {
+        new Sortable(a, {
+            handle: '.drag-handle',
+            animation: 200,
+            onEnd: async () => {
+                const o = [];
+                document.querySelectorAll('#admin-lista .producto-card').forEach(c => {
+                    const id = c.getAttribute('data-id');
+                    const prod = productos.find(x => x.id == id);
+                    if (prod) o.push(prod);
+                });
+                if (o.length) {
+                    await safeFetch('/reordenar-productos', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lista: o })
+                    });
+                }
+            }
+        });
+    }
+}
+    
+function agregarVarianteFilaNueva(pid) {
+    const container = document.getElementById(`contenedor-filas-variantes-${pid}`);
+    if(!container) return;
+    const i = container.children.length;
+    const div = document.createElement('div');
+    div.className = 'variante-item row-variante-accion';
+    div.style.cssText = 'display:grid; grid-template-columns:2fr 1fr 2fr auto; gap:12px; align-items:center;';
+    div.innerHTML = `
+        <input type="text" class="v-input-nombre" placeholder="Ej: Blanco / King" style="border-radius:50px; padding:10px 14px;">
+        <input type="number" class="v-input-stock" value="0" min="0" style="border-radius:50px; padding:10px 14px; text-align:center;">
+        <div style="display:flex; gap:6px; align-items:center;">
+            <input type="text" class="v-input-foto" placeholder="URL Foto" style="border-radius:50px; padding:10px 14px; font-size:11px;">
+            <button type="button" onclick="alert('Guardá el artículo primero para habilitar carga de fotos en esta variante.')" style="background:#8C7E74; color:white; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer;"><i class="fas fa-cloud-upload-alt"></i></button>
+        </div>
+        <button type="button" onclick="this.closest('.row-variante-accion').remove()" style="background:none; border:none; color:#D96B6B; cursor:pointer; padding:0 8px;"><i class="fas fa-trash-alt"></i></button>
+    `;
+    container.appendChild(div);
+}
+
+async function subirFotoVarianteNativa(input, pid, idx) {
+    if(!input.files?.[0]) return;
+    const f=new FormData(); f.append('foto', input.files[0]);
+    try {
+        const d=await safeFetch('/subir-imagen',{method:'POST',body:f});
+        if(d.url) {
+            const row = input.closest('.row-variante-accion');
+            if(row) row.querySelector('.v-input-foto').value = d.url;
+            mostrarToast('✅ Subida con éxito');
+        }
+    } catch(e){}
+}
+
+function toggleVariantes(id){const p=document.getElementById(`variantes-panel-${id}`);const b=document.getElementById(`btn-toggle-${id}`);if(!p||!b)return;if(p.style.display==='none'){p.style.display='block';b.innerHTML=`<i class="fas fa-layer-group"></i> Ocultar Variantes <i class="fas fa-chevron-up"></i>`;}else{p.style.display='none';const prod=productos.find(x=>x.id==id);b.innerHTML=`<i class="fas fa-layer-group"></i> Variantes (${prod?.variantes?.length||0}) <i class="fas fa-chevron-down"></i>`;}}
+function aplicarStockATodas(pid){const p=productos.find(x=>x.id==pid);if(!p?.variantes?.length)return;const m=document.createElement('div');m.className='modal active';m.innerHTML=`<div class="modal-content" style="max-width:400px"><div class="modal-header"><h3>Aplicar Stock</h3><button type="button" onclick="this.closest('.modal').remove()">&times;</button></div><div class="modal-body"><input type="number" id="stock-global" value="0" min="0" style="font-size:24px;text-align:center;padding:16px;border-radius:16px"></div><div class="modal-footer"><button type="button" onclick="this.closest('.modal').remove()" class="tab-btn">Cancelar</button><button type="button" onclick="aplicarStockGlobal('${pid}')" class="btn-confirm">Aplicar</button></div></div>`;document.body.appendChild(m);}
+function aplicarStockGlobal(pid){const s=parseInt(document.getElementById('stock-global').value)||0; document.querySelectorAll(`#contenedor-filas-variantes-${pid} .v-input-stock`).forEach(inp => inp.value = s); document.querySelector('.modal.active')?.remove();mostrarToast(`✅ Stock ${s} asignado temporalmente`);}
+function actualizarSubcategorias(pid){const catId=document.getElementById(`cat-${pid}`).value;const cat=categorias.find(c=>c.id==parseInt(catId));const sel=document.getElementById(`subcat-${pid}`);if(!sel)return;let h='<option value="">Sin subcategoría</option>';if(cat?.subcategorias?.length)h+=cat.subcategorias.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');sel.innerHTML=h;}
+
+async function saveEdit(id){
+    const nombre = document.getElementById(`en-${id}`)?.value?.trim();
+    const precio = parseFloat(document.getElementById(`ep-${id}`)?.value);
+    const precioMayor = parseFloat(document.getElementById(`epm-${id}`)?.value) || 0;
+    const categoriaId = parseInt(document.getElementById(`cat-${id}`)?.value) || null;
+    const subcategoria = document.getElementById(`subcat-${id}`)?.value || null;
+    const descripcion = document.getElementById(`desc-${id}`)?.value?.trim() || '';
+    
+    if(!nombre){ mostrarToast('Nombre requerido', true); return; }
+    if(!precio || precio <= 0){ mostrarToast('Precio > 0', true); return; }
+    
+    const variantes = [];
+    // Buscamos exactamente el contenedor y la clase de cada fila de variante
+    const filas = document.querySelectorAll(`#contenedor-filas-variantes-${id} .row-variante-accion`);
+    
+    filas.forEach(row => {
+        const nom = row.querySelector('.v-input-nombre')?.value?.trim();
+        const stk = parseInt(row.querySelector('.v-input-stock')?.value) || 0;
+        const fot = row.querySelector('.v-input-foto')?.value?.trim() || '';
+        
+        if(nom) {
+            variantes.push({ nombre: nom, stock: stk, foto: fot });
+        }
+    });
+    
+    if(!variantes.length){ mostrarToast('Al menos 1 variante', true); return; }
+    
+    const p = productos.find(x => x.id == id); 
+    if(!p) return;
+    
+    p.nombre = nombre;
+    p.precio = precio;
+    p.precioMayor = precioMayor;
+    p.categoriaId = categoriaId;
+    p.subcategoria = subcategoria;
+    p.descripcion = descripcion;
+    p.variantes = variantes;
+    
+    await safeFetch('/guardar-producto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(p)
+    });
+    
+    mostrarToast('✅ Guardado con variantes con éxito');
+    cargarYRenderAdmin();
+}
+    
+async function eliminarProducto(id){if(!confirm('¿Eliminar?'))return;await safeFetch('/eliminar-producto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});mostrarToast('✅ Eliminado');cargarYRenderAdmin();}
+function nuevoProd(){let id=Date.now().toString();productos.unshift({id,nombre:"Nuevo artículo",precio:0,precioMayor:0,variantes:[{nombre:"Única",stock:0,foto:""}],descripcion:""});renderAdmin();}
+async function verStockBajo(){let d=await safeFetch('/stock-bajo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minimo:5})});if(!d.stockBajo?.length)mostrarToast('✅ Stock OK');else mostrarToast(`⚠️ ${d.stockBajo.length} bajas`,true);}
+
+function renderVentas(){ const b=document.getElementById('lista-ventas-body'); if(!b)return; b.innerHTML=ventasHistorial.map(v=>`<tr><td><small>${v.fecha}</small><br><strong>${v.id}</strong></td><td>${v.cliente?.nombre||'Mostrador'}</td><td>${v.items.length}</td><td><strong>${fmt.format(v.pago.total)}</strong></td><td><button type="button" onclick="verDetalleVenta('${v.id}')" class="btn-print btn-info"><i class="fas fa-eye"></i></button> <button type="button" onclick="imprimirTicket('${v.id}','termico')" class="btn-print"><i class="fas fa-receipt"></i> Ticket</button> <button type="button" onclick="imprimirTicket('${v.id}','a4')" class="btn-print btn-excel"><i class="fas fa-file-pdf"></i> A4</button></td></tr>`).join(''); }
+function filtrarVentas(){const t=document.getElementById('ventas-buscador').value.toLowerCase();document.querySelectorAll('#lista-ventas-body tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(t)?'':'none');}
+
+function verDetalleVenta(id){ 
+    const v=ventasHistorial.find(x=>x.id===id); if(!v)return; const cliente=v.cliente||{}; const esEnvio=v.logistica==='envio'; const m=document.createElement('div'); m.className='modal active';
+    m.innerHTML=`<div class="modal-content" style="max-width:750px"><div class="modal-header"><h3>📋 Venta ${v.id}</h3><button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button></div><div class="modal-body" style="padding:20px"><div style="background:#f8fafc;border-radius:16px;padding:16px;margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>📅 Fecha:</strong> ${v.fecha}<br><strong>📦 Entrega:</strong> ${esEnvio ? '🚚 Envío a domicilio' : '🏪 Retiro en local'}<br><strong>💳 Pago:</strong> ${v.pago?.metodo||'No especificado'}<br><strong>👤 Vendedor:</strong> ${v.vendedor||'Admin'}</div><div style="text-align:right"><strong>💰 Total:</strong><br><span style="font-size:24px;font-weight:800;color:#3D312A">${fmt.format(v.pago?.total||v.total||0)}</span></div></div></div>${cliente.nombre&&cliente.nombre!=='Mostrador'?`<div style="background:#FDFBF7;border-radius:16px;padding:16px;margin-bottom:16px;border:1px solid #E6E1DA;"><h4 style="margin-bottom:8px;color:#3D312A"><i class="fas fa-user"></i> Datos del Cliente</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px"><div><strong>Nombre:</strong> ${escapeHtml(cliente.nombre||'')}</div><div><strong>DNI:</strong> ${escapeHtml(cliente.dni||'')}</div><div><strong>Teléfono:</strong> ${escapeHtml(cliente.celular||'')}</div></div></div>`:''}<div style="background:white;border-radius:16px;padding:16px;border:1px solid #e2e8f0"><table style="width:100%"><thead><tr><th>Producto</th><th>Cant</th><th>Subtotal</th></tr></thead><tbody>${v.items.map(i=>`<tr><td>${escapeHtml(i.pNom)} (${escapeHtml(i.vNom)})</td><td style="text-align:center">${i.cant}</td><td style="text-align:right">${fmt.format(i.precio*i.cant)}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+    document.body.appendChild(m);
+}
+
+async function imprimirTicket(id, tipo = 'termico') {
+    const v = ventasHistorial.find(x => x.id === id); if (!v) return; const cliente = v.cliente || {}; let nombreEmpresa = configuracion.empresa?.nombre || 'CASA ELEGIDA';
+    let h = `<div style="width:280px;padding:12px;font-family:monospace;font-size:11px;background:white"><strong>${escapeHtml(nombreEmpresa)}</strong><br>Venta: ${v.id}<br>Total: ${fmt.format(v.pago?.total)}</div>`;
+    const el = document.createElement('div'); el.innerHTML = h; document.body.appendChild(el);
+    html2pdf().from(el).set({ margin: 0.5, filename: `ticket_${v.id}.pdf`, jsPDF: { unit: 'mm', format: tipo==='termico'?[80, 150]:'a4' } }).save().then(() => el.remove());
+}
+
+async function subirLogo(i){if(!i.files?.[0])return;let f=new FormData();f.append('logo',i.files[0]);let d=await safeFetch('/subir-logo',{method:'POST',body:f});if(d.success){document.getElementById('logo-preview-img').src=d.url;document.getElementById('logo-preview-img').style.display='block';document.getElementById('logo-placeholder').style.display='none';}}
+async function eliminarLogo(){await safeFetch('/eliminar-logo',{method:'POST'});document.getElementById('logo-preview-img').style.display='none';document.getElementById('logo-placeholder').style.display='block';}
+async function guardarConfiguracion(){await safeFetch('/save-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({empresa:{nombre:document.getElementById('empresa-nombre').value,slogan:document.getElementById('empresa-slogan').value,telefono:document.getElementById('empresa-telefono').value,email:document.getElementById('empresa-email').value,direccion:document.getElementById('empresa-direccion').value},horarios:{lunesViernes:document.getElementById('horario-lv').value,sabados:document.getElementById('horario-sab').value,domingos:document.getElementById('horario-dom').value},redes:{instagram:document.getElementById('red-instagram').value,facebook:document.getElementById('red-facebook').value,tiktok:document.getElementById('red-tiktok').value,whatsapp:document.getElementById('red-whatsapp').value},pagos:{alias:document.getElementById('pago-alias').value,cbu:document.getElementById('pago-cbu').value,banco:document.getElementById('pago-banco').value,titular:document.getElementById('pago-titular').value}})});mostrarToast('✅ Guardado');}
+async function guardarDisenoTienda(){await safeFetch('/save-diseno-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({diseno:{colorPrimario:document.getElementById('tienda-color-primary').value,colorSecundario:document.getElementById('tienda-color-secondary').value,colorFondo:document.getElementById('tienda-color-bg').value,colorTexto:document.getElementById('tienda-color-text').value}})});mostrarToast('✅ Guardado');}
+async function guardarConfiguracionTienda(){await safeFetch('/save-tienda-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tienda:{habilitada:document.getElementById('tienda-on').classList.contains('active'),titulo:document.getElementById('tienda-titulo').value,mensajeBienvenida:document.getElementById('tienda-mensaje').value}})});mostrarToast('✅ Guardado');}
+function setTiendaHabilitada(h){document.getElementById('tienda-on').classList.toggle('active',h);document.getElementById('tienda-off').classList.toggle('active',!h);}
+function toggleMayorista(){mayoristaHabilitado=!mayoristaHabilitado;const p=document.getElementById('mayoristaPanel'),b=document.getElementById('btnMayoristaToggle');if(mayoristaHabilitado){p.style.display='block';b.innerHTML='<i class="fas fa-toggle-on"></i> Activado';b.style.background='#10b981';}else{p.style.display='none';b.innerHTML='<i class="fas fa-toggle-off"></i> Desactivado';b.style.background='#64748b';}}
+function selectMayoristaModo(m) { mayoristaModo = m; document.querySelectorAll('.modo-option').forEach(o => { o.classList.toggle('active', o.getAttribute('data-modo') === m); }); document.getElementById('configCantidad').style.display = (m === 'monto') ? 'none' : 'block'; document.getElementById('configMonto').style.display = (m === 'cantidad') ? 'none' : 'block'; }
+async function guardarMayorista(){await safeFetch('/save-mayorista-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({habilitado:mayoristaHabilitado,modo:mayoristaModo,valorCantidad:parseInt(document.getElementById('mayoristaCantidad').value)||0,valorMonto:desformatearNumero(document.getElementById('mayoristaMonto').value)})});mostrarToast('✅ Guardado');}
+async function guardarMetodosEnvio(){const l=document.getElementById('metodos-envio-lista').value.split('\n').filter(x=>x.trim());await safeFetch('/guardar-metodos-envio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lista:l})});mostrarToast('✅ Guardado');cargarMetodosEnvio();}
+
+function abrirModalCategorias(){const m=document.createElement('div');m.className='modal active';m.innerHTML=`<div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>Categorías</h3><button type="button" onclick="this.closest('.modal').remove()">&times;</button></div><div class="modal-body"><div style="display:flex;gap:12px;margin-bottom:20px"><input type="text" id="nueva-cat-nombre" placeholder="Nueva"><button type="button" onclick="agregarCategoria()" class="btn-confirm" style="width:auto;padding:8px 16px">+</button></div><div id="cats-lista">${categorias.map(c=>`<div><input type="text" value="${escapeHtml(c.nombre)}" id="cat-nombre-${c.id}"><button type="button" onclick="guardarCat(${c.id})" class="tab-btn btn-success"><i class="fas fa-save"></i></button><button type="button" onclick="eliminarCat(${c.id})" class="tab-btn btn-danger"><i class="fas fa-trash"></i></button></div>`).join('')}</div></div></div>`;document.body.appendChild(m);}
+async function agregarCategoria(){const n=document.getElementById('nueva-cat-nombre').value.trim();if(!n)return;await safeFetch('/guardar-categoria',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:Math.floor(Date.now()/1000),nombre:n,subcategorias:[]})});document.querySelector('.modal.active').remove();cargarCategorias();}
+async function guardarCat(id){const n=document.getElementById(`cat-nombre-${id}`).value.trim();if(!n)return;await safeFetch('/guardar-categoria',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,nombre:n})});mostrarToast('✅ Guardado');}
+async function eliminarCat(id){if(!confirm('¿Eliminar?'))return;await safeFetch('/eliminar-categoria',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});document.querySelector('.modal.active').remove();cargarCategorias();}
+
+async function cargarPedidosTienda(){try{const d=await safeFetch('/tienda/listar-pedidos',{method:'POST'});pedidosTienda=d.lista||[];renderPedidosWeb();}catch(e){}}
+function renderPedidosWeb(){ const b = document.getElementById('lista-pedidos-body'); if(!b) return; b.innerHTML = pedidosTienda.map(p => `<tr><td><strong>${p.id}</strong></td><td>${escapeHtml(p.cliente?.nombre || '')}</td><td>${p.items.length}</td><td>${fmt.format(p.total)}</td><td><span class="estado-badge estado-${p.estado}">${p.estado}</span></td><td><button type="button" onclick="verDetallePedido('${p.id}')" class="btn-print btn-info"><i class="fas fa-eye"></i></button></td></tr>`).join(''); }
+function verDetallePedido(id) { const p = pedidosTienda.find(x => x.id === id); if (!p) return; alert(`Pedido ${p.id} - Total: ${fmt.format(p.total)}`); }
+
+async function verificarPINRetiro(){
+    const p = document.getElementById('pin-retiro-input').value.trim(); if(p.length !== 4) return;
+    try {
+        const d = await safeFetch('/tienda/verificar-pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: p }) });
+        if(d.success && d.pedido) {
+            document.getElementById('pin-retiro-resultado').innerHTML = `<div style="background:#FEFAE0; padding:16px; border-radius:12px;">📦 Pedido Encontrado: ${d.pedido.id} <button class="btn-confirm" onclick="confirmarRetiro('${d.pedido.id}','${p}')">Confirmar Retiro</button></div>`;
+        } else { document.getElementById('pin-retiro-resultado').innerHTML = '❌ PIN Inválido'; }
+    } catch(e){}
+}
+async function confirmarRetiro(id, pin) { await safeFetch('/tienda/retirar-pedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedidoId: id, pin }) }); mostrarToast('✅ Entregado'); tab('v'); }
+
+async function cargarDashboard(){
+    try{
+        const d=await safeFetch('/admin/estadisticas-avanzadas',{method:'POST'});
+        document.getElementById('estadisticas-avanzadas').innerHTML = `<div class="stats-grid"><div class="stat-card"><h3>${fmt.format(d.ventasHoy||0)}</h3><p>Ventas Hoy</p></div></div>`;
+    }catch(e){}
+}
+async function cargarHistorialCajas(){ const d=await safeFetch('/admin/historial-cajas',{method:'POST'}); }
+async function seleccionarPlantilla(p){await safeFetch('/save-plantilla',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plantilla:p})});mostrarToast('✅ Guardado');}
+async function cambiarIcono(i){await safeFetch('/save-icono',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({icono:i})});mostrarToast('✅ Guardado');}
+
+async function cargarNotificaciones(){try{const d=await safeFetch('/notificaciones',{method:'POST'});notificaciones=d.lista||[];notificacionesNoLeidas=notificaciones.filter(n=>!n.leida).length;actualizarBadge();}catch(e){}}
+function actualizarBadge(){const b=document.getElementById('notif-count');if(notificacionesNoLeidas>0){b.style.display='flex';b.textContent=notificacionesNoLeidas;}else b.style.display='none';}
+function toggleNotificaciones(){const p=document.getElementById('notif-panel');p.style.display=p.style.display==='none'?'block':'none';}
+function marcarTodasLeidas(){ safeFetch('/notificaciones/leer-todas',{method:'POST'}); }
+async function cargarLogs(){ const d=await safeFetch('/logs/admin',{method:'POST'}); }
+
+async function cargarPerfiles(){try{const d=await safeFetch('/admin/perfiles',{method:'POST'});document.getElementById('lista-perfiles').innerHTML=d.lista.map(p=>`<div class="perfil-card"><h5>${p.nombre}</h5></div>`).join('');}catch(e){}}
+function abrirModalCrearPerfil(){}
+function abrirModalCambiarPassword(){}
+async function cambiarPassword(){}
+function abrirBuscadorClientes(){}
+async function exportarVentasCSV(){ const r=await fetch('/admin/exportar-ventas',{method:'POST',headers:{'Authorization':`Bearer ${adminToken}`}}); }
+
+async function verEstadoCaja(){ try { const d=await safeFetch('/admin/estado-caja-profesional',{method:'POST'}); const c=document.getElementById('estado-caja'); if(c) c.innerHTML=d.abierta?'Caja abierta':'Caja Cerrada'; } catch(e){} }
+function abrirCajaProfesional(){}
+async function cerrarCajaProfesional(){ const d = await safeFetch('/admin/cierre-caja-profesional', { method: 'POST' }); verEstadoCaja(); }
+
+let todosClientes = [];
+async function cargarClientes() { const d = await safeFetch('/admin/listar-clientes', { method: 'POST' }); todosClientes = d.lista || []; renderizarTablaClientes(todosClientes); }
+function filtrarClientes() {}
+function renderizarTablaClientes(lista) { document.getElementById('lista-clientes-body').innerHTML = lista.map(c=>`<tr><td>${escapeHtml(c.nombre)}</td><td><button onclick="verHistorialClienteCompleto('${c.id}','${c.nombre}')">Historial</button></td></tr>`).join(''); }
+async function verHistorialClienteCompleto(id, n) { alert('Historial de ' + n); }
+async function eliminarCliente(id, n) { await safeFetch('/admin/eliminar-cliente', { method: 'POST' }); }
+
+let variantesManuales = [];
+function agregarProductoManual() { mostrarToast('Manual'); }
+function generarVariantesColorTalle(pid) { mostrarToast('Generar'); }
+function asignarFotoPorColor(pid) { alert('Foto por Color'); }
+
+let productosRendimiento = [];
+async function cargarProductosRendimiento() { const d = await safeFetch('/listar', {method:'POST'}); }
+function filtrarRendimiento() {}
+function editarCostos(pid) {}
+function verRendimientoHistorico(pid) {}
+
+function toggleThemePanel(){const p=document.getElementById('theme-panel');if(p)p.style.display=p.style.display==='block'?'none':'block';}
+function toggleDarkMode(){document.body.classList.toggle('dark-mode');}
+
+async function iniciarBackupTotal(){await safeFetch('/admin/backup/crear-total',{method:'POST'});}
+async function cargarHistorialBackups(){const d=await safeFetch('/admin/backup/historial-total',{method:'POST'});}
+function procesarArchivoRestore(i){}
+function confirmarRestauracionTotal(){}
+function actualizarEstadisticasRapidas(){verEstadoCaja();}
+</script>
+</body>
+</html>
