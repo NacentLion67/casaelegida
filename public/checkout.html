@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Finalizar Compra | CASA ELEGIDA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #4A3728;
+            --primary-light: #6B5344;
+            --primary-dark: #3E2A1E;
+            --secondary: #D4A373;
+            --bg-light: #FEFAE0;
+            --bg-white: #FFFFFF;
+            --text-dark: #4A3728;
+            --text-light: #8B7355;
+            --success: #4CAF50;
+            --danger: #F44336;
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .checkout-header {
+            background: var(--bg-white); padding: 16px 20px; box-shadow: var(--shadow-md);
+            display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100;
+        }
+        .checkout-header h1 { font-size: 20px; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .back-btn {
+            background: none; border: none; font-size: 22px; color: var(--text-light);
+            cursor: pointer; padding: 8px; border-radius: 50%; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .back-btn:hover { background: #F0E6DC; color: var(--text-dark); }
+        
+        .checkout-container {
+            max-width: 800px; width: 100%; margin: 24px auto; padding: 0 20px;
+            flex: 1; display: flex; flex-direction: column; gap: 24px;
+        }
+        
+        .step-card { background: var(--bg-white); border-radius: 24px; padding: 24px; box-shadow: var(--shadow-md); }
+        .step-card h2 {
+            font-size: 18px; color: var(--primary); margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #FDF8F4; padding-bottom: 10px;
+        }
+        
+        .summary-list { margin-bottom: 16px; }
+        .summary-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid #F0E6DC; font-size: 14px; gap: 16px;
+        }
+        .summary-item-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .summary-item-img { width: 50px; height: 60px; object-fit: cover; border-radius: 8px; background: #FAEDCD; border: 1px solid rgba(212,163,115,0.2); }
+        .summary-item-details h4 { font-weight: 600; color: var(--text-dark); font-size: 14px; }
+        .summary-item-details p { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+        .summary-item-price { font-weight: 700; color: var(--primary); font-size: 14px; white-space: nowrap; }
+        
+        .total-box {
+            background: #FDF8F4; padding: 16px; border-radius: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 18px; font-weight: 800; color: var(--primary);
+        }
+
+        .delivery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .delivery-box {
+            padding: 16px; border: 2px solid #F0E6DC; border-radius: 16px;
+            text-align: center; cursor: pointer; transition: all 0.2s; background: white;
+        }
+        .delivery-box i { font-size: 28px; margin-bottom: 8px; color: var(--primary); }
+        .delivery-box h3 { font-size: 14px; margin-bottom: 4px; }
+        .delivery-box p { font-size: 11px; color: var(--text-light); }
+        .delivery-box.active { border-color: var(--primary); background: #FDF8F4; }
+        
+        .form-row { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
+        @media (min-width: 640px) { .form-row { grid-template-columns: 1fr 1fr; } }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-dark); }
+        .form-group input, .form-group select {
+            width: 100%; padding: 14px; border: 2px solid #F0E6DC; border-radius: 14px; font-size: 14px; background: white;
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
+        .form-group input[readonly] { background: #F8F2EC; color: var(--text-light); cursor: not-allowed; border-color: #E8DCD2; }
+        .bloqueado-aviso { display: block; font-size: 10px; color: var(--primary); margin-top: 4px; font-weight: 500; }
+        
+        .btn-confirm {
+            width: 100%; padding: 18px; background: var(--primary); color: white;
+            border: none; border-radius: 50px; font-size: 16px; font-weight: 700;
+            cursor: pointer; margin-top: 12px; transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-confirm:hover { background: var(--primary-light); transform: translateY(-2px); }
+        .btn-confirm:disabled { background: #CCC; cursor: not-allowed; transform: none; }
+        
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; background: var(--success);
+            color: white; padding: 14px 20px; border-radius: 40px; font-weight: 600;
+            font-size: 14px; z-index: 2000; box-shadow: var(--shadow-lg); animation: slideIn 0.3s;
+        }
+        .toast.error { background: var(--danger); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="checkout-header">
+        <button class="back-btn" onclick="window.location.href='/tienda'">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1><i class="fas fa-shopping-bag"></i> Finalizar Compra</h1>
+    </div>
+    
+    <div class="checkout-container" id="main-checkout">
+        
+        <!-- PASO 1: CONFIRMAR CARRITO -->
+        <div class="step-card">
+            <h2><i class="fas fa-shopping-basket"></i> Paso 1: Confirmar Carrito</h2>
+            <div class="summary-list" id="lista-productos-final">
+                <p style="text-align: center; color: var(--text-light);">Cargando tu bolso de compras...</p>
+            </div>
+            <div class="total-box">
+                <span>Monto Total de la Orden:</span>
+                <span id="monto-total-final">$0</span>
+            </div>
+        </div>
+
+        <!-- PASO 2: MÉTODO DE ENTREGA -->
+        <div class="step-card">
+            <h2><i class="fas fa-truck"></i> Paso 2: Método de Entrega</h2>
+            <div class="delivery-grid">
+                <div class="delivery-box active" id="delivery-local" onclick="cambiarMetodoEntrega('local')">
+                    <i class="fas fa-store"></i>
+                    <h3>Retiro en Local</h3>
+                    <p>Retirá sin cargo</p>
+                </div>
+                <div class="delivery-box" id="delivery-envio" onclick="cambiarMetodoEntrega('envio')">
+                    <i class="fas fa-shipping-fast"></i>
+                    <h3>Envío a Domicilio</h3>
+                    <p>Recibilo en tu dirección</p>
+                </div>
+            </div>
+
+            <!-- Desplegable de medios de transporte cargados por Admin -->
+            <div id="wrapper-metodo-transporte" style="display: none; margin-top: 16px;">
+                <div class="form-group">
+                    <label><i class="fas fa-box-open"></i> Seleccioná el Medio de Envío *</label>
+                    <select id="selector-medio-envio">
+                        <option value="">Cargando empresas de transporte...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 3: DATOS PERSONALES Y DOMICILIO -->
+        <div class="step-card">
+            <h2><i class="fas fa-user-edit"></i> Paso 3: Datos de Facturación y Entrega</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombre (No editable)</label>
+                    <input type="text" id="c-nombre" readonly>
+                    <span class="bloqueado-aviso"><i class="fas fa-lock"></i> Bloqueado por perfil</span>
+                </div>
+                <div class="form-group">
+                    <label>Apellido (No editable)</label>
+                    <input type="text" id="c-apellido" readonly>
+                    <span class="bloqueado-aviso"><i class="fas fa-lock"></i> Bloqueado por perfil</span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>DNI (No editable)</label>
+                    <input type="text" id="c-dni" readonly>
+                    <span class="bloqueado-aviso"><i class="fas fa-lock"></i> Bloqueado por perfil</span>
+                </div>
+                <div class="form-group">
+                    <label>Número Celular *</label>
+                    <input type="tel" id="c-telefono" placeholder="Ej: 3816569211">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Correo Electrónico (No editable)</label>
+                <input type="email" id="c-email" readonly>
+                <span class="bloqueado-aviso"><i class="fas fa-lock"></i> Bloqueado por perfil</span>
+            </div>
+
+            <div id="campos-domicilio" style="display: none; margin-top: 24px; border-top: 2px dashed #F0E6DC; padding-top: 20px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Provincia *</label>
+                        <select id="c-provincia">
+                            <option value="">Seleccionar</option>
+                            <option value="Tucumán">Tucumán</option>
+                            <option value="Buenos Aires">Buenos Aires</option>
+                            <option value="CABA">CABA</option>
+                            <option value="Catamarca">Catamarca</option>
+                            <option value="Chaco">Chaco</option>
+                            <option value="Chubut">Chubut</option>
+                            <option value="Córdoba">Córdoba</option>
+                            <option value="Corrientes">Corrientes</option>
+                            <option value="Entre Ríos">Entre Ríos</option>
+                            <option value="Formosa">Formosa</option>
+                            <option value="Jujuy">Jujuy</option>
+                            <option value="La Pampa">La Pampa</option>
+                            <option value="La Rioja">La Rioja</option>
+                            <option value="Mendoza">Mendoza</option>
+                            <option value="Misiones">Misiones</option>
+                            <option value="Neuquén">Neuquén</option>
+                            <option value="Río Negro">Río Negro</option>
+                            <option value="Salta">Salta</option>
+                            <option value="San Juan">San Juan</option>
+                            <option value="San Luis">San Luis</option>
+                            <option value="Santa Cruz">Santa Cruz</option>
+                            <option value="Santa Fe">Santa Fe</option>
+                            <option value="Santiago del Estero">Santiago del Estero</option>
+                            <option value="Tierra del Fuego">Tierra del Fuego</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Localidad *</label>
+                        <input type="text" id="c-localidad" placeholder="Ej: San Miguel de Tucumán">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Código Postal *</label>
+                        <input type="text" id="c-cp" placeholder="Ej: 4000">
+                    </div>
+                    <div class="form-group">
+                        <label>Dirección y Altura del Domicilio *</label>
+                        <input type="text" id="c-direccion" placeholder="Ej: Av. Alem 1067">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-confirm" id="btn-finalizar" onclick="procesarPedidoFinal()" style="margin-top: 24px;">
+                <i class="fas fa-check-circle"></i> Finalizar Compra
+            </button>
+        </div>
+
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        let listadoCarrito = [];
+        let metodoEntrega = 'local';
+        let empresasEnvioDisponibles = [];
+        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
+
+        function sanitizarUrlImagen(url) {
+            if (!url) return 'https://via.placeholder.com/60x70/FAEDCD/4A3728?text=Curvy';
+            if (url.startsWith('/uploads/') || url.startsWith('http')) return url;
+            return url;
+        }
+
+        async function iniciarCheckout() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                // 1. CARGA FLEXIBLE PARA MAPEAR COLUMNAS EN MINÚSCULAS DESDE LA BD
+                const resUser = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!resUser.ok) throw new Error();
+                const usuario = await resUser.json();
+
+                let backupUser = {};
+                try { backupUser = JSON.parse(localStorage.getItem('usuario')) || {}; } catch(e){}
+
+                // Solución definitiva al autorrelleno: Lee minúsculas o mayúsculas indistintamente
+                document.getElementById('c-nombre').value = usuario.nombre || usuario.Nombre || backupUser.nombre || '';
+                document.getElementById('c-apellido').value = usuario.apellido || usuario.Apellido || backupUser.apellido || '';
+                document.getElementById('c-dni').value = usuario.dni || usuario.Dni || backupUser.dni || '';
+                document.getElementById('c-email').value = usuario.email || usuario.Email || backupUser.email || '';
+                document.getElementById('c-telefono').value = usuario.telefono || usuario.Telefono || backupUser.telefono || '';
+                
+                const provReal = usuario.provincia || usuario.Provincia || '';
+                if (provReal) {
+                    document.getElementById('c-provincia').value = provReal;
+                }
+                document.getElementById('c-localidad').value = usuario.localidad || usuario.Localidad || '';
+                document.getElementById('c-cp').value = usuario.cp || usuario.Cp || '';
+                document.getElementById('c-direccion').value = usuario.direccion || usuario.Direccion || '';
+
+                // 2. Cargar transportes dinámicos
+                const resTienda = await fetch('/tienda/listar-productos', { method: 'POST' });
+                if (resTienda.ok) {
+                    const dataTienda = await resTienda.json();
+                    empresasEnvioDisponibles = dataTienda.metodosEnvio || [];
+                    popularSelectorEnvios();
+                }
+
+                // 3. Obtener el carrito persistente
+                const resCarrito = await fetch('/api/obtener-carrito', { headers: { 'Authorization': `Bearer ${token}` } });
+                const dataCarrito = await resCarrito.json();
+                
+                if (dataCarrito.success && dataCarrito.carrito && dataCarrito.carrito.length > 0) {
+                    listadoCarrito = dataCarrito.carrito;
+                } else {
+                    const respaldo = localStorage.getItem('tienda_carrito') || localStorage.getItem('carrito');
+                    if (respaldo) listadoCarrito = JSON.parse(respaldo);
+                }
+
+            } catch(e) {
+                console.error("Error al iniciar checkout:", e);
+                localStorage.clear();
+                window.location.href = '/login';
+                return;
+            }
+
+            if (!listadoCarrito || listadoCarrito.length === 0) {
+                document.getElementById('main-checkout').innerHTML = `
+                    <div class="step-card" style="text-align:center; padding: 40px;">
+                        <i class="fas fa-shopping-cart" style="font-size: 48px; color: var(--primary); margin-bottom:15px;"></i>
+                        <h3>Tu bolsa de compras está vacía</h3>
+                        <p style="color: var(--text-light); margin-bottom: 20px;">Agregá prendas en la tienda para poder finalizar.</p>
+                        <button class="btn-confirm" onclick="window.location.href='/tienda'">Ir a la Tienda</button>
+                    </div>`;
+                return;
+            }
+
+            renderizarProductosFinales();
+        }
+
+        function popularSelectorEnvios() {
+            const select = document.getElementById('selector-medio-envio');
+            if (!select) return;
+            
+            if (empresasEnvioDisponibles.length === 0) {
+                select.innerHTML = '<option value="Transporte General">Correo / Transporte a coordinar</option>';
+                return;
+            }
+
+            let html = '<option value="">-- Seleccioná la empresa de transporte --</option>';
+            empresasEnvioDisponibles.forEach(m => {
+                html += `<option value="${m}">${m}</option>`;
+            });
+            select.innerHTML = html;
+        }
+
+        function cambiarMetodoEntrega(tipo) {
+            metodoEntrega = tipo;
+            document.getElementById('delivery-local').classList.toggle('active', tipo === 'local');
+            document.getElementById('delivery-envio').classList.toggle('active', tipo === 'envio');
+
+            const camposDomicilio = document.getElementById('campos-domicilio');
+            const wrapperTransporte = document.getElementById('wrapper-metodo-transporte');
+
+            if (tipo === 'local') {
+                camposDomicilio.style.display = 'none';
+                wrapperTransporte.style.display = 'none';
+            } else {
+                camposDomicilio.style.display = 'block';
+                wrapperTransporte.style.display = 'block';
+            }
+        }
+
+        function renderizarProductosFinales() {
+            const tabla = document.getElementById('lista-productos-final');
+            let totalAcumulado = 0;
+            let html = '';
+
+            listadoCarrito.forEach(prod => {
+                const subtotalItem = prod.precio * prod.cant;
+                totalAcumulado += subtotalItem;
+                const detalleTalle = prod.vNom || prod.talle || 'Único';
+                const fotoPrenda = sanitizarUrlImagen(prod.vFoto);
+
+                html += `
+                    <div class="summary-item">
+                        <div class="summary-item-left">
+                            <img src="${fotoPrenda}" class="summary-item-img" onerror="this.src='https://via.placeholder.com/50x60/FAEDCD/4A3728?text=Moda'">
+                            <div class="summary-item-details">
+                                <h4>${prod.pNom}</h4>
+                                <p>Talle/Variante: <strong>${detalleTalle}</strong> &nbsp;|&nbsp; Cantidad: <strong>${prod.cant}</strong></p>
+                            </div>
+                        </div>
+                        <div class="summary-item-price">${fmt.format(subtotalItem)}</div>
+                    </div>`;
+            });
+
+            tabla.innerHTML = html;
+            document.getElementById('monto-total-final').textContent = fmt.format(totalAcumulado);
+        }
+
+        async function procesarPedidoFinal() {
+            const telefono = document.getElementById('c-telefono').value.trim();
+            if (!telefono) {
+                mostrarToast('❌ El número celular es obligatorio para coordinar la entrega.', true);
+                return;
+            }
+
+            let provincia = ''; let localidad = ''; let cp = ''; let direccion = '';
+            let transporteElegido = 'Retiro Sucursal';
+
+            if (metodoEntrega !== 'local') {
+                transporteElegido = document.getElementById('selector-medio-envio').value;
+                if (!transporteElegido) {
+                    mostrarToast('❌ Elegí una empresa de transporte para despachar tu envío.', true);
+                    return;
+                }
+
+                provincia = document.getElementById('c-provincia').value;
+                localidad = document.getElementById('c-localidad').value.trim();
+                cp = document.getElementById('c-cp').value.trim();
+                direccion = document.getElementById('c-direccion').value.trim();
+
+                if (!provincia || !localidad || !cp || !direccion) {
+                    mostrarToast('❌ Completá todos los campos del domicilio para realizar el despacho.', true);
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('btn-finalizar');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando pedido...';
+
+            const payload = {
+                carrito: listadoCarrito,
+                tipoEntrega: metodoEntrega === 'local' ? 'local' : 'envio',
+                metodoEnvio: transporteElegido,
+                total: listadoCarrito.reduce((s, i) => s + (i.precio * i.cant), 0),
+                cliente: { telefono, provincia, localidad, cp, direccion }
+            };
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/tienda/crear-pedido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 1. Limpiamos el carrito en la base de datos de Railway
+                    await fetch('/api/guardar-carrito', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ carrito: [] })
+                    });
+                    
+                    // 2. Limpiamos todas las variables locales en la memoria del celular para que quede en 0
+                    listadoCarrito = [];
+                    localStorage.removeItem('tienda_carrito'); 
+                    localStorage.removeItem('carrito');
+                    const tokenKey = token ? 'carrito_' + token : 'carrito_anonimo';
+                    localStorage.removeItem(tokenKey);
+                    
+                    mostrarToast('✨ ¡Pedido confirmado con éxito!');
+                    
+                    // 3. Volvemos a la tienda con el carrito totalmente vacío
+                    setTimeout(() => window.location.href = '/tienda', 2500);
+                } else {
+                    alert('❌ Ocurrió un inconveniente: ' + data.error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Finalizar Compra';
+                }
+            } catch (err) {
+                alert('❌ Error de red: No se pudo conectar con el servidor.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Finalizar Compra';
+            }
+        }
+
+        function mostrarToast(mensaje, esError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${esError ? 'error' : ''}`;
+            toast.innerHTML = mensaje;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        document.addEventListener('DOMContentLoaded', iniciarCheckout);
+    </script>
+</body>
+</html>
