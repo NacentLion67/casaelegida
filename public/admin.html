@@ -1436,44 +1436,75 @@ function renderAdmin(){
 function agregarVarianteFilaNueva(pid) {
     const container = document.getElementById(`contenedor-filas-variantes-${pid}`);
     if(!container) return;
-    const i = container.children.length;
+    const i = container.children.length; // Índice dinámico para no repetir IDs
     const div = document.createElement('div');
     div.className = 'variante-item row-variante-accion';
-    
-    // CORREGIDO: Ahora usa las mismas columnas (2.5fr 1fr auto auto) para que queden alineadas con renderAdmin
     div.style.cssText = 'display:grid; grid-template-columns: 2.5fr 1fr auto auto; gap:12px; align-items:center;';
     
     div.innerHTML = `
+        <!-- Input de Nombre -->
         <input type="text" class="v-input-nombre" placeholder="Ej: Blanco / King" style="border-radius:50px; padding:10px 14px;">
         
+        <!-- Input de Stock -->
         <input type="number" class="v-input-stock" value="0" min="0" style="border-radius:50px; padding:10px 14px; text-align:center;">
         
+        <!-- Contenedor Multimedia -->
         <div style="display:flex; gap:8px; align-items:center;">
-            <div style="width:48px; height:38px; border-radius:8px; background:#F6F3EA; display:flex; align-items:center; justify-content:center; border:1px solid #E6E1DA;">
-                <span style="font-size:14px; color:#D4A373;">🖼️</span>
+            <!-- Miniatura / Preview visual de la tela -->
+            <div style="width:48px; height:38px; border-radius:8px; background:#F6F3EA; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:1px solid #E6E1DA;">
+                <img id="prev-v-${pid}-${i}" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+                <span id="icon-v-${pid}-${i}" style="font-size:14px; color:#D4A373;">🖼️</span>
             </div>
             
+            <!-- Guardado oculto de la URL de Cloudinary -->
             <input type="hidden" class="v-input-foto" value="">
             
-            <button type="button" onclick="alert('Guardá el artículo primero para habilitar la carga de fotos en esta variante.')" style="background:#8C7E74; color:white; border:none; border-radius:50%; width:36px; height:36px; flex-shrink:0; cursor:pointer;"><i class="fas fa-cloud-upload-alt"></i></button>
+            <!-- Botón Nube Real que abre el selector de tu PC/Celular -->
+            <button type="button" onclick="document.getElementById('file-v-${pid}-${i}').click()" style="background:#3D312A; color:white; border:none; border-radius:50%; width:36px; height:36px; flex-shrink:0; cursor:pointer;">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </button>
+            
+            <!-- Input File Oculto Vinculado -->
+            <input type="file" id="file-v-${pid}-${i}" accept="image/*" style="display:none" onchange="subirFotoVarianteNativa(this,'${pid}',${i})">
         </div>
         
-        <button type="button" onclick="this.closest('.row-variante-accion').remove()" style="background:none; border:none; color:#D96B6B; cursor:pointer; padding:0 8px;"><i class="fas fa-trash-alt"></i></button>
+        <!-- Botón Eliminar Fila -->
+        <button type="button" onclick="this.closest('.row-variante-accion').remove()" style="background:none; border:none; color:#D96B6B; cursor:pointer; padding:0 8px;">
+            <i class="fas fa-trash-alt"></i>
+        </button>
     `;
     container.appendChild(div);
 }
 
 async function subirFotoVarianteNativa(input, pid, idx) {
     if(!input.files?.[0]) return;
-    const f=new FormData(); f.append('foto', input.files[0]);
+    const f = new FormData(); 
+    f.append('foto', input.files[0]);
+    
     try {
-        const d=await safeFetch('/subir-imagen',{method:'POST',body:f});
+        const d = await safeFetch('/subir-imagen', { method: 'POST', body: f });
         if(d.url) {
             const row = input.closest('.row-variante-accion');
-            if(row) row.querySelector('.v-input-foto').value = d.url;
+            if(row) {
+                // Guardamos el string en el input oculto para la Base de Datos
+                row.querySelector('.v-input-foto').value = d.url;
+                
+                // ¡Efecto en vivo! Buscamos la miniatura dentro de la fila y le inyectamos la foto cargada
+                const img = row.querySelector('img');
+                const icon = row.querySelector('span');
+                if(img) { 
+                    img.src = d.url; 
+                    img.style.display = 'block'; 
+                }
+                if(icon) { 
+                    icon.style.display = 'none'; 
+                }
+            }
             mostrarToast('✅ Subida con éxito');
         }
-    } catch(e){}
+    } catch(e) {
+        mostrarToast('❌ Error al subir la imagen', true);
+    }
 }
 
 function toggleVariantes(id){const p=document.getElementById(`variantes-panel-${id}`);const b=document.getElementById(`btn-toggle-${id}`);if(!p||!b)return;if(p.style.display==='none'){p.style.display='block';b.innerHTML=`<i class="fas fa-layer-group"></i> Ocultar Variantes <i class="fas fa-chevron-up"></i>`;}else{p.style.display='none';const prod=productos.find(x=>x.id==id);b.innerHTML=`<i class="fas fa-layer-group"></i> Variantes (${prod?.variantes?.length||0}) <i class="fas fa-chevron-down"></i>`;}}
