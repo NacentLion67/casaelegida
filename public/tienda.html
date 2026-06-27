@@ -1620,7 +1620,52 @@ function renderizarCarrito(){
     actualizarProgresoMayorista();
 }
     
-function modificarCantidadCarrito(i,d){const it=carrito[i];if(!it)return;const nc=it.cant+d;if(nc<=0){eliminarDelCarrito(i);return}if(!it.esManual){const p=productos.find(x=>x.id==it.pId);const v=p?.variantes?.find(x=>x.nombre===it.vNom);if(v&&v.stock<nc){mostrarToast('❌ Stock insuficiente','error');return}}it.cant=nc;recalcularPreciosMayoristas();guardarCarritoLocal();renderizarCarrito();actualizarProgresoMayorista()}
+function modificarCantidadCarrito(i, d) {
+    const it = carrito[i];
+    if (!it) return;
+    const nc = it.cant + d;
+    
+    if (nc <= 0) { 
+        eliminarDelCarrito(i); 
+        return; 
+    }
+    
+    if (!it.esManual) {
+        const p = productos.find(x => x.id == it.pId);
+        const v = p?.variantes?.find(x => x.nombre === it.vNom);
+        if (v) {
+            if (nc > v.stock) {
+                mostrarToast(`❌ Stock límite: Solo quedan ${v.stock} unidades`, 'error');
+                return;
+            }
+        }
+    }
+    
+    it.cant = nc;
+    recalcularPreciosMayoristas();
+    guardarCarritoLocal();
+    renderizarCarrito();
+    actualizarProgresoMayorista();
+}
+
+function cambiarCantidadModal(d) {
+    const i = document.getElementById('modal-quantity');
+    if (!i || !productoModalActual) return;
+    
+    const v = productoModalActual.variantes[varianteSeleccionada];
+    if (!v) return;
+    
+    let valorActual = parseInt(i.value) || 1;
+    let nuevoValor = valorActual + d;
+    
+    if (nuevoValor > v.stock) {
+        mostrarToast(`❌ Stock límite: Solo quedan ${v.stock} unidades`, 'error');
+        return;
+    }
+    
+    i.value = Math.max(1, nuevoValor);
+}
+    
 function eliminarDelCarrito(i){carrito.splice(i,1);recalcularPreciosMayoristas();guardarCarritoLocal();renderizarCarrito();actualizarProgresoMayorista();mostrarToast('🗑️ Producto eliminado')}
 
 function guardarCarritoLocal(){
