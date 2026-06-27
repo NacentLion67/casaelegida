@@ -1153,6 +1153,7 @@ body {
 
 <script>
 let productos=[],categorias=[],carrito=[],misConfiguraciones={empresa:{},tienda:{},mayorista:{},redes:{},pagos:{}};
+let configuracion={}; // 🔥 VARIABLE CRÍTICA DECLARADA
 let productoModalActual=null,varianteSeleccionada=0,categoriaSeleccionada=null,subcategoriaSeleccionada=null,busquedaActual='',ordenActual='default',usuarioActual=null;
 const fmt=new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:0});
 let favoritos=JSON.parse(localStorage.getItem('favoritos')||'[]');
@@ -1206,6 +1207,9 @@ async function cargarDatos(){
         misConfiguraciones.banners = conf.banners || [];
         misConfiguraciones.anuncios = conf.anuncios || [];
 
+        // 🔥 ENLACE MAESTRO: Seteamos la configuración global unificada para evitar ReferenceErrors
+        configuracion = { ...conf, ...misConfiguraciones };
+
         const esMobile = window.innerWidth <= 768;
         productos.forEach(p => {
             if (p.variantes) {
@@ -1256,7 +1260,6 @@ async function cargarDatos(){
             });
         }
         
-        // Renderizado dinámico usando estrictamente misConfiguraciones
         const nombreTienda = misConfiguraciones.empresa?.nombre || 'CASA ELEGIDA';
         const sloganTienda = misConfiguraciones.empresa?.slogan || 'TEXTILES PREMIUM';
         
@@ -1315,15 +1318,14 @@ async function cargarDatos(){
         renderizarCategorias();
         renderizarSubcategorias();
         renderizarProductos();
-        cargarCarritoLocal();
+        await cargarCarritoLocal(); // Esperamos de forma segura la carga del pedido
         checkLogin();
         mostrarProductoDestacado();
 
-        // Envolvemos la función con error de referencia en su propio try/catch protector
         try {
             actualizarWhatsAppPago();
         } catch(errPago) {
-            console.error("Aviso controlado: Falló actualizarWhatsAppPago, pero la tienda sigue operativa:", errPago);
+            console.error("Aviso controlado: Falló actualizarWhatsAppPago", errPago);
         }
 
     } catch(e) {
