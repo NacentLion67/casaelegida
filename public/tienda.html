@@ -1466,11 +1466,9 @@ function getRelacionados(producto,limite=5){const catId=producto.categoriaId;let
 let variantesTiendaSeleccionadas = {}; // Trackea el índice seleccionado por cada productoId
 
 function renderizarProductos() {
-    // 1. Corregido al ID real de tu HTML para que cargue la grilla
     const contenedor = document.getElementById('products-grid');
     if (!contenedor) return;
 
-    // 2. Corregido para que use la lista con filtros, orden y buscador activos
     const listaFiltrada = getProductosFiltrados();
 
     if (!listaFiltrada || listaFiltrada.length === 0) {
@@ -1485,31 +1483,83 @@ function renderizarProductos() {
     let html = '';
 
     listaFiltrada.forEach(p => {
-        // Tomamos la primera imagen disponible para la portada de la tarjeta
-        let fotoProducto = '';
-        if (p.variantes && Array.isArray(p.variantes) && p.variantes[0] && p.variantes[0].foto) {
-            fotoProducto = p.variantes[0].foto;
-        } else if (p.foto) {
-            fotoProducto = p.foto;
-        } else {
-            fotoProducto = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%23F6F3EA"><rect width="400" height="300"/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%233D312A%22 font-size=%2214%22>Casa Elegida</text></svg>';
+        // Aseguramos que el producto tenga al menos una variante base si viene vacío
+        if (!p.variantes || p.variantes.length === 0) {
+            p.variantes = [{ nombre: "Única", stock: 0, foto: "" }];
         }
+        
+        // Inicializamos el índice de la variante seleccionada por defecto (la primera con stock)
+        if (variantesTiendaSeleccionadas[p.id] === undefined) {
+            variantesTiendaSeleccionadas[p.id] = p.variantes.findIndex(v => v.stock > 0);
+        }
+        if (variantesTiendaSeleccionadas[p.id] === -1) {
+            variantesTiendaSeleccionadas[p.id] = 0;
+        }
+        
+        let idx = variantesTiendaSeleccionadas[p.id];
+        let v = p.variantes[idx] || p.variantes[0];
+        
+        // 1. Armamos el listado desplegable de opciones (Colores / Medidas) para esta sábana/artículo
+        let variantesHTML = '<div style="display:flex; flex-direction:column; gap:6px; width:100%;">';
+        p.variantes.forEach((vr, i) => {
+            const tieneImagen = vr.foto && vr.foto.trim() !== '';
+            variantesHTML += `
+                <div onclick="seleccionarVarianteTienda(${p.id}, ${i})" 
+                     class="variante-item-tienda ${idx === i ? 'activa' : ''} ${vr.stock === 0 ? 'sin-stock' : ''}" 
+                     data-index="${i}"
+                     style="padding: 8px 12px; gap: 10px; display:flex; align-items:center;">
+                    <div style="width:40px; height:30px; border-radius:6px; background:#F6F3EA; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:1px solid rgba(197,168,128,0.15);">
+                        <img src="${tieneImagen ? sanitizarUrl(vr.foto) : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2230%22 fill=%22%23FAEDCD%22><rect width=%2240%22 height=%2230%22/><text x=%2250%%22 y=%2265%%22 text-anchor=%22middle%22 fill=%22%23D4A373%22 font-size=%2210%22>🛏️</text></svg>'}" style="width:100%; height:100%; object-fit:cover;">
+                    </div>
+                    <div style="flex:1; display:flex; flex-direction:column; text-align:left;">
+                        <span style="font-size:11px; font-weight:600; color:var(--text-dark); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display:block; max-width:130px;">${escapeHtml(vr.nombre)}</span>
+                        <span style="font-size:10px; color:var(--text-light);">
+                            ${vr.stock === 0 ? '<span style="color:var(--danger); font-weight:600;">Sin stock</span>' : `Stock: ${vr.stock} u.`}
+                        </span>
+                    </div>
+                </div>`;
+        });
+        variantesHTML += '</div>';
 
-        // Renderizado estético Lookbook de la tarjeta original
+        // 2. Inyectamos la tarjeta completa con todos sus controles interactivos vinculados
         html += `
             <div class="product-card" style="border-radius:16px; overflow:hidden; background:white; border:1px solid #E6E1DA; display:flex; flex-direction:column; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
                 <div class="producto-img-container" style="position:relative; aspect-ratio: 4/3 !important; background:#F6F3EA; width:100%; overflow:hidden;">
-                    <img src="${fotoProducto}" alt="${escapeHtml(p.nombre)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 fill=%22%23F6F3EA%22><rect width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%233D312A%22 font-size=%2214%22>🛏️ Casa Elegida</text></svg>'">
+                    <span class="badge-stock ${v.stock <= 3 ? 'low' : ''}" id="stock-tag-${p.id}">Stock: ${v.stock} u.</span>
+                    <img id="img-tienda-${p.id}" src="${sanitizarUrl(v.foto)}" alt="${escapeHtml(p.nombre)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 fill=%22%23F6F3EA%22><rect width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%233D312A%22 font-size=%2214%22>🛏️ Casa Elegida</text></svg>'">
                 </div>
-                <div class="producto-info" style="padding:16px; text-align:center; flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:8px;">
+                <div class="producto-info" style="padding:16px; text-align:center; flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:6px;">
                     <div>
-                        <h3 style="font-family:'Poppins', sans-serif; font-size:15px; font-weight:600; color:#3D312A; margin:0 0 4px 0;">${escapeHtml(p.nombre)}</h3>
-                        <p style="font-size:16px; font-weight:700; color:#C5A880; margin:0;">${fmt.format(p.precio)}</p>
-                        ${p.precioMayor > 0 ? `<p style="font-size:12px; color:#8C7E74; margin-top:2px;">💎 Mayorista: ${fmt.format(p.precioMayor)}</p>` : ''}
+                        <h3 style="font-family:'Poppins', sans-serif; font-size:14px; font-weight:500; color:#3D312A; margin:0 0 4px 0;">${escapeHtml(p.nombre)}</h3>
+                        <div class="product-prices" style="margin-bottom:2px;">
+                            <span class="price-current">${fmt.format(p.precio)}</span>
+                        </div>
+                        ${p.precioMayor > 0 ? `<p style="font-size:11px; color:var(--text-light); margin:0 0 6px 0;">💎 Mayorista: ${fmt.format(p.precioMayor)}</p>` : ''}
                     </div>
                     
-                    <!-- 3. El botón limpio que redirige directamente a la Landing Page del producto -->
-                    <button class="btn-ver" onclick="window.location.href='/producto/${p.id}'" style="width:100%; padding:11px; background:#3D312A; color:white; border:none; border-radius:50px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; cursor:pointer; margin-top:8px;">Ver Artículo Completo</button>
+                    <!-- Botón para expandir las opciones reales del stock -->
+                    <button class="btn-desplegar-tienda" id="btn-desplegar-t-${p.id}" onclick="toggleVariantesTienda(${p.id})">
+                        <i class="fas fa-layer-group"></i>
+                        <span id="btn-text-t-${p.id}">Opciones Disponibles (${p.variantes.length})</span>
+                        <i class="fas fa-chevron-down" id="btn-icon-t-${p.id}"></i>
+                    </button>
+                    
+                    <!-- Desplegable fluido de las telas/colores -->
+                    <div class="variantes-grid-container" id="variantes-container-t-${p.id}">
+                        ${variantesHTML}
+                    </div>
+
+                    <!-- Selector de unidades físicas -->
+                    <div class="cantidad-selector-tienda">
+                        <button class="btn-cant-tienda" onclick="cambiarCantidadTienda(${p.id}, -1)">−</button>
+                        <input type="number" id="cant-t-${p.id}" value="1" min="1" max="${v.stock}" class="input-cant-tienda" readonly>
+                        <button class="btn-cant-tienda" onclick="cambiarCantidadTienda(${p.id}, 1)">+</button>
+                    </div>
+                    
+                    <!-- Botón oficial de inyección al Carrito Boutique -->
+                    <button class="btn-add-product" id="btn-add-t-${p.id}" onclick="agregarAlPedidoDirecto(${p.id})" ${v.stock === 0 ? 'disabled' : ''}>
+                        ${v.stock === 0 ? '<i class="fas fa-box"></i> Sin Stock' : '<i class="fas fa-shopping-bag"></i> Agregar al Pedido'}
+                    </button>
                 </div>
             </div>
         `;
