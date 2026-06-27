@@ -8,18 +8,18 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap');
 
-*{margin:0;padding:0;box-sizing:border-box}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-    --primary: #3D312A;                /* Moka Premium */
-    --primary-light: #52433A;          /* Moka Suave */
-    --secondary: #C5A880;              /* Oro Atenuado / Champagne */
-    --bg-light: #FDFBF7;               /* Lino Claro Orgánico */
+    --primary: #3D312A;                 /* Moka Premium */
+    --primary-light: #52433A;           /* Moka Suave */
+    --secondary: #C5A880;               /* Oro Atenuado / Champagne */
+    --bg-light: #FDFBF7;                /* Lino Claro Orgánico */
     --bg-white: #ffffff;
     --text-dark: #3D312A;
-    --text-light: #8C7E74;             /* Sombra de Lino */
-    --success: #4E7A62;                /* Verde Oliva Boutique */
-    --danger: #D96B6B;                 /* Terracota Soft */
+    --text-light: #8C7E74;              /* Sombra de Lino */
+    --success: #4E7A62;                 /* Verde Oliva Boutique */
+    --danger: #D96B6B;                  /* Terracota Soft */
     --warning: #DE9B72;
     --shadow-sm: 0 4px 12px rgba(61,49,42,0.02);
     --shadow-md: 0 8px 24px rgba(61,49,42,0.05);
@@ -121,7 +121,7 @@ body {
     margin-top: 2px;
 }
 
-/* buscador boutique */
+/* Buscador Boutique */
 .search-bar {
     flex: 1;
     max-width: 400px;
@@ -347,7 +347,7 @@ body {
     width: 350px !important;
     height: 100% !important;
     max-height: 240px !important;
-    opacity: 0.25 !important; /* Le damos un poco más de fuerza visual al estar grande */
+    opacity: 0.25 !important;
     filter: brightness(0) invert(1); 
     transition: all 0.4s ease;
     display: flex;
@@ -361,32 +361,6 @@ body {
     object-fit: contain;
 }
 
-@media(max-width: 768px) {
-    .hero {
-        padding: 50px 24px;
-        text-align: center;
-    }
-    .hero-content {
-        flex-direction: column;
-        gap: 24px;
-    }
-    .hero-text {
-        align-items: center;
-    }
-    .hero-text h2 {
-        font-size: 32px;
-    }
-    .hero-text p {
-        border-left: none;
-        padding-left: 0;
-        font-size: 14px;
-    }
-    #hero-logo {
-        width: 140px !important;
-        height: 140px !important;
-    }
-}
-    
 /* Layout Espacios */
 .main-content {
     max-width: 1400px;
@@ -585,7 +559,7 @@ body {
     cursor: not-allowed;
 }
 
-/* Banner de destacado */
+/* Banner de Destacado */
 .destacado-card {
     background: linear-gradient(135deg, #3D312A 0%, #52433A 100%);
     border-radius: var(--border-radius);
@@ -684,9 +658,7 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 32px;
 }
-@media(max-width: 650px) {
-    .modal-body { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
-}
+
 .producto-imagen-modal {
     width: 100%;
     aspect-ratio: 1/1;
@@ -916,14 +888,6 @@ body {
     color: #ffffff;
 }
 
-@media(max-width: 768px) {
-    .footer-content {
-        grid-template-columns: 1fr;
-        gap: 24px;
-        text-align: left;
-    }
-}
-
 /* Botón Flotante de WhatsApp Boutique */
 .whatsapp-float {
     position: fixed;
@@ -958,37 +922,26 @@ body {
     border-radius: var(--border-radius);
 }
 
-/* Responsivo */
-@media(max-width: 768px) {
-    .hero { padding: 32px 16px; border-radius: 0; }
-    .products-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-    .product-image { height: 180px; }
-}
-
-/* Contenedor de variantes premium (Optimizado sin lag ni trabas) */
+/* Contenedor de variantes premium (Optimizado sin lag) */
 .variantes-grid-container {
     background: #F6F3EA;
     border-radius: 14px;
     max-height: 0;
     overflow: hidden;
     opacity: 0;
-    padding: 0 12px; /* Evita saltos bruscos de caja en el renderizado inicial */
+    padding: 0 12px;
     margin: 0;
-    
-    /* Curva de aceleración fluida con tiempos coordinados */
     transition: max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
                 opacity 0.2s ease, 
                 padding 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
                 margin 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-    
-    /* Forzamos al procesador a usar aceleración gráfica directa */
     will-change: max-height, opacity;
     transform: translateZ(0);
     backface-visibility: hidden;
 }
 
 .variantes-grid-container.desplegado {
-    max-height: 270px; /* Altura óptima para scroll fluido en tarjetas lookbook */
+    max-height: 270px;
     overflow-y: auto;
     opacity: 1;
     padding: 12px;
@@ -1003,7 +956,7 @@ body {
     border-radius: 2px; 
 }
 
-/* Items individuales de variante (Transiciones atómicas sin 'all') */
+/* Items individuales de variante */
 .variante-item-tienda {
     display: flex;
     align-items: center;
@@ -1015,8 +968,6 @@ body {
     cursor: pointer;
     margin-bottom: 6px;
     text-align: left;
-    
-    /* Reemplazado transition:all para prevenir recálculos del DOM innecesarios */
     transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
     transform: translateZ(0);
 }
@@ -1080,7 +1031,7 @@ body {
     background: transparent; 
 }
 
-/* Botón desplegable */
+/* Botón Desplegable */
 .btn-desplegar-tienda {
     width: 100%;
     padding: 10px;
@@ -1107,7 +1058,125 @@ body {
     background: var(--primary); 
     color: white; 
 }
+
+/* ==========================================================================
+   MASTER RESPONSIVE DESIGN - CASA ELEGIDA (PORTADA PÚBLICA)
+   ========================================================================== */
+@media (max-width: 992px) {
+    .main-content { gap: 20px; }
+    .hero-text h2 { font-size: 38px; }
+}
+
+@media (max-width: 768px) {
+    /* 1. Reajuste de Margenes */
+    body { padding: 0; }
     
+    /* La barra de subcategorías se apila arriba de los productos de forma horizontal */
+    .main-content { 
+        flex-direction: column; 
+        gap: 24px; 
+        padding: 16px 12px 40px; 
+    }
+    .filters-sidebar { 
+        width: 100%; 
+    }
+    .filter-section {
+        padding: 16px;
+        border-radius: 16px;
+    }
+    .subcategory-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .subcategory-item {
+        background: var(--bg-light);
+        padding: 6px 12px;
+        border-radius: 50px;
+        border: 1px solid #E6E1DA;
+    }
+
+    /* 2. Header Boutique estructurado para celulares */
+    .header-main {
+        flex-direction: column;
+        padding: 12px;
+        gap: 12px;
+        text-align: center;
+    }
+    .logo {
+        width: 100%;
+        justify-content: center;
+    }
+    .logo-icon {
+        height: 50px;
+        width: 80px;
+    }
+    .logo-text h1 { font-size: 20px; }
+    
+    .search-bar {
+        max-width: 100%;
+        width: 100%;
+    }
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    .cart-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 12px;
+        font-size: 12px;
+    }
+
+    /* 3. Menú de Categorías Fluido Táctil */
+    .categories-container {
+        gap: 12px;
+        padding: 0 12px 6px;
+        -webkit-overflow-scrolling: touch; 
+    }
+    .categories-container::-webkit-scrollbar { display: none; }
+    .tab-btn { padding: 10px 16px; font-size: 12px; white-space: nowrap; flex-shrink: 0; border-radius: 40px; }
+    
+    /* 4. Grilla lookbook fija en 2 columnas perfectas sin cortes */
+    .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .product-card { border-radius: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    /* Las sábanas resguardan su proporción real y no se aplastan */
+    .product-image, .producto-img-container { height: auto !important; aspect-ratio: 4/3 !important; border-radius: 14px 14px 0 0; }
+    
+    /* Truncado elegante de nombres a dos líneas máximo */
+    .product-name, .product-info h3 { 
+        font-size: 13px !important; 
+        margin: 6px 0 !important; 
+        line-height: 1.3; 
+        min-height: 34px; 
+        display: -webkit-box; 
+        -webkit-line-clamp: 2; 
+        -webkit-box-orient: vertical; 
+        overflow: hidden; 
+    }
+    .price-current { font-size: 16px; }
+    
+    /* Modales y Menús Laterales en celus */
+    .modal-body { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
+    #cart-sidebar { max-width: 100% !important; width: 100% !important; }
+    .cart-product-card { padding: 12px; }
+    .footer-content { grid-template-columns: 1fr; gap: 24px; text-align: left; }
+    .hero { padding: 40px 20px; text-align: center; border-radius: 0; }
+    .hero-content { flex-direction: column; gap: 20px; }
+    .hero-text { align-items: center; }
+    .hero-text h2 { font-size: 30px; }
+    .hero-text p { border-left: none; padding-left: 0; font-size: 14px; }
+    #hero-logo { width: 120px !important; height: 120px !important; }
+}
+
+@media (max-width: 480px) {
+    /* En teléfonos delgados, pasamos todo a 1 columna grande para destacar el producto textil */
+    .products-grid { grid-template-columns: 1fr; gap: 16px; }
+    .producto-img-container { aspect-ratio: 16/10 !important; }
+    .product-info h3 { font-size: 14px !important; min-height: auto; }
+    .price-current { font-size: 18px; }
+}
 </style>
 </head>
 <body>
