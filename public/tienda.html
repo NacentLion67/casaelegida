@@ -1756,18 +1756,25 @@ async function cargarCarritoLocal(){
         console.log("Servidor ocupado, usando respaldo de memoria local...");
     }
 
-    const g = localStorage.getItem(key) || localStorage.getItem('tienda_carrito');
-    const ts = localStorage.getItem('carrito_timestamp');
-    if (g && ts && (Date.now() - ts < 7 * 24 * 60 * 60 * 1000)) {
+    // Corrección de lectura優先 de contenido real
+    let g = localStorage.getItem(key);
+    let parsed = [];
+    try {
+        parsed = g ? JSON.parse(g) : [];
+    } catch(e) { parsed = []; }
+
+    if (!parsed || parsed.length === 0) {
+        let gRespaldo = localStorage.getItem('tienda_carrito');
         try {
-            carrito = JSON.parse(g);
-            recalcularPreciosMayoristas();
-            renderizarCarrito();
-            actualizarProgresoMayorista();
-        } catch(e) {
-            carrito = [];
-        }
+            parsed = gRespaldo ? JSON.parse(gRespaldo) : [];
+        } catch(e) { parsed = []; }
     }
+
+    carrito = Array.isArray(parsed) ? parsed : [];
+    
+    recalcularPreciosMayoristas();
+    renderizarCarrito();
+    actualizarProgresoMayorista();
 }
 
 function toggleVariantesTienda(id) {
