@@ -371,54 +371,82 @@
     const input = document.getElementById('compra-cantidad');
     if(!input || !variantes[varianteSeleccionadaIdx]) return;
     
-    const stockMaximo = variantes[varianteSeleccionadaIdx].stock;
-    let valorActual = parseInt(input.value) || 1;
+    // Forzamos el parseo a número entero para evitar que la web lo lea como texto
+    const stockMaximo = parseInt(variantes[varianteSeleccionadaIdx].stock, 10) || 0;
+    let valorActual = parseInt(input.value, 10) || 1;
     let nuevoValor = valorActual + d;
     
     if (nuevoValor > stockMaximo) {
-        alert(`Stock límite: Solo quedan ${stockMaximo} unidades disponibles de esta opción.`);
+        alert(`Stock límite: Solo quedan ${stockMaximo} unidades disponibles en total.`);
         return;
     }
     
-    input.value = Math.max(1, nuevoValor);
+    if (nuevoValor < 1) return;
+    input.value = nuevoValor;
 }
 
-    function inyectarAlPedido() {
-        const v = variantes[varianteSeleccionadaIdx];
-        const cant = parseInt(document.getElementById('compra-cantidad').value) || 1;
-        
-        let carrito = [];
-        try {
-            carrito = JSON.parse(localStorage.getItem('tienda_carrito') || '[]');
-        } catch(e) { carrito = []; }
-
-        const existente = carrito.find(i => i.pId === producto.id && i.vNom === v.nombre);
-        if (existente) {
-            if (v.stock < existente.cant + cant) {
-                alert("No podemos agregar esa cantidad, supera las unidades físicas disponibles en stock.");
-                return;
-            }
-            existente.cant += cant;
-        } else {
-            carrito.push({
-                pId: producto.id,
-                pNom: producto.nombre,
-                vNom: v.nombre,
-                vFoto: v.foto,
-                precio: producto.precio,
-                precioOriginal: producto.precio,
-                cant: cant,
-                esManual: false
-            });
-        }
-
-        localStorage.setItem('tienda_carrito', JSON.stringify(carrito));
-        localStorage.setItem('carrito_timestamp', Date.now());
-        
-        alert(`¡Añadido al pedido! Se cargaron ${cant} unidades de: ${v.nombre}`);
-        window.location.href = '/tienda'; 
+async function inyectarAlPedido() {
+    const v = variantes[varianteSeleccionadaIdx];
+    const cant = parseInt(document.getElementById('compra-cantidad').value, 10) || 1;
+    const stockReal = parseInt(v.stock, 10) || 0; // Conversión estricta de la DB
+    
+    let carrito = [];
+    const token = localStorage.getItem('token');
+    const key = token ? 'carrito_' + token : 'carrito_anonimo';
+    
+    try {
+        carrito = JSON.parse(localStorage.getItem(key) || localStorage.getItem('tienda_carrito') || '[]');
+    } catch(e) { 
+        carrito = []; 
     }
 
+    const existente = carrito.find(i => i.pId === producto.id && i.vNom === v.nombre);
+    if (existente) {
+        const cantidadTotalBolsa = parseInt(existente.cant, 10) + cant;
+        if (stockReal < cantidadTotalBolsa) {
+            alert(`Límite excedido: Ya tenés ${existente.cant} unidad en el carrito. No podés agregar ${cant} más porque el stock real cargado en Admin es de ${stockReal}.`);
+            return;
+        }
+        existente.cant += cant;
+    } else {
+        if (cant > stockReal) {
+            alert(`No es posible agregar esa cantidad. El stock real es de ${stockReal}.`);
+            return;
+        }
+        carrito.push({
+            pId: producto.id,
+            pNom: producto.nombre,
+            vNom: v.nombre,
+            vFoto: v.foto,
+            precio: producto.precio,
+            precioOriginal: producto.precio,
+            cant: cant,
+            esManual: false
+        });
+    }
+
+    localStorage.setItem(key, JSON.stringify(carrito));
+    localStorage.setItem('tienda_carrito', JSON.stringify(carrito));
+    localStorage.setItem('carrito_timestamp', Date.now());
+    
+    if (token) {
+        try {
+            await fetch('/api/guardar-carrito', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                    },
+                body: JSON.stringify({ carrito: carrito }) 
+            });
+        } catch(err) {
+            console.log("Sincronización local exitosa.");
+        }
+    }
+    
+    alert(`¡Añadido al pedido! Se cargaron ${cant} unidades.`);
+    window.location.href = '/tienda'; 
+}
     document.addEventListener('DOMContentLoaded', cargarPaginaProducto);
 </script>
 </body>
