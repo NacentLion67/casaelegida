@@ -367,12 +367,21 @@
         btn.innerHTML = v.stock === 0 ? '<i class="fas fa-box-open"></i> Opción sin stock' : '<i class="fas fa-shopping-bag"></i> Agregar al Pedido';
     }
 
-    function modificarCantidad(d) {
-        const input = document.getElementById('compra-cantidad');
-        const maxVal = parseInt(input.max) || 1;
-        let valor = parseInt(input.value) + d;
-        input.value = Math.max(1, Math.min(valor, maxVal));
+   function modificarCantidad(d) {
+    const input = document.getElementById('compra-cantidad');
+    if(!input || !variantes[varianteSeleccionadaIdx]) return;
+    
+    const stockMaximo = variantes[varianteSeleccionadaIdx].stock;
+    let valorActual = parseInt(input.value) || 1;
+    let nuevoValor = valorActual + d;
+    
+    if (nuevoValor > stockMaximo) {
+        alert(`Stock límite: Solo quedan ${stockMaximo} unidades disponibles de esta opción.`);
+        return;
     }
+    
+    input.value = Math.max(1, nuevoValor);
+}
 
     function inyectarAlPedido() {
         const v = variantes[varianteSeleccionadaIdx];
