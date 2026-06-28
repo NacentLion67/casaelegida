@@ -31,7 +31,7 @@
 
         .panel {
             background: #ffffff;
-            border-radius: 24px; /* Cambiado de 8px a 24px para mantener el estilo curvo */
+            border-radius: 24px;
             padding: 24px;
             box-shadow: 0 8px 32px rgba(61,49,42,0.03);
             border: 1px solid #E6E1DA;
@@ -64,9 +64,9 @@
         body.dark-mode .tab-btn { background: #29221F; color: #FDFBF7; }
 
         .tab-btn.active {
-            background: #3D312A; /* Moka regular de la tienda */
+            background: #3D312A;
             color: white;
-            border-bottom: 2px solid #C5A880; /* Línea oro atenuado / champagne */
+            border-bottom: 2px solid #C5A880; /* Champagne */
             box-shadow: 0 8px 24px rgba(61,49,42,0.05);
             transform: translateY(-1px);
         }
@@ -104,8 +104,8 @@
         .producto-imagen-principal {
             width: 100%;
             height: auto;
-            aspect-ratio: 4/5;
-            object-fit: contain;
+            aspect-ratio: 4/3 !important;
+            object-fit: cover;
             border-radius: 16px;
             margin-bottom: 12px;
             background: #F6F3EA;
@@ -368,15 +368,12 @@
         .history-table th { background: #F6F3EA; padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #3D312A; }
         .history-table td { padding: 12px; border-bottom: 1px solid #E6E1DA; font-size: 13px; }
 
-        /* ==========================================================================
-           ESTILOS PREMIUM HIGH-PRESTIGE (CURVAS & ELEGANCIA)
-           ========================================================================== */
         .login-wrapper {
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background: #FDFBF7; /* Fondo lino orgánico premium */
+            background: #FDFBF7;
             background-image: radial-gradient(var(--secondary) 0.75px, transparent 0);
             background-size: 24px 24px;
             opacity: 0.98;
@@ -385,15 +382,14 @@
 
         .login-card {
             background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px); /* Efecto cristal de lujo */
+            backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 32px; /* Super redondeado de prestigio */
+            border-radius: 32px;
             padding: 50px 40px;
             max-width: 450px;
             width: 100%;
-            box-shadow: 0 24px 64px rgba(61, 49, 42, 0.08), 
-                        0 8px 24px rgba(197, 168, 128, 0.04);
+            box-shadow: 0 24px 64px rgba(61, 49, 42, 0.08), 0 8px 24px rgba(197, 168, 128, 0.04);
             text-align: center;
             animation: loginFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
@@ -403,7 +399,7 @@
             height: 130px;
             margin: 0 auto 24px;
             background: #ffffff;
-            border-radius: 50%; /* Contenedor de logo circular perfecto */
+            border-radius: 50%;
             box-shadow: 0 12px 32px rgba(61, 49, 42, 0.05);
             border: 1px solid rgba(197, 168, 128, 0.2);
             display: flex;
@@ -413,44 +409,18 @@
             transition: transform 0.4s ease;
         }
 
-        .login-logo-container:hover {
-            transform: scale(1.05) rotate(2deg);
-        }
+        .login-logo-container:hover { transform: scale(1.05) rotate(2deg); }
+        .login-logo-container img { width: 100%; height: 100%; object-fit: contain; }
 
-        .login-logo-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .login-card h2 {
-            font-family: 'Playfair Display', serif;
-            color: #3D312A; /* Moka */
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-        }
-
-        .login-subtitle {
-            font-family: 'Poppins', sans-serif;
-            font-size: 11px;
-            color: #C5A880; /* Oro atenuado */
-            text-transform: uppercase;
-            letter-spacing: 3px; /* Espaciado premium de marca de lujo */
-            font-weight: 600;
-            margin-bottom: 36px;
-        }
-
-        .login-input-group {
-            margin-bottom: 20px;
-        }
+        .login-card h2 { font-family: 'Playfair Display', serif; color: #3D312A; font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
+        .login-subtitle { font-family: 'Poppins', sans-serif; font-size: 11px; color: #C5A880; text-transform: uppercase; letter-spacing: 3px; font-weight: 600; margin-bottom: 36px; }
+        .login-input-group { margin-bottom: 20px; }
 
         .login-input-group input {
             width: 100%;
             padding: 16px 24px;
             border: 1px solid rgba(197, 168, 128, 0.3);
-            border-radius: 50px !important; /* Totalmente redondeado y suave */
+            border-radius: 50px !important;
             font-size: 14px;
             font-family: 'Poppins', sans-serif;
             background: rgba(255, 255, 255, 0.9);
@@ -463,7 +433,7 @@
             outline: none;
             border-color: #3D312A;
             background: #ffffff;
-            box-shadow: 0 0 0 4px rgba(197, 168, 128, 0.15); /* Aura dorada de enfoque */
+            box-shadow: 0 0 0 4px rgba(197, 168, 128, 0.15);
         }
 
         .login-submit-btn {
@@ -472,7 +442,7 @@
             background: linear-gradient(135deg, #4A3B33 0%, #3D312A 100%);
             color: white;
             border: none;
-            border-radius: 50px !important; /* Botón cápsula súper elegante */
+            border-radius: 50px !important;
             font-family: 'Poppins', sans-serif;
             font-size: 13px;
             font-weight: 600;
@@ -490,170 +460,85 @@
             transform: translateY(-2px);
         }
 
-        .login-submit-btn:active {
-            transform: translateY(0);
-        }
-
-        .login-error-msg {
-            color: #D96B6B;
-            margin-top: 20px;
-            font-size: 13px;
-            font-weight: 500;
-            font-family: 'Poppins', sans-serif;
-        }
+        .login-error-msg { color: #D96B6B; margin-top: 20px; font-size: 13px; font-weight: 500; font-family: 'Poppins', sans-serif; }
 
         @keyframes loginFadeIn {
-            from {
-                opacity: 0;
-                vertical-align: middle;
-                transform: scale(0.95) translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
+            from { opacity: 0; transform: scale(0.95) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-       @media(max-width:1024px){
-
+        @media(max-width:1024px){
             body{padding:12px}
-
             .layout-con-carrito{grid-template-columns:1fr}
-
             .nav-tabs{gap:8px}
-
             .tab-btn{padding:10px 16px;font-size:12px}
-
             .grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
-
             .producto-imagen-principal{height:220px}
-
             #v-cart{position:fixed!important;right:0!important;top:0!important;width:100%!important;max-width:420px!important;height:100vh!important;max-height:100vh!important;z-index:1001!important;border-radius:0!important}
-
         }
 
         @media(max-width:768px){
-
             body{padding:8px}
-
             .panel{padding:16px;border-radius:20px}
-
             .nav-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:8px;gap:6px;-webkit-overflow-scrolling:touch}
-
             .nav-tabs::-webkit-scrollbar{display:none}
-
             .tab-btn{padding:8px 14px;font-size:11px;white-space:nowrap;flex-shrink:0}
-
             .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-
             .card{padding:10px;border-radius:16px}
-
             .producto-imagen-principal{height:160px;border-radius:12px}
-
             .card h4{font-size:13px}
-
             .precio-producto{font-size:16px}
-
             .variante-seleccionada-info{font-size:11px;padding:6px 10px}
-
             .btn-desplegar-variantes{font-size:11px;padding:10px}
-
             .variantes-grid {grid-template-columns:repeat(auto-fill,minmax(65px,1fr));gap:6px}
-
             .variante-item-venta img{height:55px}
-
             .variante-item-venta .variante-nombre{font-size:9px}
-
             .cantidad-btn{width:32px;height:32px;font-size:16px}
-
             .cantidad-input{width:45px;font-size:14px}
-
             .btn-add{font-size:12px;padding:12px}
-
             #v-cart{max-width:100%!important;width:100%!important}
-
             .cart-item{padding:10px}
-
             .form-row{grid-template-columns:1fr}
-
             .modal-content{padding:16px;border-radius:20px;max-width:95%}
-
             .producto-header{flex-direction:column}
-
             .producto-imagen img{width:80px;height:80px}
-
             .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-
             .stat-card{padding:12px}
-
             .stat-card h3{font-size:20px}
-
             .backup-hero{padding:20px}
-
             .backup-hero h2{font-size:20px}
-
             .btn-backup-master{padding:14px 24px;font-size:14px}
-
             .backup-cards{grid-template-columns:1fr}
-
             .history-table{font-size:11px}
-
             .history-table th,.history-table td{padding:6px}
-
             .charts-container{grid-template-columns:1fr!important}
-
             table{font-size:11px}
-
             input,select,textarea{padding:10px 12px;font-size:13px}
-
         }
 
         @media(max-width:480px){
-
             body{padding:4px}
-
             .panel{padding:10px;border-radius:16px}
-
             .tab-btn{padding:6px 10px;font-size:10px;gap:4px}
-
             .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-
             .producto-imagen-principal{height:130px}
-
             .card h4{font-size:11px}
-
             .precio-producto{font-size:14px}
-
             .precio-mayor{font-size:10px}
-
             .cantidad-btn{width:28px;height:28px;font-size:14px}
-
             .cantidad-input{width:40px;font-size:13px;padding:4px}
-
             .btn-add{font-size:11px;padding:10px}
-
             .variantes-grid{grid-template-columns:repeat(auto-fill,minmax(55px,1fr));gap:4px}
-
             .variante-item-venta img{height:45px}
-
             .variante-item-venta .variante-nombre{font-size:8px}
-
             .cart-item{gap:8px}
-
             .cart-img{width:40px;height:40px;border-radius:14px}
-
             .stats-grid{grid-template-columns:1fr 1fr;gap:6px}
-
             .stat-card{padding:8px}
-
             .stat-card i{font-size:20px}
-
             .stat-card h3{font-size:16px}
-
             .stat-card p{font-size:10px}
-
         }
-        
     </style>
 </head>
 <body>
@@ -744,7 +629,7 @@
         </div>
     </div>
     
-    <label style="font-weight:600;margin:16px 0 8px;display:block"><i class="fas fa-credit-card"></i> Pago</label>
+    <label style="font-weight:600;margin-16px 0 8px;display:block"><i class="fas fa-credit-card"></i> Pago</label>
     <div class="pago-tabs">
         <button type="button" id="p-ef" class="pago-btn active" onclick="setMetodo('efectivo')"><i class="fas fa-money-bill-wave"></i> Efectivo</button>
         <button type="button" id="p-tr" class="pago-btn" onclick="setMetodo('transferencia')"><i class="fas fa-exchange-alt"></i> Transf.</button>
@@ -800,13 +685,19 @@ async function safeFetch(url, options={}) { if (adminToken) options.headers = { 
 async function loginAdmin() { const usuario = document.getElementById('login-usuario').value.trim(); const password = document.getElementById('login-password').value; if (!usuario || !password) { document.getElementById('login-error').textContent = 'Completá todos los campos'; return; } try { const res = await fetch('/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({usuario,password}) }); const data = await res.json(); if (data.success) { localStorage.setItem('adminToken', data.token); adminToken = data.token; adminActual = data.perfil; document.getElementById('login-screen').style.display = 'none'; document.getElementById('main-screen').style.display = 'block'; tab('v'); } else { document.getElementById('login-error').textContent = data.error || 'Error'; } } catch(e) { document.getElementById('login-error').textContent = 'Error de conexión'; } }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    if (adminToken) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-screen').style.display = 'block';
+        tab('v');
+    }
     try {
         const res = await fetch('/get-config', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         if (res.ok) {
             const data = await res.json();
-            if (data && data.logo) {
+            const c = data.configuracion || data.config || data;
+            if (c && c.logo) {
                 const imgLogin = document.getElementById('login-logo-img');
-                if (imgLogin) imgLogin.src = data.logo;
+                if (imgLogin) imgLogin.src = c.logo;
             }
         }
     } catch(e) { console.log("Cargando logo local por defecto..."); }
@@ -819,12 +710,10 @@ async function cargarConfiguracion() {
         const d = await safeFetch('/get-config', { method: 'POST' });
         if (!d) return;
 
-        // 🔥 CORRECCIÓN CLAVE: Extrae la configuración ya sea que venga anidada o directa
         const c = d.configuracion || d.config || d;
         configuracion = c;
         window.configuracion = c;
         
-        // 1. Carga del Logo
         const img = document.getElementById('logo-preview-img');
         const placeholder = document.getElementById('logo-placeholder');
         if (c.logo && c.logo.trim() !== '') {
@@ -835,14 +724,12 @@ async function cargarConfiguracion() {
             if (placeholder) placeholder.style.display = 'block';
         }
         
-        // Helper seguro para deserializar strings JSON o usar objetos directos
         const deserializarSeguro = (campo) => {
             if (!campo) return {};
             if (typeof campo === 'object') return campo;
             try { return JSON.parse(campo); } catch(e) { return {}; }
         };
 
-        // 2. Ficha de la Empresa
         const emp = deserializarSeguro(c.empresa);
         if (document.getElementById('empresa-nombre')) document.getElementById('empresa-nombre').value = emp.nombre || '';
         if (document.getElementById('empresa-slogan')) document.getElementById('empresa-slogan').value = emp.slogan || '';
@@ -850,47 +737,40 @@ async function cargarConfiguracion() {
         if (document.getElementById('empresa-email')) document.getElementById('empresa-email').value = emp.email || '';
         if (document.getElementById('empresa-direccion')) document.getElementById('empresa-direccion').value = emp.direccion || '';
         
-        // 3. Horarios de Atención
         const hor = deserializarSeguro(c.horarios);
         if (document.getElementById('horario-lv')) document.getElementById('horario-lv').value = hor.lunesViernes || '';
         if (document.getElementById('horario-sab')) document.getElementById('horario-sab').value = hor.sabados || '';
         if (document.getElementById('horario-dom')) document.getElementById('horario-dom').value = hor.domingos || '';
         
-        // 4. Redes Sociales
         const red = deserializarSeguro(c.redes);
         if (document.getElementById('red-instagram')) document.getElementById('red-instagram').value = red.instagram || '';
         if (document.getElementById('red-facebook')) document.getElementById('red-facebook').value = red.facebook || '';
         if (document.getElementById('red-tiktok')) document.getElementById('red-tiktok').value = red.tiktok || '';
         if (document.getElementById('red-whatsapp')) document.getElementById('red-whatsapp').value = red.whatsapp || '';
         
-        // 5. Datos de Cobro
         const pag = deserializarSeguro(c.pagos);
         if (document.getElementById('pago-alias')) document.getElementById('pago-alias').value = pag.alias || '';
         if (document.getElementById('pago-cbu')) document.getElementById('pago-cbu').value = pag.cbu || '';
         if (document.getElementById('pago-banco')) document.getElementById('pago-banco').value = pag.banco || '';
         if (document.getElementById('pago-titular')) document.getElementById('pago-titular').value = pag.titular || '';
         
-        // 6. Diseño Web
         const dis = deserializarSeguro(c.diseno);
         if (document.getElementById('tienda-color-primary')) document.getElementById('tienda-color-primary').value = dis.colorPrimario || '#3D312A';
         if (document.getElementById('tienda-color-secondary')) document.getElementById('tienda-color-secondary').value = dis.colorSecundario || '#C5A880';
         if (document.getElementById('tienda-color-bg')) document.getElementById('tienda-color-bg').value = dis.colorFondo || '#FDFBF7';
         if (document.getElementById('tienda-color-text')) document.getElementById('tienda-color-text').value = dis.colorTexto || '#3D312A';
         
-        // 7. Estado Salón Virtual Web
         const tnd = deserializarSeguro(c.tienda);
         if (document.getElementById('tienda-titulo')) document.getElementById('tienda-titulo').value = tnd.titulo || '';
         if (document.getElementById('tienda-mensaje')) document.getElementById('tienda-mensaje').value = tnd.mensajeBienvenida || '';
         setTiendaHabilitada(tnd.habilitada !== false);
         
-        // 8. Reglas Mayoristas
         const may = deserializarSeguro(c.mayorista);
         mayoristaHabilitado = may.habilitado || false;
         mayoristaModo = may.modo || 'cantidad';
         if (document.getElementById('mayoristaCantidad')) document.getElementById('mayoristaCantidad').value = may.valorCantidad || 3;
         if (document.getElementById('mayoristaMonto')) document.getElementById('mayoristaMonto').value = formatearNumero(may.valorMonto || 80000);
         
-        // Ejecutamos el toggle visual protector de errores
         if (document.querySelectorAll('.modo-option').length) {
             selectMayoristaModo(mayoristaModo);
         }
@@ -954,7 +834,6 @@ function tab(t) {
         container.className='layout'; 
         container.innerHTML=renderPaginaConfiguracion(); 
         cartPanel.classList.add('hidden'); 
-        // 🔥 ÚNICO SENSADO SEGURO: Sincroniza y rellena los datos cuando el HTML ya existe en pantalla
         setTimeout(() => { 
             cargarConfiguracion(); 
             cargarMetodosEnvio();
@@ -1315,7 +1194,6 @@ function renderProductosVenta() {
         let idx = varianteSeleccionada[p.id]; 
         let v = p.variantes[idx] || p.variantes[0]; 
 
-        // Renderizado limpio de variantes una debajo de la otra
         let variantesHTML = '<div style="display:flex; flex-direction:column; gap:8px; width:100%;">';
         p.variantes.forEach((vr, i) => {
             const tieneImagen = vr.foto && vr.foto.trim() !== '';
@@ -1326,7 +1204,6 @@ function renderProductosVenta() {
                      data-index="${i}" 
                      style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:16px; border:2px solid #E6E1DA; background:white; text-align:left; width:100%;">
                     
-                    <!-- Formato rectangular horizontal para la miniatura de la sábana -->
                     <div style="width:60px; height:45px; border-radius:10px; background:#F6F3EA; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:1px solid rgba(197,168,128,0.15);">
                         <img src="${tieneImagen ? sanitizarUrl(vr.foto) : 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2245%22 fill=%22%23FAEDCD%22><rect width=%2260%22 height=%2245%22/><text x=%2250%%22 y=%2260%%22 text-anchor=%22middle%22 fill=%22%23D4A373%22 font-size=%2214%22>🛏️</text></svg>'}" 
                              style="width:100%; height:100%; object-fit:cover;">
@@ -1349,7 +1226,6 @@ function renderProductosVenta() {
                     ${p.precioMayor > 0 ? `<span style="background:#E4EDE1; color:#3C763D; font-size:10px; padding:4px 10px; border-radius:40px; font-weight:600">MAYORISTA</span>` : ''}
                 </div>
                 
-                <!-- Ajustado aspect-ratio a 4/3 para fotos de sábanas/empaques sin cortes verticales -->
                 <img id="img-principal-${p.id}" src="${sanitizarUrl(v.foto)}" 
                      onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22 fill=%22%23F6F3EA%22><rect width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%233D312A%22 font-size=%2216%22>Casa Elegida Blanquería</text></svg>'" 
                      class="producto-imagen-principal" 
@@ -1569,39 +1445,27 @@ function renderAdmin(){
 function agregarVarianteFilaNueva(pid) {
     const container = document.getElementById(`contenedor-filas-variantes-${pid}`);
     if(!container) return;
-    const i = container.children.length; // Índice dinámico para no repetir IDs
+    const i = container.children.length;
     const div = document.createElement('div');
     div.className = 'variante-item row-variante-accion';
     div.style.cssText = 'display:grid; grid-template-columns: 2.5fr 1fr auto auto; gap:12px; align-items:center;';
     
     div.innerHTML = `
-        <!-- Input de Nombre -->
         <input type="text" class="v-input-nombre" placeholder="Ej: Blanco / King" style="border-radius:50px; padding:10px 14px;">
-        
-        <!-- Input de Stock -->
         <input type="number" class="v-input-stock" value="0" min="0" style="border-radius:50px; padding:10px 14px; text-align:center;">
         
-        <!-- Contenedor Multimedia -->
         <div style="display:flex; gap:8px; align-items:center;">
-            <!-- Miniatura / Preview visual de la tela -->
             <div style="width:48px; height:38px; border-radius:8px; background:#F6F3EA; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; border:1px solid #E6E1DA;">
                 <img id="prev-v-${pid}-${i}" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
                 <span id="icon-v-${pid}-${i}" style="font-size:14px; color:#D4A373;">🖼️</span>
             </div>
-            
-            <!-- Guardado oculto de la URL de Cloudinary -->
             <input type="hidden" class="v-input-foto" value="">
-            
-            <!-- Botón Nube Real que abre el selector de tu PC/Celular -->
             <button type="button" onclick="document.getElementById('file-v-${pid}-${i}').click()" style="background:#3D312A; color:white; border:none; border-radius:50%; width:36px; height:36px; flex-shrink:0; cursor:pointer;">
                 <i class="fas fa-cloud-upload-alt"></i>
             </button>
-            
-            <!-- Input File Oculto Vinculado -->
             <input type="file" id="file-v-${pid}-${i}" accept="image/*" style="display:none" onchange="subirFotoVarianteNativa(this,'${pid}',${i})">
         </div>
         
-        <!-- Botón Eliminar Fila -->
         <button type="button" onclick="this.closest('.row-variante-accion').remove()" style="background:none; border:none; color:#D96B6B; cursor:pointer; padding:0 8px;">
             <i class="fas fa-trash-alt"></i>
         </button>
@@ -1619,10 +1483,7 @@ async function subirFotoVarianteNativa(input, pid, idx) {
         if(d.url) {
             const row = input.closest('.row-variante-accion');
             if(row) {
-                // Guardamos el string en el input oculto para la Base de Datos
                 row.querySelector('.v-input-foto').value = d.url;
-                
-                // ¡Efecto en vivo! Buscamos la miniatura dentro de la fila y le inyectamos la foto cargada
                 const img = row.querySelector('img');
                 const icon = row.querySelector('span');
                 if(img) { 
@@ -1657,7 +1518,6 @@ async function saveEdit(id){
     if(!precio || precio <= 0){ mostrarToast('Precio > 0', true); return; }
     
     const variantes = [];
-    // Buscamos exactamente el contenedor y la clase de cada fila de variante
     const filas = document.querySelectorAll(`#contenedor-filas-variantes-${id} .row-variante-accion`);
     
     filas.forEach(row => {
@@ -1715,9 +1575,22 @@ async function imprimirTicket(id, tipo = 'termico') {
 
 async function subirLogo(i){if(!i.files?.[0])return;let f=new FormData();f.append('logo',i.files[0]);let d=await safeFetch('/subir-logo',{method:'POST',body:f});if(d.success){document.getElementById('logo-preview-img').src=d.url;document.getElementById('logo-preview-img').style.display='block';document.getElementById('logo-placeholder').style.display='none';}}
 async function eliminarLogo(){await safeFetch('/eliminar-logo',{method:'POST'});document.getElementById('logo-preview-img').style.display='none';document.getElementById('logo-placeholder').style.display='block';}
-async function guardarConfiguracion(){await safeFetch('/save-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({empresa:{nombre:document.getElementById('empresa-nombre').value,slogan:document.getElementById('empresa-slogan').value,telefono:document.getElementById('empresa-telefono').value,email:document.getElementById('empresa-email').value,direccion:document.getElementById('empresa-direccion').value},horarios:{lunesViernes:document.getElementById('horario-lv').value,sabados:document.getElementById('horario-sab').value,domingos:document.getElementById('horario-dom').value},redes:{instagram:document.getElementById('red-instagram').value,facebook:document.getElementById('red-facebook').value,tiktok:document.getElementById('red-tiktok').value,whatsapp:document.getElementById('red-whatsapp').value},pagos:{alias:document.getElementById('pago-alias').value,cbu:document.getElementById('pago-cbu').value,banco:document.getElementById('pago-banco').value,titular:document.getElementById('pago-titular').value}})});mostrarToast('✅ Guardado');}
-async function guardarDisenoTienda(){await safeFetch('/save-diseno-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({diseno:{colorPrimario:document.getElementById('tienda-color-primary').value,colorSecundario:document.getElementById('tienda-color-secondary').value,colorFondo:document.getElementById('tienda-color-bg').value,colorTexto:document.getElementById('tienda-color-text').value}})});mostrarToast('✅ Guardado');}
-async function guardarConfiguracionTienda(){await safeFetch('/save-tienda-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tienda:{habilitada:document.getElementById('tienda-on').classList.contains('active'),titulo:document.getElementById('tienda-titulo').value,mensajeBienvenida:document.getElementById('tienda-mensaje').value}})});mostrarToast('✅ Guardado');}
+
+async function guardarConfiguracion(){
+    await safeFetch('/save-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({empresa:{nombre:document.getElementById('empresa-nombre').value,slogan:document.getElementById('empresa-slogan').value,telefono:document.getElementById('empresa-telefono').value,email:document.getElementById('empresa-email').value,direccion:document.getElementById('empresa-direccion').value},horarios:{lunesViernes:document.getElementById('horario-lv').value,sabados:document.getElementById('horario-sab').value,domingos:document.getElementById('horario-dom').value},redes:{instagram:document.getElementById('red-instagram').value,facebook:document.getElementById('red-facebook').value,tiktok:document.getElementById('red-tiktok').value,whatsapp:document.getElementById('red-whatsapp').value},pagos:{alias:document.getElementById('pago-alias').value,cbu:document.getElementById('pago-cbu').value,banco:document.getElementById('pago-banco').value,titular:document.getElementById('pago-titular').value}})});
+    mostrarToast('✅ Guardado');
+    await cargarConfiguracion();
+}
+async function guardarDisenoTienda(){
+    await safeFetch('/save-diseno-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({diseno:{colorPrimario:document.getElementById('tienda-color-primary').value,colorSecundario:document.getElementById('tienda-color-secondary').value,colorFondo:document.getElementById('tienda-color-bg').value,colorTexto:document.getElementById('tienda-color-text').value}})});
+    mostrarToast('✅ Guardado');
+    await cargarConfiguracion();
+}
+async function guardarConfiguracionTienda(){
+    await safeFetch('/save-tienda-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tienda:{habilitada:document.getElementById('tienda-on').classList.contains('active'),titulo:document.getElementById('tienda-titulo').value,mensajeBienvenida:document.getElementById('tienda-mensaje').value}})});
+    mostrarToast('✅ Guardado');
+    await cargarConfiguracion();
+}
 function setTiendaHabilitada(h){document.getElementById('tienda-on').classList.toggle('active',h);document.getElementById('tienda-off').classList.toggle('active',!h);}
 function toggleMayorista(){mayoristaHabilitado=!mayoristaHabilitado;const p=document.getElementById('mayoristaPanel'),b=document.getElementById('btnMayoristaToggle');if(mayoristaHabilitado){p.style.display='block';b.innerHTML='<i class="fas fa-toggle-on"></i> Activado';b.style.background='#10b981';}else{p.style.display='none';b.innerHTML='<i class="fas fa-toggle-off"></i> Desactivado';b.style.background='#64748b';}}
 
@@ -1731,8 +1604,8 @@ function selectMayoristaModo(m) {
     if (cCant) cCant.style.display = (m === 'monto') ? 'none' : 'block'; 
     if (cMont) cMont.style.display = (m === 'cantidad') ? 'none' : 'block'; 
 }
-    
-async function guardarMayorista(){await safeFetch('/save-mayorista-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({habilitado:mayoristaHabilitado,modo:mayoristaModo,valorCantidad:parseInt(document.getElementById('mayoristaCantidad').value)||0,valorMonto:desformatearNumero(document.getElementById('mayoristaMonto').value)})});mostrarToast('✅ Guardado');}
+
+async function guardarMayorista(){await safeFetch('/save-mayorista-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({habilitado:mayoristaHabilitado,modo:mayoristaModo,valorCantidad:parseInt(document.getElementById('mayoristaCantidad').value)||0,valorMonto:desformatearNumero(document.getElementById('mayoristaMonto').value)})});mostrarToast('✅ Guardado');await cargarConfiguracion();}
 async function guardarMetodosEnvio(){const l=document.getElementById('metodos-envio-lista').value.split('\n').filter(x=>x.trim());await safeFetch('/guardar-metodos-envio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lista:l})});mostrarToast('✅ Guardado');cargarMetodosEnvio();}
 
 function abrirModalCategorias(){const m=document.createElement('div');m.className='modal active';m.innerHTML=`<div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>Categorías</h3><button type="button" onclick="this.closest('.modal').remove()">&times;</button></div><div class="modal-body"><div style="display:flex;gap:12px;margin-bottom:20px"><input type="text" id="nueva-cat-nombre" placeholder="Nueva"><button type="button" onclick="agregarCategoria()" class="btn-confirm" style="width:auto;padding:8px 16px">+</button></div><div id="cats-lista">${categorias.map(c=>`<div><input type="text" value="${escapeHtml(c.nombre)}" id="cat-nombre-${c.id}"><button type="button" onclick="guardarCat(${c.id})" class="tab-btn btn-success"><i class="fas fa-save"></i></button><button type="button" onclick="eliminarCat(${c.id})" class="tab-btn btn-danger"><i class="fas fa-trash"></i></button></div>`).join('')}</div></div></div>`;document.body.appendChild(m);}
