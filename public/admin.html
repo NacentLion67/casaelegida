@@ -1656,9 +1656,75 @@ function abrirCajaProfesional(){}
 async function cerrarCajaProfesional(){ const d = await safeFetch('/admin/cierre-caja-profesional', { method: 'POST' }); verEstadoCaja(); }
 
 let todosClientes = [];
+
+function renderPaginaClientes() {
+    return `
+        <div class="panel" style="border: 1px solid #E6E1DA; background: #ffffff;">
+            <h3 style="color: #3D312A; font-family: 'Playfair Display', serif; font-weight: 800; font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-users" style="color: #C5A880;"></i> Clientes Registrados
+            </h3>
+            <div class="ventas-buscador" style="margin-bottom: 20px;">
+                <input type="text" id="clientes-buscador" placeholder="🔍 Buscar cliente por nombre o datos..." onkeyup="filtrarClientes()" style="border-radius: 50px; padding: 14px 20px;">
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #F6F3EA; color: #3D312A; font-size: 13px; font-weight: 600;">
+                            <th style="padding: 14px; text-align: left; border-top-left-radius: 14px; border-bottom-left-radius: 14px;">Cliente / Información</th>
+                            <th style="padding: 14px; text-align: right; border-top-right-radius: 14px; border-bottom-right-radius: 14px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-clientes-body">
+                        <tr>
+                            <td colspan="2" style="text-align:center; padding: 32px; color: #8C7E74;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px; color: #C5A880;"></i><br>Sincronizando base de clientes...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+    
 async function cargarClientes() { const d = await safeFetch('/admin/listar-clientes', { method: 'POST' }); todosClientes = d.lista || []; renderizarTablaClientes(todosClientes); }
-function filtrarClientes() {}
-function renderizarTablaClientes(lista) { document.getElementById('lista-clientes-body').innerHTML = lista.map(c=>`<tr><td>${escapeHtml(c.nombre)}</td><td><button onclick="verHistorialClienteCompleto('${c.id}','${c.nombre}')">Historial</button></td></tr>`).join(''); }
+
+function filtrarClientes() {
+    const t = document.getElementById('clientes-buscador').value.toLowerCase();
+    document.querySelectorAll('#lista-clientes-body tr').forEach(r => {
+        // Oculta o muestra las filas de la tabla de clientes según lo tipeado
+        r.style.display = r.textContent.toLowerCase().includes(t) ? '' : 'none';
+    });
+}
+    
+
+function renderizarTablaClientes(lista) {
+    const body = document.getElementById('lista-clientes-body');
+    if (!body) return;
+    
+    if (!lista || !lista.length) {
+        body.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:32px; color:#8C7E74;">No se encontraron clientes registrados en el sistema.</td></tr>`;
+        return;
+    }
+    
+    body.innerHTML = lista.map(c => `
+        <tr style="border-bottom: 1px solid #E6E1DA;">
+            <td style="padding: 14px; text-align: left; vertical-align: middle;">
+                <strong style="font-size: 14px; color: #3D312A; display: block;">${escapeHtml(c.nombre)}</strong>
+                <span style="font-size: 11px; color: #8C7E74; display: block; margin-top: 3px;">
+                    ${c.dni ? `<i class="fas fa-id-card"></i> DNI: ${escapeHtml(c.dni)}` : ''} 
+                    ${c.celular || c.telefono ? ` &nbsp;•&nbsp; <i class="fas fa-phone"></i> Cel: ${escapeHtml(c.celular || c.telefono)}` : ''}
+                </span>
+            </td>
+            <td style="padding: 14px; text-align: right; vertical-align: middle;">
+                <button onclick="verHistorialClienteCompleto('${c.id}','${c.nombre}')" class="tab-btn" style="padding: 8px 18px; font-size: 12px; background: #3D312A; color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: none;">
+                    <i class="fas fa-history"></i> Historial
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
 async function verHistorialClienteCompleto(id, n) { alert('Historial de ' + n); }
 async function eliminarCliente(id, n) { await safeFetch('/admin/eliminar-cliente', { method: 'POST' }); }
 
