@@ -269,7 +269,7 @@
             }
 
             try {
-                // 1. CARGA FLEXIBLE PARA MAPEAR COLUMNAS EN MINÚSCULAS DESDE LA BD
+                // 1. Datos de Perfil del Usuario
                 const resUser = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
                 if (!resUser.ok) throw new Error();
                 const usuario = await resUser.json();
@@ -277,7 +277,6 @@
                 let backupUser = {};
                 try { backupUser = JSON.parse(localStorage.getItem('usuario')) || {}; } catch(e){}
 
-                // Solución definitiva al autorrelleno: Lee minúsculas o mayúsculas indistintamente
                 document.getElementById('c-nombre').value = usuario.nombre || usuario.Nombre || backupUser.nombre || '';
                 document.getElementById('c-apellido').value = usuario.apellido || usuario.Apellido || backupUser.apellido || '';
                 document.getElementById('c-dni').value = usuario.dni || usuario.Dni || backupUser.dni || '';
@@ -292,11 +291,11 @@
                 document.getElementById('c-cp').value = usuario.cp || usuario.Cp || '';
                 document.getElementById('c-direccion').value = usuario.direccion || usuario.Direccion || '';
 
-                // 2. Cargar transportes dinámicos
-                const resTienda = await fetch('/tienda/listar-productos', { method: 'POST' });
-                if (resTienda.ok) {
-                    const dataTienda = await resTienda.json();
-                    empresasEnvioDisponibles = dataTienda.metodosEnvio || [];
+                // 🔥 CORRECCIÓN CLAVE: Conectamos con el endpoint de logística real del Admin
+                const resEnvio = await fetch('/listar-metodos-envio', { method: 'POST' });
+                if (resEnvio.ok) {
+                    const dataEnvio = await resEnvio.json();
+                    empresasEnvioDisponibles = dataEnvio.lista || [];
                     popularSelectorEnvios();
                 }
 
@@ -336,14 +335,14 @@
             const select = document.getElementById('selector-medio-envio');
             if (!select) return;
             
-            if (empresasEnvioDisponibles.length === 0) {
-                select.innerHTML = '<option value="Transporte General">Correo / Transporte a coordinar</option>';
+            if (!empresasEnvioDisponibles || empresasEnvioDisponibles.length === 0) {
+                select.innerHTML = '<option value="">-- No hay empresas cargadas en Admin --</option>';
                 return;
             }
 
             let html = '<option value="">-- Seleccioná la empresa de transporte --</option>';
             empresasEnvioDisponibles.forEach(m => {
-                html += `<option value="${m}">${m}</option>`;
+                html += `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`;
             });
             select.innerHTML = html;
         }
@@ -381,8 +380,8 @@
                         <div class="summary-item-left">
                             <img src="${fotoPrenda}" class="summary-item-img" onerror="this.src='https://via.placeholder.com/50x60/FAEDCD/4A3728?text=Moda'">
                             <div class="summary-item-details">
-                                <h4>${prod.pNom}</h4>
-                                <p>Talle/Variante: <strong>${detalleTalle}</strong> &nbsp;|&nbsp; Cantidad: <strong>${prod.cant}</strong></p>
+                                <h4>${escapeHtml(prod.pNom)}</h4>
+                                <p>Talle/Variante: <strong>${escapeHtml(detalleTalle)}</strong> &nbsp;|&nbsp; Cantidad: <strong>${prod.cant}</strong></p>
                             </div>
                         </div>
                         <div class="summary-item-price">${fmt.format(subtotalItem)}</div>
@@ -444,14 +443,12 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // 1. Limpiamos el carrito en la base de datos de Railway
                     await fetch('/api/guardar-carrito', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ carrito: [] })
                     });
                     
-                    // 2. Limpiamos todas las variables locales en la memoria del celular para que quede en 0
                     listadoCarrito = [];
                     localStorage.removeItem('tienda_carrito'); 
                     localStorage.removeItem('carrito');
@@ -459,8 +456,6 @@
                     localStorage.removeItem(tokenKey);
                     
                     mostrarToast('✨ ¡Pedido confirmado con éxito!');
-                    
-                    // 3. Volvemos a la tienda con el carrito totalmente vacío
                     setTimeout(() => window.location.href = '/tienda', 2500);
                 } else {
                     alert('❌ Ocurrió un inconveniente: ' + data.error);
@@ -473,6 +468,8 @@
                 btn.innerHTML = '<i class="fas fa-check-circle"></i> Finalizar Compra';
             }
         }
+
+        function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
         function mostrarToast(mensaje, esError = false) {
             const container = document.getElementById('toast-container');
