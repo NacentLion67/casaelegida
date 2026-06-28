@@ -365,7 +365,6 @@
 <body>
 
 <div class="container-premium">
-    <!-- Barra Superior de Navegación y Acceso al Carrito -->
     <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E6E1DA; padding-bottom: 16px; margin-bottom: 8px;">
         <a href="/tienda" class="volviendo-btn" style="margin:0;"><i class="fas fa-arrow-left"></i> Volver a la Tienda</a>
         <button onclick="toggleCarrito()" style="background: var(--primary); color: white; padding: 10px 24px; border-radius: 50px; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(61,49,42,0.1);">
@@ -373,18 +372,15 @@
         </button>
     </div>
 
-    <!-- Columna Izquierda: Portada Visual + Descripción Abajo -->
     <div class="galeria-wrapper">
         <img id="foto-visor" src="" alt="Cargando Prenda..." class="visor-principal">
         
-        <!-- Bloque de Descripción debajo de la imagen principal -->
         <div class="descripcion-contenedor">
             <h4 style="font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; color: var(--primary); font-weight: 700;"><i class="fas fa-align-left"></i> Descripción del Artículo</h4>
             <p class="descripcion-text" id="prod-descripcion" style="margin: 0;"></p>
         </div>
     </div>
 
-    <!-- Columna Derecha: Precios y Mosaico Estilo Muestrario -->
     <div class="detalles-compra">
         <div>
             <h1 class="titulo-producto" id="prod-nombre">Cargando...</h1>
@@ -398,13 +394,11 @@
 
         <div>
             <h4 style="font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;"><i class="fas fa-palette"></i> Elegir Variante</h4>
-            <!-- Mosaico Compacto Lookbook -->
             <div class="variante-cajon" id="cajon-variantes"></div>
         </div>
 
         <hr style="border:none; border-top:1px solid #E6E1DA">
 
-        <!-- Acciones e inyección al pedido -->
         <div class="acciones-compra-bloque">
             <div class="quantity-control">
                 <button type="button" class="cant-btn" onclick="modificarCantidad(-1)">−</button>
@@ -418,7 +412,6 @@
     </div>
 </div>
 
-<!-- Estructura del Carrito Lateral Desplegable -->
 <div class="cart-overlay" id="cart-overlay" onclick="toggleCarrito()"></div>
 <div class="cart-sidebar" id="cart-sidebar">
     <div class="cart-header">
@@ -438,7 +431,7 @@
 </div>
 
 <script>
-    let producto = null, variantes = [], configuracion = {}, varianteSeleccionadaIdx = 0, carrito = [];
+    let producto = null, variantes = [], productos = [], configuracion = {}, varianteSeleccionadaIdx = 0, carrito = [];
     const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
     const idProducto = window.location.pathname.split('/').pop();
 
@@ -448,6 +441,56 @@
     function toggleCarrito() {
         document.getElementById('cart-sidebar').classList.toggle('active');
         document.getElementById('cart-overlay').classList.toggle('active');
+    }
+
+    function recalcularPreciosMayoristas() {
+        let confMayorista = configuracion.mayorista;
+        if (typeof confMayorista === 'string') {
+            try { confMayorista = JSON.parse(confMayorista); } catch(e) { confMayorista = {}; }
+        }
+
+        if (!confMayorista || !confMayorista.habilitado) {
+            carrito.forEach(i => {
+                if (i.precioOriginal) {
+                    i.precio = i.precioOriginal;
+                    delete i.precioOriginal;
+                }
+            });
+            return;
+        }
+
+        const modo = confMayorista.modo || 'cantidad';
+        const valorCantidad = parseInt(confMayorista.valorCantidad, 10) || 3;
+        const valorMonto = parseFloat(confMayorista.valorMonto) || 80000;
+
+        const cantTotal = carrito.reduce((s, i) => s + i.cant, 0);
+        const montoTotalMayorista = carrito.reduce((s, i) => {
+            const p = (producto && i.pId === producto.id) ? producto : productos.find(x => x.id == i.pId);
+            const precioAUsar = (p && p.precioMayor > 0) ? p.precioMayor : (i.precioOriginal || i.precio);
+            return s + (precioAUsar * i.cant);
+        }, 0);
+
+        let cumple = false;
+        if (modo === 'cantidad') {
+            cumple = cantTotal >= valorCantidad;
+        } else if (modo === 'monto') {
+            cumple = montoTotalMayorista >= valorMonto;
+        } else if (modo === 'ambas') {
+            cumple = (cantTotal >= valorCantidad && montoTotalMayorista >= valorMonto);
+        }
+
+        carrito.forEach(i => {
+            if (i.esManual) return;
+            const p = (producto && i.pId === producto.id) ? producto : productos.find(x => x.id == i.pId);
+            if (!p) return;
+            if (cumple && p.precioMayor > 0) {
+                if (!i.precioOriginal) i.precioOriginal = i.precio;
+                i.precio = p.precioMayor;
+            } else if (i.precioOriginal) {
+                i.precio = i.precioOriginal;
+                delete i.precioOriginal;
+            }
+        });
     }
 
     function renderizarCarrito() {
@@ -467,20 +510,23 @@
         carrito.forEach((it, i) => {
             total += it.precio * it.cant;
             cantTotal += it.cant;
+            const tieneMayorista = it.precioOriginal && it.precio < it.precioOriginal;
             h += `
                 <div class="cart-product-card" style="display:flex; flex-direction:column; gap:10px; align-items:stretch;">
                     <div style="display:flex; gap:12px; align-items:center; width:100%;">
                         <img src="${sanitizarUrl(it.vFoto)}" style="width:55px;height:55px;object-fit:cover;border-radius:8px;border:1px solid #E6E1DA;flex-shrink:0;">
                         <div style="flex:1; min-width:0;">
                             <div style="display:flex;justify-content:space-between;align-items:flex-start; gap:4px;">
-                                <span style="font-weight:600;font-size:12px;color:var(--text-dark);line-height:1.2; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(it.pNom)}</span>
+                                <span style="font-weight:600;font-size:12px;color:var(--text-dark);line-height:1.2; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(it.pNom)} ${tieneMayorista ? '<span style="background:#C5A880;color:white;padding:1px 5px;border-radius:10px;font-size:8px;font-weight:700;margin-left:2px">MAY</span>':''}</span>
                                 <button onclick="eliminarDelCarrito(${i})" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;flex-shrink:0;"><i class="fas fa-times"></i></button>
                             </div>
                             <p style="font-size:11px;color:var(--text-light);margin-top:2px;overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(it.vNom)}</p>
                         </div>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #E6E1DA; padding-top:8px; margin-top:2px;">
-                        <span style="font-size:12px; font-weight:700; color:var(--text-dark);">${fmt.format(it.precio)} c/u</span>
+                        <span style="font-size:12px; font-weight:700; color:var(--text-dark);">
+                            ${tieneMayorista ? `<span style="text-decoration:line-through; color:#94a3b8; font-size:11px; margin-right:4px;">${fmt.format(it.precioOriginal)}</span><span style="color:#4E7A62;">${fmt.format(it.precio)}</span>` : `${fmt.format(it.precio)}`} c/u
+                        </span>
                         <div class="quantity-control-wrapper">
                             <button class="quantity-btn-cart" onclick="modificarCantidadCarrito(${i},-1)">−</button>
                             <span style="min-width:24px;text-align:center;font-weight:600;font-size:12px;color:var(--text-dark)">${it.cant}</span>
@@ -519,6 +565,8 @@
         
         const token = localStorage.getItem('token');
         const key = token ? 'carrito_' + token : 'carrito_anonimo';
+        
+        recalcularPreciosMayoristas();
         localStorage.setItem(key, JSON.stringify(carrito));
         localStorage.setItem('tienda_carrito', JSON.stringify(carrito));
         localStorage.setItem('carrito_timestamp', Date.now());
@@ -538,6 +586,8 @@
         carrito.splice(i, 1);
         const token = localStorage.getItem('token');
         const key = token ? 'carrito_' + token : 'carrito_anonimo';
+        
+        recalcularPreciosMayoristas();
         localStorage.setItem(key, JSON.stringify(carrito));
         localStorage.setItem('tienda_carrito', JSON.stringify(carrito));
         localStorage.setItem('carrito_timestamp', Date.now());
@@ -546,6 +596,7 @@
 
     async function cargarPaginaProducto() {
         try {
+            // 1. Cargamos el producto individual y su configuración básica
             const res = await fetch(`/api/tienda/producto/${idProducto}`);
             if(!res.ok) throw new Error("No pudimos conectar con el catálogo de este artículo.");
             const data = await res.json();
@@ -553,6 +604,13 @@
             producto = data.producto;
             configuracion = data.configuracion;
             variantes = producto.variantes || [];
+
+            // 🔥 SEGURO COMPLETO: Sincroniza el catálogo global de productos para validar umbrales cruzados
+            const resList = await fetch('/tienda/listar-productos', { method: 'POST' }).catch(() => null);
+            if (resList && resList.ok) {
+                const dataList = await resList.json();
+                productos = dataList.productos || [];
+            }
             
             if(configuracion.diseno) {
                 const d = configuracion.diseno;
@@ -581,6 +639,8 @@
             try {
                 carrito = JSON.parse(localStorage.getItem(key) || localStorage.getItem('tienda_carrito') || '[]');
             } catch(e) { carrito = []; }
+            
+            recalcularPreciosMayoristas();
             renderizarCarrito();
 
         } catch(e) {
@@ -686,6 +746,9 @@
                 esManual: false
             });
         }
+
+        // Ejecuta el motor de cálculo antes de impactar el storage
+        recalcularPreciosMayoristas();
 
         localStorage.setItem(key, JSON.stringify(carrito));
         localStorage.setItem('tienda_carrito', JSON.stringify(carrito));
