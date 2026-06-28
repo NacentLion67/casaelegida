@@ -114,7 +114,7 @@
 
         .descripcion-text { font-size: 14px; color: var(--text-light); line-height: 1.6; }
 
-        /* Mosaico de Variantes de Alta Densidad (Optimizado sin lag) */
+        /* Mosaico de Variantes de Alta Densidad */
         .variante-cajon { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); 
@@ -177,13 +177,15 @@
         /* Controles de Cantidad y Botón de Acción */
         .acciones-compra-bloque { display: flex; align-items: center; gap: 16px; margin-top: 8px; flex-wrap: wrap; }
         
-        .cantidad-caja { 
-            display: flex; 
-            align-items: center; 
-            background: #F6F3EA; 
-            border-radius: 50px; 
-            padding: 4px; 
-            border: 1px solid #E6E1DA; 
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            border: 1px solid #E6E1DA;
+            width: fit-content;
+            background: #ffffff;
+            border-radius: 50px;
+            padding: 4px;
+            background: #F6F3EA;
         }
         .cant-btn { 
             width: 38px; 
@@ -224,14 +226,36 @@
         }
         .btn-agregar-carrito:hover { background: #52433A; transform: translateY(-1px); }
         .btn-agregar-carrito:disabled { background: #CBD5E1; color: #8C7E74; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ==========================================================================
+           CARRITO SIDEBAR STYLES
+           ========================================================================== */
+        .cart-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 2500; }
+        .cart-overlay.active { display: block; }
+        .cart-sidebar { position: fixed; top: 0; right: -460px; width: 100%; max-width: 440px; height: 100%; background: #ffffff; box-shadow: -5px 0 30px rgba(0,0,0,0.05); z-index: 2600; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; border-left: 1px solid #E6E1DA; }
+        .cart-sidebar.active { right: 0; }
+        .cart-header { padding: 24px; border-bottom: 1px solid #E6E1DA; display: flex; justify-content: space-between; align-items: center; }
+        .cart-header h3 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+        .cart-close { background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--text-dark); }
+        .cart-items { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-light); }
+        .cart-product-card { background: #ffffff; border: 1px solid #E6E1DA; padding: 16px; display: flex; gap: 12px; border-radius: 12px; align-items: center; position: relative; }
+        .cart-total { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 600; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+        @media (max-width: 768px) { #cart-sidebar { max-width: 100% !important; width: 100% !important; } }
     </style>
 </head>
 <body>
 
 <div class="container-premium">
+    <!-- Barra Superior de Navegación y Acceso al Carrito -->
+    <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E6E1DA; padding-bottom: 16px; margin-bottom: 8px;">
+        <a href="/tienda" class="volviendo-btn" style="margin:0;"><i class="fas fa-arrow-left"></i> Volver a la Tienda</a>
+        <button onclick="toggleCarrito()" style="background: var(--primary); color: white; padding: 10px 24px; border-radius: 50px; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(61,49,42,0.1);">
+            <i class="fas fa-shopping-bag"></i> Mi Pedido (<span id="cart-count">0</span>)
+        </button>
+    </div>
+
     <!-- Columna Izquierda: Portada Visual + Descripción Abajo -->
     <div class="galeria-wrapper">
-        <a href="/tienda" class="volviendo-btn"><i class="fas fa-arrow-left"></i> Volver a la Tienda</a>
         <img id="foto-visor" src="" alt="Cargando Prenda..." class="visor-principal">
         
         <!-- Bloque de Descripción debajo de la imagen principal -->
@@ -263,7 +287,7 @@
 
         <!-- Acciones e inyección al pedido -->
         <div class="acciones-compra-bloque">
-            <div class="cantidad-caja">
+            <div class="quantity-control">
                 <button type="button" class="cant-btn" onclick="modificarCantidad(-1)">−</button>
                 <input type="number" id="compra-cantidad" value="1" class="cant-input" readonly>
                 <button type="button" class="cant-btn" onclick="modificarCantidad(1)">+</button>
@@ -275,13 +299,82 @@
     </div>
 </div>
 
+<!-- Estructura del Carrito Lateral Desplegable -->
+<div class="cart-overlay" id="cart-overlay" onclick="toggleCarrito()"></div>
+<div class="cart-sidebar" id="cart-sidebar">
+    <div class="cart-header">
+        <h3><i class="fas fa-shopping-bag"></i> Mi Pedido</h3>
+        <button class="cart-close" onclick="toggleCarrito()">&times;</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-footer">
+        <div class="cart-total">
+            <span>Total:</span>
+            <span id="cart-total">$0</span>
+        </div>
+        <button class="btn-agregar-carrito" style="width: 100%; border-radius: 50px;" onclick="window.location.href='/checkout'">
+            <i class="fas fa-arrow-right"></i> Finalizar Compra
+        </button>
+    </div>
+</div>
+
 <script>
-    let producto = null, variantes = [], configuracion = {}, varianteSeleccionadaIdx = 0;
+    let producto = null, variantes = [], configuracion = {}, varianteSeleccionadaIdx = 0, carrito = [];
     const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
     const idProducto = window.location.pathname.split('/').pop();
 
     function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
     function sanitizarUrl(url){ if(!url) return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%23F6F3EA"><rect width="400" height="300"/></svg>'; return url; }
+
+    function toggleCarrito() {
+        document.getElementById('cart-sidebar').classList.toggle('active');
+        document.getElementById('cart-overlay').classList.toggle('active');
+    }
+
+    function renderizarCarrito() {
+        const c = document.getElementById('cart-items');
+        const t = document.getElementById('cart-total');
+        const cnt = document.getElementById('cart-count');
+        if(!c || !t || !cnt) return;
+        
+        if(!carrito || !carrito.length){
+            c.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text-light)"><i class="fas fa-shopping-bag" style="font-size:42px;margin-bottom:12px;opacity:0.3"></i><h3>Tu pedido está vacío</h3></div>';
+            t.textContent = '$0';
+            cnt.textContent = '0';
+            return;
+        }
+        
+        let h = '', total = 0, cantTotal = 0;
+        carrito.forEach((it, i) => {
+            total += it.precio * it.cant;
+            cantTotal += it.cant;
+            h += `
+                <div class="cart-product-card">
+                    <img src="${sanitizarUrl(it.vFoto)}" style="width:55px;height:55px;object-fit:cover;border-radius:8px;border:1px solid #E6E1DA;">
+                    <div style="flex:1;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <span style="font-weight:600;font-size:12px;color:var(--text-dark);line-height:1.2;">${escapeHtml(it.pNom)}</span>
+                            <button onclick="eliminarDelCarrito(${i})" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;"><i class="fas fa-times"></i></button>
+                        </div>
+                        <p style="font-size:11px;color:var(--text-light);margin-top:2px;">${escapeHtml(it.vNom)}</p>
+                        <p style="font-size:12px;font-weight:700;color:var(--primary);margin-top:4px;">${it.cant} u. x ${fmt.format(it.precio)}</p>
+                    </div>
+                </div>`;
+        });
+        c.innerHTML = h;
+        t.textContent = fmt.format(total);
+        cnt.textContent = cantTotal;
+    }
+
+    function eliminarDelCarrito(i) {
+        carrito.splice(i, 1);
+        const token = localStorage.getItem('token');
+        const key = token ? 'carrito_' + token : 'carrito_anonimo';
+        localStorage.setItem(key, JSON.stringify(carrito));
+        localStorage.setItem('tienda_carrito', JSON.stringify(carrito));
+        localStorage.setItem('carrito_timestamp', Date.now());
+        renderizarCarrito();
+    }
 
     async function cargarPaginaProducto() {
         try {
@@ -293,7 +386,6 @@
             configuracion = data.configuracion;
             variantes = producto.variantes || [];
             
-            // Inyección de la identidad corporativa de la marca
             if(configuracion.diseno) {
                 const d = configuracion.diseno;
                 if(d.colorPrimario) document.documentElement.style.setProperty('--primary', d.colorPrimario);
@@ -311,12 +403,18 @@
                 document.getElementById('prod-precio-mayorista').textContent = `💰 Mayorista: ${fmt.format(producto.precioMayor)}`;
             }
 
-            // Selecciona la primera opción que tenga stock real
-            varianteSeleccionadaIdx = variantes.findIndex(v => v.stock > 0);
+            varianteSeleccionadaIdx = variantes.findIndex(v => parseInt(v.stock, 10) > 0);
             if(varianteSeleccionadaIdx === -1) varianteSeleccionadaIdx = 0;
 
             renderizarCajonVariantes();
             actualizarAmbienteVariante();
+
+            let key = localStorage.getItem('token') ? 'carrito_' + localStorage.getItem('token') : 'carrito_anonimo';
+            try {
+                carrito = JSON.parse(localStorage.getItem(key) || localStorage.getItem('tienda_carrito') || '[]');
+            } catch(e) { carrito = []; }
+            renderizarCarrito();
+
         } catch(e) {
             console.error(e);
             window.location.href = '/tienda';
@@ -331,7 +429,7 @@
         variantes.forEach((v, i) => {
             const esActiva = i === varianteSeleccionadaIdx;
             cajon.innerHTML += `
-                <div class="variante-fila ${esActiva ? 'activa' : ''} ${v.stock === 0 ? 'sin-stock' : ''}" 
+                <div class="variante-fila ${esActiva ? 'activa' : ''} ${parseInt(v.stock, 10) === 0 ? 'sin-stock' : ''}" 
                      onclick="cambiarOpcionVariante(${i})" 
                      title="${escapeHtml(v.nombre)}">
                     <img src="${sanitizarUrl(v.foto)}" class="variante-thumb">
@@ -360,93 +458,90 @@
 
         const input = document.getElementById('compra-cantidad');
         input.value = 1;
-        input.max = v.stock;
+        input.max = parseInt(v.stock, 10) || 0;
 
         const btn = document.getElementById('btn-add-master');
-        btn.disabled = v.stock === 0;
-        btn.innerHTML = v.stock === 0 ? '<i class="fas fa-box-open"></i> Opción sin stock' : '<i class="fas fa-shopping-bag"></i> Agregar al Pedido';
+        btn.disabled = parseInt(v.stock, 10) === 0;
+        btn.innerHTML = parseInt(v.stock, 10) === 0 ? '<i class="fas fa-box-open"></i> Opción sin stock' : '<i class="fas fa-shopping-bag"></i> Agregar al Pedido';
     }
 
-   function modificarCantidad(d) {
-    const input = document.getElementById('compra-cantidad');
-    if(!input || !variantes[varianteSeleccionadaIdx]) return;
-    
-    // Forzamos el parseo a número entero para evitar que la web lo lea como texto
-    const stockMaximo = parseInt(variantes[varianteSeleccionadaIdx].stock, 10) || 0;
-    let valorActual = parseInt(input.value, 10) || 1;
-    let nuevoValor = valorActual + d;
-    
-    if (nuevoValor > stockMaximo) {
-        alert(`Stock límite: Solo quedan ${stockMaximo} unidades disponibles en total.`);
-        return;
-    }
-    
-    if (nuevoValor < 1) return;
-    input.value = nuevoValor;
-}
-
-async function inyectarAlPedido() {
-    const v = variantes[varianteSeleccionadaIdx];
-    const cant = parseInt(document.getElementById('compra-cantidad').value, 10) || 1;
-    const stockReal = parseInt(v.stock, 10) || 0; // Conversión estricta de la DB
-    
-    let carrito = [];
-    const token = localStorage.getItem('token');
-    const key = token ? 'carrito_' + token : 'carrito_anonimo';
-    
-    try {
-        carrito = JSON.parse(localStorage.getItem(key) || localStorage.getItem('tienda_carrito') || '[]');
-    } catch(e) { 
-        carrito = []; 
-    }
-
-    const existente = carrito.find(i => i.pId === producto.id && i.vNom === v.nombre);
-    if (existente) {
-        const cantidadTotalBolsa = parseInt(existente.cant, 10) + cant;
-        if (stockReal < cantidadTotalBolsa) {
-            alert(`Límite excedido: Ya tenés ${existente.cant} unidad en el carrito. No podés agregar ${cant} más porque el stock real cargado en Admin es de ${stockReal}.`);
+    function modificarCantidad(d) {
+        const input = document.getElementById('compra-cantidad');
+        if(!input || !variantes[varianteSeleccionadaIdx]) return;
+        
+        const stockMaximo = parseInt(variantes[varianteSeleccionadaIdx].stock, 10) || 0;
+        let valorActual = parseInt(input.value, 10) || 1;
+        let nuevoValor = valorActual + d;
+        
+        if (nuevoValor > stockMaximo) {
+            alert(`Stock límite: Solo quedan ${stockMaximo} unidades disponibles en total.`);
             return;
         }
-        existente.cant += cant;
-    } else {
-        if (cant > stockReal) {
-            alert(`No es posible agregar esa cantidad. El stock real es de ${stockReal}.`);
-            return;
-        }
-        carrito.push({
-            pId: producto.id,
-            pNom: producto.nombre,
-            vNom: v.nombre,
-            vFoto: v.foto,
-            precio: producto.precio,
-            precioOriginal: producto.precio,
-            cant: cant,
-            esManual: false
-        });
+        
+        if (nuevoValor < 1) return;
+        input.value = nuevoValor;
     }
 
-    localStorage.setItem(key, JSON.stringify(carrito));
-    localStorage.setItem('tienda_carrito', JSON.stringify(carrito));
-    localStorage.setItem('carrito_timestamp', Date.now());
-    
-    if (token) {
+    async function inyectarAlPedido() {
+        const v = variantes[varianteSeleccionadaIdx];
+        const cant = parseInt(document.getElementById('compra-cantidad').value, 10) || 1;
+        const stockReal = parseInt(v.stock, 10) || 0;
+        
+        const token = localStorage.getItem('token');
+        const key = token ? 'carrito_' + token : 'carrito_anonimo';
+        
         try {
-            await fetch('/api/guardar-carrito', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${token}` 
-                    },
-                body: JSON.stringify({ carrito: carrito }) 
+            carrito = JSON.parse(localStorage.getItem(key) || localStorage.getItem('tienda_carrito') || '[]');
+        } catch(e) { carrito = []; }
+
+        const existente = carrito.find(i => i.pId === producto.id && i.vNom === v.nombre);
+        if (existente) {
+            const cantidadTotalBolsa = parseInt(existente.cant, 10) + cant;
+            if (stockReal < cantidadTotalBolsa) {
+                alert(`Límite excedido: Ya tenés ${existente.cant} unidades en el carrito. No podés agregar ${cant} más porque el stock real es de ${stockReal}.`);
+                return;
+            }
+            existente.cant += cant;
+        } else {
+            if (cant > stockReal) {
+                alert(`No es posible agregar esa cantidad. El stock real es de ${stockReal}.`);
+                return;
+            }
+            carrito.push({
+                pId: producto.id,
+                pNom: producto.nombre,
+                vNom: v.nombre,
+                vFoto: v.foto,
+                precio: producto.precio,
+                precioOriginal: producto.precio,
+                cant: cant,
+                esManual: false
             });
-        } catch(err) {
-            console.log("Sincronización local exitosa.");
         }
+
+        localStorage.setItem(key, JSON.stringify(carrito));
+        localStorage.setItem('tienda_carrito', JSON.stringify(carrito));
+        localStorage.setItem('carrito_timestamp', Date.now());
+        
+        if (token) {
+            try {
+                await fetch('/api/guardar-carrito', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ carrito: carrito }) 
+                });
+            } catch(err) {
+                console.log("Sincronización local exitosa.");
+            }
+        }
+        
+        renderizarCarrito();
+        toggleCarrito();
     }
-    
-    alert(`¡Añadido al pedido! Se cargaron ${cant} unidades.`);
-    window.location.href = '/tienda'; 
-}
+
     document.addEventListener('DOMContentLoaded', cargarPaginaProducto);
 </script>
 </body>
