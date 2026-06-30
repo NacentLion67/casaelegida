@@ -270,6 +270,14 @@
         .btn-toggle-variantes { margin-top: 12px; padding: 10px 20px; background: #3D312A; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
         .btn-toggle-variantes:hover { background: #52433A; }
 
+        .variantes-grid-container { background: #F6F3EA; border-radius: 14px; max-height: 0; overflow: hidden; opacity: 0; padding: 0 12px; margin: 0; transition: max-height 0.3s cubic-bezier(0.25,1,0.5,1), opacity 0.2s ease, padding 0.3s cubic-bezier(0.25,1,0.5,1), margin 0.3s cubic-bezier(0.25,1,0.5,1); }
+        .variantes-grid-container.desplegado { max-height: 280px; overflow-y: auto; opacity: 1; padding: 12px; margin: 10px 0; }
+        .variantes-grid-container::-webkit-scrollbar { width: 4px; }
+        .variantes-grid-container::-webkit-scrollbar-thumb { background: #C5A880; border-radius: 2px; }
+        .btn-desplegar-variantes { width: 100%; padding: 10px; background: #F6F3EA; color: #3D312A; border: 1px solid #E6E1DA; border-radius: 12px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 8px 0; transition: all 0.2s; }
+        .btn-desplegar-variantes:hover { background: #E6E1DA; }
+        .btn-desplegar-variantes.activo { background: #3D312A; color: white; }
+
         .theme-config { position: fixed; bottom: 20px; left: 20px; z-index: 999; }
         .theme-config-btn { width: 50px; height: 50px; border-radius: 50%; background: #3D312A; color: white; border: none; cursor: pointer; font-size: 20px; box-shadow: 0 4px 20px rgba(61, 49, 42, 0.3); transition: all 0.3s; }
         .theme-config-btn:hover { transform: scale(1.1); }
