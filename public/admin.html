@@ -1330,17 +1330,17 @@ async function eliminarProducto(id){ if(!confirm('¿Eliminar?'))return; await sa
 
 function nuevoProd(){ let id=Date.now().toString(); productos.unshift({id,nombre:"Nuevo artículo",precio:0,precioMayor:0,variantes:[{nombre:"Única",stock:0,foto:""}],descripcion:""}); renderAdmin(); }
 
-async function cargarYRenderAdmin(){ try{ const d=await safeFetch('/get-productos',{method:'POST'}); productos=d.lista||d.productos||[]; renderAdmin(); }catch(e){} }
+async function cargarYRenderAdmin(){ try{ const d=await safeFetch('/listar',{method:'POST'}); productos=d.lista||[]; renderAdmin(); }catch(e){} }
 
-async function cargarCategorias(){ try{ const d=await safeFetch('/get-categorias',{method:'POST'}); categorias=d.lista||d.categorias||[]; }catch(e){ categorias=[]; } }
+async function cargarCategorias(){ try{ const d=await safeFetch('/listar-categorias',{method:'POST'}); categorias=d.lista||[]; }catch(e){ categorias=[]; } }
 
-async function cargar(){ try{ const d=await safeFetch('/get-productos',{method:'POST'}); productos=d.lista||d.productos||[]; renderProductosVenta(); }catch(e){} }
+async function cargar(){ try{ const d=await safeFetch('/listar',{method:'POST'}); productos=d.lista||[]; renderProductosVenta(); }catch(e){} }
 
-async function cargarMetodosEnvio(){ try{ const d=await safeFetch('/get-metodos-envio',{method:'POST'}); metodosEnvio=d.lista||[]; }catch(e){ metodosEnvio=[]; } }
+async function cargarMetodosEnvio(){ try{ const d=await safeFetch('/listar-metodos-envio',{method:'POST'}); metodosEnvio=d.lista||[]; }catch(e){ metodosEnvio=[]; } }
 
-async function cargarVentas(){ try{ const d=await safeFetch('/get-ventas',{method:'POST'}); ventasHistorial=d.lista||[]; const b=document.getElementById('lista-ventas-body'); if(b) b.innerHTML=ventasHistorial.map(v=>`<tr><td>${v.id}</td><td>${escapeHtml(v.cliente?.nombre||'')}</td><td>${v.items?.length||0}</td><td>${fmt.format(v.total||0)}</td><td></td></tr>`).join(''); }catch(e){} }
+async function cargarVentas(){ try{ const d=await safeFetch('/listar-ventas',{method:'POST'}); ventasHistorial=d.lista||[]; const b=document.getElementById('lista-ventas-body'); if(b) b.innerHTML=ventasHistorial.map(v=>`<tr><td>${v.id}</td><td>${escapeHtml(v.cliente?.nombre||'')}</td><td>${v.items?.length||0}</td><td>${fmt.format(v.total||0)}</td><td></td></tr>`).join(''); }catch(e){} }
 
-async function cargarProductosRendimiento(){ try{ const d=await safeFetch('/get-productos',{method:'POST'}); productosRendimiento=d.lista||d.productos||[]; const b=document.getElementById('lista-rendimiento-body'); if(b) b.innerHTML=productosRendimiento.map(p=>`<tr><td>${escapeHtml(p.nombre)}</td><td>${fmt.format(p.precio||0)}</td><td>${fmt.format(p.precioMayor||0)}</td><td></td></tr>`).join(''); }catch(e){} }
+async function cargarProductosRendimiento(){ try{ const d=await safeFetch('/listar',{method:'POST'}); productosRendimiento=d.lista||[]; const b=document.getElementById('lista-rendimiento-body'); if(b) b.innerHTML=productosRendimiento.map(p=>`<tr><td>${escapeHtml(p.nombre)}</td><td>${fmt.format(p.precio||0)}</td><td>${fmt.format(p.precioMayor||0)}</td><td></td></tr>`).join(''); }catch(e){} }
     
 async function verStockBajo(){ let d=await safeFetch('/stock-bajo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minimo:5})}); if(!d.stockBajo?.length)mostrarToast('✅ Stock OK'); else mostrarToast(`⚠️ ${d.stockBajo.length} bajas`,true); }
 
