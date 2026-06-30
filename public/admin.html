@@ -1696,79 +1696,148 @@ function toggleDetalleVenta(id) {
 
 function renderizarRendimiento(lista) {
     const totalProductos = lista.length;
-    const totalVariantes = lista.reduce((s, p) => s + (p.variantes?.length || 0), 0);
-    const totalStock = lista.reduce((s, p) => s + (p.variantes?.reduce((vs, v) => vs + (v.stock || 0), 0) || 0), 0);
-    const sinStock = lista.filter(p => p.variantes?.every(v => v.stock === 0)).length;
-    const stockBajo = lista.filter(p => p.variantes?.some(v => v.stock > 0 && v.stock <= 5) && !p.variantes?.every(v => v.stock === 0)).length;
+    const totalVariantes = lista.reduce((s, p) => s + (p.variantes?.length||0), 0);
+    const totalStock = lista.reduce((s, p) => s + (p.variantes?.reduce((vs, v) => vs + (v.stock||0), 0)||0), 0);
+    const sinStock = lista.filter(p => p.variantes?.every(v => v.stock===0)).length;
+    const stockBajo = lista.filter(p => p.variantes?.some(v => v.stock>0&&v.stock<=5) && !p.variantes?.every(v => v.stock===0)).length;
+    const conCosto = lista.filter(p => costosProductos[p.id]).length;
 
     const badge = document.getElementById('rend-total-badge');
     if (badge) badge.innerHTML = `<i class="fas fa-box"></i> ${totalProductos} artículos`;
 
     const statsDiv = document.getElementById('rendimiento-stats');
     if (statsDiv) statsDiv.innerHTML = `
-        <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-boxes" style="color:#C5A880;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${totalProductos}</h3><p style="color:#8C7E74;font-size:12px">Artículos en catálogo</p></div>
-        <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-layer-group" style="color:#4E7A62;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${totalVariantes}</h3><p style="color:#8C7E74;font-size:12px">Variantes totales</p></div>
-        <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-warehouse" style="color:#3D312A;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${totalStock}</h3><p style="color:#8C7E74;font-size:12px">Unidades en stock</p></div>
-        <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-exclamation-triangle" style="color:#DE9B72;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${stockBajo}</h3><p style="color:#8C7E74;font-size:12px">Stock bajo (≤5)</p></div>
-        <div class="stat-card" style="border-left:4px solid #D96B6B"><i class="fas fa-times-circle" style="color:#D96B6B;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${sinStock}</h3><p style="color:#8C7E74;font-size:12px">Sin stock</p></div>
+        <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-boxes" style="color:#C5A880;font-size:26px;margin-bottom:8px"></i><h3>${totalProductos}</h3><p style="color:#8C7E74;font-size:12px">En catálogo</p></div>
+        <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-warehouse" style="color:#4E7A62;font-size:26px;margin-bottom:8px"></i><h3>${totalStock}</h3><p style="color:#8C7E74;font-size:12px">Unidades stock</p></div>
+        <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-exclamation-triangle" style="color:#DE9B72;font-size:26px;margin-bottom:8px"></i><h3>${stockBajo}</h3><p style="color:#8C7E74;font-size:12px">Stock bajo</p></div>
+        <div class="stat-card" style="border-left:4px solid #D96B6B"><i class="fas fa-times-circle" style="color:#D96B6B;font-size:26px;margin-bottom:8px"></i><h3>${sinStock}</h3><p style="color:#8C7E74;font-size:12px">Sin stock</p></div>
+        <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-calculator" style="color:#3D312A;font-size:26px;margin-bottom:8px"></i><h3>${conCosto}</h3><p style="color:#8C7E74;font-size:12px">Con costo cargado</p></div>
     `;
 
     const grid = document.getElementById('rendimiento-grid');
     if (!grid) return;
-    if (!lista.length) { grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px;color:#8C7E74"><i class="fas fa-box-open" style="font-size:40px;margin-bottom:12px;display:block;opacity:0.4"></i>No se encontraron artículos</div>`; return; }
+    if (!lista.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px;color:#8C7E74"><i class="fas fa-box-open" style="font-size:40px;margin-bottom:12px;display:block;opacity:0.4"></i>No se encontraron artículos</div>`;
+        return;
+    }
 
     grid.innerHTML = lista.map(p => {
-        const stockTotal = p.variantes?.reduce((s, v) => s + (v.stock || 0), 0) || 0;
+        const stockTotal = p.variantes?.reduce((s, v) => s + (v.stock||0), 0) || 0;
         const fotoPreview = p.variantes?.[0]?.foto || '';
         const tieneMayor = p.precioMayor > 0;
+        const costo = costosProductos[p.id];
         let estadoStock, colorEstado, iconoEstado;
-        if (stockTotal === 0) { estadoStock = 'Sin stock'; colorEstado = '#D96B6B'; iconoEstado = 'fa-times-circle'; }
-        else if (stockTotal <= 5) { estadoStock = 'Stock bajo'; colorEstado = '#DE9B72'; iconoEstado = 'fa-exclamation-triangle'; }
-        else { estadoStock = 'Disponible'; colorEstado = '#4E7A62'; iconoEstado = 'fa-check-circle'; }
+        if (stockTotal===0) { estadoStock='Sin stock'; colorEstado='#D96B6B'; iconoEstado='fa-times-circle'; }
+        else if (stockTotal<=5) { estadoStock='Stock bajo'; colorEstado='#DE9B72'; iconoEstado='fa-exclamation-triangle'; }
+        else { estadoStock='Disponible'; colorEstado='#4E7A62'; iconoEstado='fa-check-circle'; }
 
-        const variantesHTML = (p.variantes || []).slice(0, 4).map(v => `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${v.stock===0?'#FFF0F0':v.stock<=5?'#FFF8F0':'#F6F3EA'};border-radius:10px;font-size:11px">
-                <span style="font-weight:600;color:#3D312A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">${escapeHtml(v.nombre)}</span>
-                <span style="font-weight:700;color:${v.stock===0?'#D96B6B':v.stock<=5?'#DE9B72':'#4E7A62'};flex-shrink:0;margin-left:8px">${v.stock} u.</span>
+        const variantesHTML = (p.variantes||[]).slice(0,4).map(v => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:${v.stock===0?'#FFF0F0':v.stock<=5?'#FFF8F0':'#F6F3EA'};border-radius:8px;font-size:11px">
+                <span style="font-weight:600;color:#3D312A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px">${escapeHtml(v.nombre)}</span>
+                <span style="font-weight:700;color:${v.stock===0?'#D96B6B':v.stock<=5?'#DE9B72':'#4E7A62'};flex-shrink:0;margin-left:6px">${v.stock} u.</span>
             </div>`).join('');
-        const masVariantes = (p.variantes?.length||0) > 4 ? `<div style="text-align:center;font-size:11px;color:#8C7E74;margin-top:4px">+${p.variantes.length-4} variantes más</div>` : '';
+        const masV = (p.variantes?.length||0)>4 ? `<div style="text-align:center;font-size:10px;color:#8C7E74;margin-top:4px">+${p.variantes.length-4} más</div>` : '';
 
-        return `<div style="background:#fff;border-radius:24px;border:1px solid #E6E1DA;overflow:hidden;transition:all 0.3s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(61,49,42,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-            <div style="display:flex;gap:14px;padding:16px;border-bottom:1px solid #F6F3EA;align-items:center">
-                <div style="width:64px;height:64px;border-radius:14px;background:#F6F3EA;overflow:hidden;flex-shrink:0;border:1px solid #E6E1DA">
-                    ${fotoPreview?`<img src="${sanitizarUrl(fotoPreview)}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:22px"><i class="fas fa-image"></i></div>`}
+        const costoDisplay = costo ? `
+            <div style="background:#F6F3EA;border-radius:12px;padding:10px 14px">
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:#8C7E74">Costo Total:</span><strong style="color:#3D312A">${fmt.format(costo.costoTotal)}</strong></div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:${tieneMayor?'4px':'0'}">
+                    <span style="color:#8C7E74">Gan. x Menor:</span>
+                    <strong style="color:${p.precio-costo.costoTotal>=0?'#4E7A62':'#D96B6B'}">${fmt.format(p.precio-costo.costoTotal)}</strong>
+                </div>
+                ${tieneMayor?`<div style="display:flex;justify-content:space-between;font-size:11px">
+                    <span style="color:#8C7E74">Gan. x Mayor:</span>
+                    <strong style="color:${p.precioMayor-costo.costoTotal>=0?'#4E7A62':'#D96B6B'}">${fmt.format(p.precioMayor-costo.costoTotal)}</strong>
+                </div>`:''}
+            </div>` : `
+            <div style="background:#FFF8F0;border:1px dashed #DE9B72;border-radius:12px;padding:10px;text-align:center;font-size:11px;color:#8C7E74">
+                <i class="fas fa-exclamation-triangle" style="color:#DE9B72;margin-right:4px"></i> Sin costo cargado aún
+            </div>`;
+
+        return `<div style="background:#fff;border-radius:24px;border:1px solid #E6E1DA;overflow:hidden;transition:all 0.3s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(61,49,42,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+
+            <div style="display:flex;gap:12px;padding:16px;border-bottom:1px solid #F6F3EA;align-items:center">
+                <div style="width:60px;height:60px;border-radius:12px;background:#F6F3EA;overflow:hidden;flex-shrink:0;border:1px solid #E6E1DA">
+                    ${fotoPreview?`<img src="${sanitizarUrl(fotoPreview)}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:20px"><i class="fas fa-image"></i></div>`}
                 </div>
                 <div style="flex:1;min-width:0">
-                    <h4 style="margin:0 0 6px;font-size:13px;font-weight:700;color:#3D312A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.nombre)}</h4>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap">
-                        <span style="background:${colorEstado}20;color:${colorEstado};font-size:10px;font-weight:700;padding:3px 8px;border-radius:50px"><i class="fas ${iconoEstado}"></i> ${estadoStock}</span>
-                        <span style="background:#F6F3EA;color:#8C7E74;font-size:10px;font-weight:600;padding:3px 8px;border-radius:50px">${p.variantes?.length||0} variantes</span>
-                        ${tieneMayor?`<span style="background:#E4EDE1;color:#4E7A62;font-size:10px;font-weight:700;padding:3px 8px;border-radius:50px">MAYORISTA</span>`:''}
+                    <h4 style="margin:0 0 5px;font-size:13px;font-weight:700;color:#3D312A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.nombre)}</h4>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap">
+                        <span style="background:${colorEstado}20;color:${colorEstado};font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px"><i class="fas ${iconoEstado}"></i> ${estadoStock}</span>
+                        <span style="background:#F6F3EA;color:#8C7E74;font-size:10px;font-weight:600;padding:2px 8px;border-radius:50px">${p.variantes?.length||0} variantes</span>
+                        ${tieneMayor?`<span style="background:#E4EDE1;color:#4E7A62;font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px">MAYORISTA</span>`:''}
                     </div>
                 </div>
             </div>
-            <div style="padding:14px 16px;border-bottom:1px solid #F6F3EA">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                    <div style="background:#F6F3EA;border-radius:14px;padding:12px;text-align:center">
-                        <div style="font-size:10px;font-weight:600;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Precio Menor</div>
-                        <div style="font-size:16px;font-weight:800;color:#3D312A">${fmt.format(p.precio||0)}</div>
+
+            <div style="padding:12px 16px;border-bottom:1px solid #F6F3EA">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                    <div style="background:#F6F3EA;border-radius:12px;padding:10px;text-align:center">
+                        <div style="font-size:9px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Precio Menor</div>
+                        <div style="font-size:15px;font-weight:800;color:#3D312A">${fmt.format(p.precio||0)}</div>
                     </div>
-                    <div style="background:${tieneMayor?'#E4EDE1':'#F6F3EA'};border-radius:14px;padding:12px;text-align:center">
-                        <div style="font-size:10px;font-weight:600;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Precio Mayor</div>
-                        <div style="font-size:16px;font-weight:800;color:${tieneMayor?'#4E7A62':'#CBD5E1'}">${tieneMayor?fmt.format(p.precioMayor):'—'}</div>
+                    <div style="background:${tieneMayor?'#E4EDE1':'#F6F3EA'};border-radius:12px;padding:10px;text-align:center">
+                        <div style="font-size:9px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Precio Mayor</div>
+                        <div style="font-size:15px;font-weight:800;color:${tieneMayor?'#4E7A62':'#CBD5E1'}">${tieneMayor?fmt.format(p.precioMayor):'—'}</div>
                     </div>
                 </div>
-                <div style="background:#F6F3EA;border-radius:14px;padding:10px;text-align:center;margin-top:10px">
-                    <div style="font-size:10px;font-weight:600;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Stock Total</div>
-                    <div style="font-size:20px;font-weight:800;color:${colorEstado}">${stockTotal} unidades</div>
+                <div style="background:#3D312A;border-radius:12px;padding:8px;text-align:center">
+                    <div style="font-size:9px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Stock Total</div>
+                    <div style="font-size:18px;font-weight:800;color:${colorEstado}">${stockTotal} u.</div>
                 </div>
             </div>
-            <div style="padding:12px 16px;display:flex;flex-direction:column;gap:6px">
-                <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Detalle de Variantes</div>
-                ${variantesHTML}${masVariantes}
+
+            <div style="padding:10px 16px;border-bottom:1px solid #F6F3EA;display:flex;flex-direction:column;gap:5px">
+                <div style="font-size:9px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Variantes</div>
+                ${variantesHTML}${masV}
             </div>
-            <div style="padding:12px 16px;border-top:1px solid #F6F3EA">
-                <button onclick="tab('a')" class="btn-confirm" style="width:100%;padding:10px;font-size:12px;border-radius:50px"><i class="fas fa-edit"></i> Editar en Stock</button>
+
+            <div style="padding:12px 16px;border-bottom:1px solid #F6F3EA">
+                <div style="font-size:9px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Costos y Ganancias</div>
+                ${costoDisplay}
+                <div id="editor-costo-${p.id}" style="display:none;margin-top:10px;background:#FDFBF7;border:1px solid #E6E1DA;border-radius:16px;padding:14px">
+                    <div style="margin-bottom:10px">
+                        <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:4px"><i class="fas fa-tag" style="color:#C5A880"></i> Costo Base</label>
+                        <input type="number" id="costo-base-${p.id}" placeholder="0" oninput="calcularCostoTotal('${p.id}')" style="width:100%;padding:8px 14px;border:1px solid #E6E1DA;border-radius:50px;font-size:13px">
+                    </div>
+                    <div style="margin-bottom:10px">
+                        <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:4px"><i class="fas fa-truck" style="color:#C5A880"></i> Costo de Envío</label>
+                        <input type="number" id="costo-envio-${p.id}" placeholder="0" oninput="calcularCostoTotal('${p.id}')" style="width:100%;padding:8px 14px;border:1px solid #E6E1DA;border-radius:50px;font-size:13px">
+                    </div>
+                    <div style="margin-bottom:10px">
+                        <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:6px"><i class="fas fa-plus-circle" style="color:#C5A880"></i> Gastos Adicionales</label>
+                        <div id="gastos-adicionales-${p.id}" style="display:flex;flex-direction:column;gap:6px"></div>
+                        <button onclick="agregarFilaGasto('${p.id}')" style="width:100%;margin-top:8px;padding:8px;border:2px dashed #C5A880;border-radius:12px;background:none;color:#C5A880;cursor:pointer;font-weight:700;font-size:12px">
+                            <i class="fas fa-plus"></i> Agregar Gasto
+                        </button>
+                    </div>
+                    <div style="background:#3D312A;border-radius:12px;padding:10px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+                        <span style="color:#E6E1DA;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Costo Total</span>
+                        <strong style="color:#C5A880;font-size:18px" id="costo-total-${p.id}">${fmt.format(costo?.costoTotal||0)}</strong>
+                    </div>
+                    <div style="display:grid;grid-template-columns:${tieneMayor?'1fr 1fr':'1fr'};gap:8px;margin-bottom:12px">
+                        <div style="background:#E4EDE1;border-radius:10px;padding:10px;text-align:center">
+                            <div style="font-size:9px;font-weight:700;color:#4E7A62;text-transform:uppercase;margin-bottom:3px">Gan. x Menor</div>
+                            <div style="font-weight:800;color:#4E7A62;font-size:14px" id="gan-menor-calc-${p.id}">—</div>
+                        </div>
+                        ${tieneMayor?`<div style="background:#F6F3EA;border-radius:10px;padding:10px;text-align:center">
+                            <div style="font-size:9px;font-weight:700;color:#3D312A;text-transform:uppercase;margin-bottom:3px">Gan. x Mayor</div>
+                            <div style="font-weight:800;color:#3D312A;font-size:14px" id="gan-mayor-calc-${p.id}">—</div>
+                        </div>`:''}
+                    </div>
+                    <button onclick="guardarCostoProducto('${p.id}')" class="btn-confirm" style="width:100%;padding:11px;font-size:12px;border-radius:50px">
+                        <i class="fas fa-save"></i> Guardar Costo
+                    </button>
+                </div>
+            </div>
+
+            <div style="padding:10px 16px;display:flex;flex-direction:column;gap:8px">
+                <button onclick="toggleEditorCosto('${p.id}')" style="width:100%;padding:11px;font-size:12px;border-radius:50px;background:${costo?'#E4EDE1':'#FFF8F0'};color:${costo?'#4E7A62':'#DE9B72'};border:2px solid ${costo?'#4E7A62':'#DE9B72'};font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+                    <i class="fas fa-calculator"></i> ${costo?'Ver / Editar Costos':'+ Cargar Costo'}
+                </button>
+                <button onclick="tab('a')" style="width:100%;padding:10px;font-size:11px;border-radius:50px;background:#F6F3EA;color:#3D312A;border:none;cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">
+                    <i class="fas fa-edit"></i> Editar en Stock
+                </button>
             </div>
         </div>`;
     }).join('');
