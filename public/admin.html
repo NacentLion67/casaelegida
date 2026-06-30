@@ -1064,8 +1064,128 @@ function renderPaginaRetiro() {
 function renderPaginaPedidosWeb() { return `<div class="panel"><h3><i class="fas fa-shopping-cart"></i> Pedidos Web</h3><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th>Fecha/ID</th><th>Cliente</th><th>Items</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="lista-pedidos-body"></tbody></table></div></div>`; }
 function renderPaginaPerfiles() { return `<div class="panel"><h3 style="display:flex;justify-content:space-between"><span><i class="fas fa-users-cog"></i> Gestión de Perfiles</span><button type="button" onclick="abrirModalCrearPerfil()" class="tab-btn btn-success"><i class="fas fa-user-plus"></i> Nuevo Perfil</button></h3><div id="lista-perfiles"></div></div>`; }
 function renderPaginaLogs() { return `<div class="panel"><h3><i class="fas fa-history"></i> Registro de Actividad</h3><div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"><input type="text" id="logs-filtro" placeholder="🔍 Buscar..." style="flex:1;min-width:200px" onkeyup="cargarLogs()"><input type="date" id="logs-desde" style="width:150px" onchange="cargarLogs()"><input type="date" id="logs-hasta" style="width:150px" onchange="cargarLogs()"><button type="button" onclick="document.getElementById('logs-filtro').value='';document.getElementById('logs-desde').value='';document.getElementById('logs-hasta').value='';cargarLogs();" class="tab-btn">Limpiar</button></div><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th>Fecha</th><th>Admin</th><th>Acción</th><th>Detalles</th></tr></thead><tbody id="logs-body"></tbody></table></div></div>`; }
-function renderPaginaEdicionWeb() { return `<div class="panel"><h3><i class="fas fa-paint-brush"></i> Edición Web</h3><div class="config-section"><h4><i class="fas fa-swatchbook"></i> Plantillas de Tienda</h4><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px"><div class="plantilla-card" style="border:2px solid #3D312A;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('moderna')"><div style="background:linear-gradient(135deg,#1a1a1a,#333);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Moderna</strong></div><div class="plantilla-card" style="border:2px solid #e2e8f0;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('clasica')"><div style="background:linear-gradient(135deg,#3D312A,#52433A);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Clásica</strong></div><div class="plantilla-card" style="border:2px solid #e2e8f0;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('minimalista')"><div style="background:linear-gradient(135deg,#fafafa,#e2e8f0);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Minimalista</strong></div></div></div><div class="config-section"><h4><i class="fas fa-icons"></i> Íconos de la Tienda</h4><div style="display:flex;gap:12px;flex-wrap:wrap"><button type="button" class="tab-btn" onclick="cambiarIcono('store')"><i class="fas fa-store"></i> Tienda</button><button type="button" class="tab-btn" onclick="cambiarIcono('home')"><i class="fas fa-home"></i> Hogar</button><button type="button" class="tab-btn" onclick="cambiarIcono('star')"><i class="fas fa-star"></i> Premium</button><button type="button" class="tab-btn" onclick="cambiarIcono('gem')"><i class="fas fa-gem"></i> Lujo</button></div></div></div>`; }
 
+function renderPaginaConfiguracion() {
+    return `<div class="panel">
+        <h3><i class="fas fa-sliders-h"></i> Configuración General</h3>
+
+        <div class="config-section">
+            <h4><i class="fas fa-building"></i> Datos de la Empresa</h4>
+            <div class="form-row">
+                <div><label class="form-label">Nombre</label><input type="text" id="empresa-nombre"></div>
+                <div><label class="form-label">Slogan</label><input type="text" id="empresa-slogan"></div>
+            </div>
+            <div class="form-row">
+                <div><label class="form-label">Teléfono</label><input type="text" id="empresa-telefono"></div>
+                <div><label class="form-label">Email</label><input type="email" id="empresa-email"></div>
+            </div>
+            <div><label class="form-label">Dirección</label><input type="text" id="empresa-direccion"></div>
+            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-save"></i> Guardar Datos</button>
+        </div>
+
+        <div class="config-section">
+            <h4><i class="fas fa-clock"></i> Horarios</h4>
+            <div class="form-row">
+                <div><label class="form-label">Lunes a Viernes</label><input type="text" id="horario-lv"></div>
+                <div><label class="form-label">Sábados</label><input type="text" id="horario-sab"></div>
+            </div>
+            <div><label class="form-label">Domingos</label><input type="text" id="horario-dom"></div>
+            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-save"></i> Guardar Horarios</button>
+        </div>
+
+        <div class="config-section">
+            <h4><i class="fas fa-share-alt"></i> Redes Sociales</h4>
+            <div class="form-row">
+                <div><label class="form-label">Instagram</label><input type="text" id="red-instagram"></div>
+                <div><label class="form-label">Facebook</label><input type="text" id="red-facebook"></div>
+            </div>
+            <div class="form-row">
+                <div><label class="form-label">TikTok</label><input type="text" id="red-tiktok"></div>
+                <div><label class="form-label">WhatsApp</label><input type="text" id="red-whatsapp"></div>
+            </div>
+            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-save"></i> Guardar Redes</button>
+        </div>
+
+        <div class="config-section">
+            <h4><i class="fas fa-credit-card"></i> Datos de Pago</h4>
+            <div class="form-row">
+                <div><label class="form-label">Alias</label><input type="text" id="pago-alias"></div>
+                <div><label class="form-label">CBU</label><input type="text" id="pago-cbu"></div>
+            </div>
+            <div class="form-row">
+                <div><label class="form-label">Banco</label><input type="text" id="pago-banco"></div>
+                <div><label class="form-label">Titular</label><input type="text" id="pago-titular"></div>
+            </div>
+            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-save"></i> Guardar Pagos</button>
+        </div>
+
+        <div class="config-section">
+            <h4><i class="fas fa-palette"></i> Diseño de la Tienda</h4>
+            <div class="form-row">
+                <div><label class="form-label">Color Primario</label><input type="color" id="tienda-color-primary"></div>
+                <div><label class="form-label">Color Secundario</label><input type="color" id="tienda-color-secondary"></div>
+            </div>
+            <div class="form-row">
+                <div><label class="form-label">Color de Fondo</label><input type="color" id="tienda-color-bg"></div>
+                <div><label class="form-label">Color de Texto</label><input type="color" id="tienda-color-text"></div>
+            </div>
+            <button type="button" onclick="guardarDisenoTienda()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-save"></i> Guardar Diseño</button>
+        </div>
+
+        <div class="config-section">
+            <h4><i class="fas fa-store"></i> Estado y Mensaje de la Tienda</h4>
+            <div class="modo-option active" id="tienda-on" onclick="setTiendaHabilitada(true)" style="display:inline-block;width:auto;margin-right:8px;cursor:pointer">Habilitada</div>
+            <div class="modo-option" id="tienda-off" onclick="setTiendaHabilitada(false)" style="display:inline-block;width:auto;cursor:pointer">Deshabilitada</div>
+            <div style="margin-top:16px"><label class="form-label">Título</label><input type="text" id="tienda-titulo"></div>
+            <div style="margin-top:12px"><label class="form-label">Mensaje de Bienvenida</label><textarea id="tienda-mensaje"></textarea></div>
+            <button type="button" onclick="guardarConfiguracionTienda()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-save"></i> Guardar Tienda</button>
+        </div>
+
+        <div class="config-section">
+            <h4><i class="fas fa-tags"></i> Precios Mayoristas <button type="button" id="btnMayoristaToggle" onclick="toggleMayorista()" class="tab-btn" style="margin-left:12px"><i class="fas fa-toggle-off"></i> Desactivado</button></h4>
+            <div id="mayoristaPanel" style="display:none">
+                <div style="display:flex;gap:12px;margin-bottom:16px">
+                    <div class="modo-option" data-modo="cantidad" onclick="selectMayoristaModo('cantidad')">Por Cantidad</div>
+                    <div class="modo-option" data-modo="monto" onclick="selectMayoristaModo('monto')">Por Monto</div>
+                    <div class="modo-option" data-modo="ambas" onclick="selectMayoristaModo('ambas')">Ambas</div>
+                </div>
+                <div id="configCantidad"><label class="form-label">Cantidad mínima de prendas</label><input type="number" id="mayoristaCantidad" value="3"></div>
+                <div id="configMonto" style="margin-top:12px"><label class="form-label">Monto mínimo ($)</label><input type="text" id="mayoristaMonto" value="80.000"></div>
+                <button type="button" onclick="guardarMayorista()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-save"></i> Guardar Mayorista</button>
+            </div>
+        </div>
+
+        <div class="config-section">
+            <h4><i class="fas fa-truck"></i> Métodos de Envío</h4>
+            <textarea id="metodos-envio-lista" rows="4" placeholder="Un método por línea"></textarea>
+            <button type="button" onclick="guardarMetodosEnvio()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-save"></i> Guardar Métodos</button>
+        </div>
+
+        <div class="config-section">
+            <h4><i class="fas fa-image"></i> Logo de la Tienda</h4>
+            <div class="logo-preview">
+                <img id="logo-preview-img" style="display:none">
+                <div id="logo-placeholder" style="color:#8C7E74;font-size:13px">Sin logo cargado</div>
+                <div class="logo-actions">
+                    <button type="button" onclick="document.getElementById('logo-file-input').click()" class="tab-btn btn-info"><i class="fas fa-upload"></i> Subir Logo</button>
+                    <input type="file" id="logo-file-input" accept="image/*" style="display:none" onchange="subirLogoAdmin(this)">
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+async function subirLogoAdmin(input) {
+    if (!input.files?.[0]) return;
+    const f = new FormData();
+    f.append('logo', input.files[0]);
+    try {
+        await safeFetch('/subir-logo', { method: 'POST', body: f });
+        mostrarToast('✅ Logo actualizado');
+        cargarConfiguracion();
+    } catch(e) { mostrarToast('❌ Error al subir logo', true); }
+}
+    
 function renderProductosVenta() { 
     const g = document.getElementById('grid-prods'); if (!g) return; g.innerHTML = ''; 
     productos.forEach(p => { 
