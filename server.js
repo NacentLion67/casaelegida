@@ -190,6 +190,16 @@ async function initDB() {
                 estado TEXT DEFAULT 'cerrada',
                 "cierreTimestamp" BIGINT
             );
+            CREATE TABLE IF NOT EXISTS costos_productos (
+                id TEXT PRIMARY KEY,
+                "productoId" BIGINT NOT NULL,
+                "costoBase" REAL DEFAULT 0,
+                "costoEnvio" REAL DEFAULT 0,
+                "gastosAdicionales" TEXT DEFAULT '[]',
+                "costoTotal" REAL DEFAULT 0,
+                "fechaTimestamp" BIGINT,
+                "fechaCreacion" TEXT DEFAULT NOW()
+            );
         `);
         console.log('✅ PostgreSQL listo');
     } finally {
@@ -1192,6 +1202,66 @@ app.post('/admin/backup/restaurar-desde-archivo', adminMiddleware(), uploadBacku
         await logActividad(req.admin.nombre, 'RESTAURACION_SISTEMA', 'Sistema restaurado desde backup', req);
         res.json({ success: true, stats: { productos: backup.productos?.length||0, ventas: backup.ventas?.length||0, imagenes: backup.metadata?.stats?.imagenes||0 } });
     } catch (error) { console.error('Error restaurando:', error); res.status(500).json({ error: 'Error al restaurar: ' + error.message }); }
+});
+
+app.post('/admin/costos/guardar', adminMiddleware(), async (req, res) => {
+    try {
+        const { productoId, costoBase, costoEnvio, gastosAdicionales } = req.body;
+        const gastos = gastosAdicionales || [];
+        const costoGastos = gastos.reduce((s, g) => s + (parseFloat(g.monto) || 0), 0);
+        const costoTotal = (parseFloat(costoBase)||0) + (parseFloat(costoEnvio)||0) + costoGastos;
+        const id = 'COSTO-' + Date.now();
+        await pool.query(
+            'INSERT INTO costos_productos (id, "productoId", "costoBase", "costoEnvio", "gastosAdicionales", "costoTotal", "fechaTimestamp") VALUES ($1,$2,$3,$4,$5,$6,$7)',
+            [id, productoId, parseFloat(costoBase)||0, parseFloat(costoEnvio)||0, JSON.stringify(gastos), costoTotal, Date.now()]
+        );
+        await logActividad(req.admin.nombre, 'GUARDAR_COSTO', `Producto ${productoId}: costo $${costoTotal}`, req);
+        res.json({ success: true, costoTotal });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/admin/costos/obtener-todos', adminMiddleware(), async (req, res) => {
+    try {
+        const result = await pool.query(`SELECT DISTINCT ON ("productoId") * FROM costos_productos ORDER BY "productoId", "fechaTimestamp" DESC`);
+        const costos = {};
+        result.rows.forEach(c => { costos[c.productoId] = { ...c, gastosAdicionales: JSON.parse(c.gastosAdicionales || '[]') }; });
+        res.json({ costos });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/admin/ganancias/historial', adminMiddleware(), async (req, res) => {
+    try {
+        const { desde, hasta } = req.body;
+        let query = 'SELECT * FROM ventas WHERE 1=1';
+        let params = [];
+        if (desde) { query += ` AND "fechaTimestamp" >= $${params.length+1}`; params.push(new Date(desde).getTime()); }
+        if (hasta) { query += ` AND "fechaTimestamp" <= $${params.length+1}`; params.push(new Date(hasta + 'T23:59:59').getTime()); }
+        query += ' ORDER BY "fechaTimestamp" DESC LIMIT 300';
+        const ventas = (await pool.query(query, params)).rows;
+        const resultados = [];
+        let totalGanancia = 0, totalVentas = 0;
+        for (const v of ventas) {
+            const items = JSON.parse(v.items || '[]');
+            let gananciaVenta = 0;
+            const itemsDetalle = [];
+            for (const item of items) {
+                const costoResult = await pool.query(
+                    'SELECT * FROM costos_productos WHERE "productoId"=$1 AND "fechaTimestamp" <= $2 ORDER BY "fechaTimestamp" DESC LIMIT 1',
+                    [item.pId, v.fechaTimestamp]
+                );
+                const costo = costoResult.rows[0];
+                const costoTotal = costo ? parseFloat(costo.costoTotal) : 0;
+                const gananciaUnidad = (parseFloat(item.precio)||0) - costoTotal;
+                const gananciaItem = gananciaUnidad * (item.cant||1);
+                gananciaVenta += gananciaItem;
+                itemsDetalle.push({ ...item, costoTotal, gananciaUnidad, gananciaTotal: gananciaItem });
+            }
+            totalGanancia += gananciaVenta;
+            totalVentas += parseFloat(v.total)||0;
+            resultados.push({ id: v.id, fecha: v.fecha, fechaTimestamp: v.fechaTimestamp, total: v.total, metodoPago: v.metodoPago, cliente: JSON.parse(v.cliente||'{}'), items: itemsDetalle, gananciaVenta });
+        }
+        res.json({ historial: resultados, totalGanancia, totalVentas, cantidadVentas: resultados.length });
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
