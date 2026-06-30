@@ -655,7 +655,13 @@ function sanitizarUrl(url){ if(!url || url === '') return ''; if(url.startsWith(
 async function safeFetch(url, options={}) { 
     if (adminToken) options.headers = { ...options.headers, 'Authorization': `Bearer ${adminToken}` }; 
     try { 
-        const res = await fetch(url, options); 
+        const res = await fetch(url, options);
+        if (res.status === 401) {
+            localStorage.removeItem('adminToken');
+            mostrarToast('⏰ Sesión expirada, volvé a ingresar', true);
+            setTimeout(() => location.reload(), 2000);
+            throw new Error('Sesión expirada');
+        }
         if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || `HTTP ${res.status}`); 
         return await res.json(); 
     } catch(e) { mostrarToast(e.message, true); throw e; } 
