@@ -698,37 +698,43 @@ function renderPaginaClientes() {
     `;
 }
 
-// 🔥 INYECTADO: RENDER DE PÁGINA RENDIMIENTO
 function renderPaginaRendimiento() {
-    return `
-        <div class="panel" style="border: 1px solid #E6E1DA; background: #ffffff;">
-            <h3 style="color: #3D312A; font-family: 'Playfair Display', serif; font-weight: 800; font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-chart-line" style="color: #C5A880;"></i> Rendimiento de Artículos
-            </h3>
-            <div class="ventas-buscador" style="margin-bottom: 20px;">
-                <input type="text" id="rendimiento-buscador" placeholder="🔍 Buscar artículo por nombre..." onkeyup="filtrarRendimiento()" style="border-radius: 50px; padding: 14px 20px;">
+    return `<div style="display:flex;flex-direction:column;gap:20px;width:100%">
+        <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:28px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+            <div>
+                <h2 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:26px;display:flex;align-items:center;gap:12px"><i class="fas fa-chart-line" style="color:#C5A880"></i> Rendimiento de Artículos</h2>
+                <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Stock, precios y estado de cada artículo del catálogo</p>
             </div>
-            <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #F6F3EA; color: #3D312A; font-size: 13px; font-weight: 600;">
-                            <th style="padding: 14px; text-align: left; border-top-left-radius: 14px; border-bottom-left-radius: 14px;">Artículo</th>
-                            <th style="padding: 14px; text-align: center;">Precio Menor</th>
-                            <th style="padding: 14px; text-align: center;">Precio Mayor</th>
-                            <th style="padding: 14px; text-align: right; border-top-right-radius: 14px; border-bottom-right-radius: 14px;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lista-rendimiento-body">
-                        <tr>
-                            <td colspan="4" style="text-align:center; padding: 32px; color: #8C7E74;">
-                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px; color: #C5A880;"></i><br>Cargando datos de rendimiento...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <span id="rend-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-box"></i> Cargando...</span>
+        </div>
+        <div class="panel" style="padding:20px">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+                <div style="flex:1;min-width:220px;position:relative">
+                    <i class="fas fa-search" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#C5A880;font-size:14px"></i>
+                    <input type="text" id="rendimiento-buscador" placeholder="Buscar artículo por nombre..." onkeyup="filtrarRendimiento()" style="padding:13px 16px 13px 42px;border-radius:50px;border:1px solid #E6E1DA;width:100%;font-size:13px">
+                </div>
+                <select id="rendimiento-filtro-stock" onchange="filtrarRendimiento()" style="padding:13px 16px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px;background:#fff;cursor:pointer">
+                    <option value="todos">Todos los estados</option>
+                    <option value="con_stock">Con stock</option>
+                    <option value="sin_stock">Sin stock</option>
+                    <option value="stock_bajo">Stock bajo (≤5)</option>
+                </select>
+                <select id="rendimiento-orden" onchange="filtrarRendimiento()" style="padding:13px 16px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px;background:#fff;cursor:pointer">
+                    <option value="nombre">Ordenar: A-Z</option>
+                    <option value="precio_asc">Precio: menor a mayor</option>
+                    <option value="precio_desc">Precio: mayor a menor</option>
+                    <option value="stock_desc">Mayor stock primero</option>
+                    <option value="stock_asc">Menor stock primero</option>
+                </select>
             </div>
         </div>
-    `;
+        <div id="rendimiento-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px"></div>
+        <div id="rendimiento-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+            <div style="grid-column:1/-1;text-align:center;padding:48px;color:#8C7E74">
+                <i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;color:#C5A880;display:block"></i>Cargando artículos...
+            </div>
+        </div>
+    </div>`;
 }
 
     async function loginAdmin() { 
@@ -1551,7 +1557,110 @@ async function cargarMetodosEnvio(){ try{ const d=await safeFetch('/listar-metod
 
 async function cargarVentas(){ try{ const d=await safeFetch('/listar-ventas',{method:'POST'}); ventasHistorial=d.lista||[]; const b=document.getElementById('lista-ventas-body'); if(b) b.innerHTML=ventasHistorial.map(v=>`<tr><td>${v.id}</td><td>${escapeHtml(v.cliente?.nombre||'')}</td><td>${v.items?.length||0}</td><td>${fmt.format(v.total||0)}</td><td></td></tr>`).join(''); }catch(e){} }
 
-async function cargarProductosRendimiento(){ try{ const d=await safeFetch('/listar',{method:'POST'}); productosRendimiento=d.lista||[]; const b=document.getElementById('lista-rendimiento-body'); if(b) b.innerHTML=productosRendimiento.map(p=>`<tr><td>${escapeHtml(p.nombre)}</td><td>${fmt.format(p.precio||0)}</td><td>${fmt.format(p.precioMayor||0)}</td><td></td></tr>`).join(''); }catch(e){} }
+async function cargarProductosRendimiento() {
+    try {
+        const d = await safeFetch('/listar', { method: 'POST' });
+        productosRendimiento = d.lista || [];
+        renderizarRendimiento(productosRendimiento);
+    } catch(e) {}
+}
+
+function renderizarRendimiento(lista) {
+    const totalProductos = lista.length;
+    const totalVariantes = lista.reduce((s, p) => s + (p.variantes?.length || 0), 0);
+    const totalStock = lista.reduce((s, p) => s + (p.variantes?.reduce((vs, v) => vs + (v.stock || 0), 0) || 0), 0);
+    const sinStock = lista.filter(p => p.variantes?.every(v => v.stock === 0)).length;
+    const stockBajo = lista.filter(p => p.variantes?.some(v => v.stock > 0 && v.stock <= 5) && !p.variantes?.every(v => v.stock === 0)).length;
+
+    const badge = document.getElementById('rend-total-badge');
+    if (badge) badge.innerHTML = `<i class="fas fa-box"></i> ${totalProductos} artículos`;
+
+    const statsDiv = document.getElementById('rendimiento-stats');
+    if (statsDiv) statsDiv.innerHTML = `
+        <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-boxes" style="color:#C5A880;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${totalProductos}</h3><p style="color:#8C7E74;font-size:12px">Artículos en catálogo</p></div>
+        <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-layer-group" style="color:#4E7A62;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${totalVariantes}</h3><p style="color:#8C7E74;font-size:12px">Variantes totales</p></div>
+        <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-warehouse" style="color:#3D312A;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${totalStock}</h3><p style="color:#8C7E74;font-size:12px">Unidades en stock</p></div>
+        <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-exclamation-triangle" style="color:#DE9B72;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${stockBajo}</h3><p style="color:#8C7E74;font-size:12px">Stock bajo (≤5)</p></div>
+        <div class="stat-card" style="border-left:4px solid #D96B6B"><i class="fas fa-times-circle" style="color:#D96B6B;font-size:28px;margin-bottom:8px"></i><h3 style="color:#3D312A">${sinStock}</h3><p style="color:#8C7E74;font-size:12px">Sin stock</p></div>
+    `;
+
+    const grid = document.getElementById('rendimiento-grid');
+    if (!grid) return;
+    if (!lista.length) { grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px;color:#8C7E74"><i class="fas fa-box-open" style="font-size:40px;margin-bottom:12px;display:block;opacity:0.4"></i>No se encontraron artículos</div>`; return; }
+
+    grid.innerHTML = lista.map(p => {
+        const stockTotal = p.variantes?.reduce((s, v) => s + (v.stock || 0), 0) || 0;
+        const fotoPreview = p.variantes?.[0]?.foto || '';
+        const tieneMayor = p.precioMayor > 0;
+        let estadoStock, colorEstado, iconoEstado;
+        if (stockTotal === 0) { estadoStock = 'Sin stock'; colorEstado = '#D96B6B'; iconoEstado = 'fa-times-circle'; }
+        else if (stockTotal <= 5) { estadoStock = 'Stock bajo'; colorEstado = '#DE9B72'; iconoEstado = 'fa-exclamation-triangle'; }
+        else { estadoStock = 'Disponible'; colorEstado = '#4E7A62'; iconoEstado = 'fa-check-circle'; }
+
+        const variantesHTML = (p.variantes || []).slice(0, 4).map(v => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${v.stock===0?'#FFF0F0':v.stock<=5?'#FFF8F0':'#F6F3EA'};border-radius:10px;font-size:11px">
+                <span style="font-weight:600;color:#3D312A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">${escapeHtml(v.nombre)}</span>
+                <span style="font-weight:700;color:${v.stock===0?'#D96B6B':v.stock<=5?'#DE9B72':'#4E7A62'};flex-shrink:0;margin-left:8px">${v.stock} u.</span>
+            </div>`).join('');
+        const masVariantes = (p.variantes?.length||0) > 4 ? `<div style="text-align:center;font-size:11px;color:#8C7E74;margin-top:4px">+${p.variantes.length-4} variantes más</div>` : '';
+
+        return `<div style="background:#fff;border-radius:24px;border:1px solid #E6E1DA;overflow:hidden;transition:all 0.3s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px rgba(61,49,42,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="display:flex;gap:14px;padding:16px;border-bottom:1px solid #F6F3EA;align-items:center">
+                <div style="width:64px;height:64px;border-radius:14px;background:#F6F3EA;overflow:hidden;flex-shrink:0;border:1px solid #E6E1DA">
+                    ${fotoPreview?`<img src="${sanitizarUrl(fotoPreview)}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:22px"><i class="fas fa-image"></i></div>`}
+                </div>
+                <div style="flex:1;min-width:0">
+                    <h4 style="margin:0 0 6px;font-size:13px;font-weight:700;color:#3D312A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.nombre)}</h4>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <span style="background:${colorEstado}20;color:${colorEstado};font-size:10px;font-weight:700;padding:3px 8px;border-radius:50px"><i class="fas ${iconoEstado}"></i> ${estadoStock}</span>
+                        <span style="background:#F6F3EA;color:#8C7E74;font-size:10px;font-weight:600;padding:3px 8px;border-radius:50px">${p.variantes?.length||0} variantes</span>
+                        ${tieneMayor?`<span style="background:#E4EDE1;color:#4E7A62;font-size:10px;font-weight:700;padding:3px 8px;border-radius:50px">MAYORISTA</span>`:''}
+                    </div>
+                </div>
+            </div>
+            <div style="padding:14px 16px;border-bottom:1px solid #F6F3EA">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div style="background:#F6F3EA;border-radius:14px;padding:12px;text-align:center">
+                        <div style="font-size:10px;font-weight:600;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Precio Menor</div>
+                        <div style="font-size:16px;font-weight:800;color:#3D312A">${fmt.format(p.precio||0)}</div>
+                    </div>
+                    <div style="background:${tieneMayor?'#E4EDE1':'#F6F3EA'};border-radius:14px;padding:12px;text-align:center">
+                        <div style="font-size:10px;font-weight:600;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Precio Mayor</div>
+                        <div style="font-size:16px;font-weight:800;color:${tieneMayor?'#4E7A62':'#CBD5E1'}">${tieneMayor?fmt.format(p.precioMayor):'—'}</div>
+                    </div>
+                </div>
+                <div style="background:#F6F3EA;border-radius:14px;padding:10px;text-align:center;margin-top:10px">
+                    <div style="font-size:10px;font-weight:600;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Stock Total</div>
+                    <div style="font-size:20px;font-weight:800;color:${colorEstado}">${stockTotal} unidades</div>
+                </div>
+            </div>
+            <div style="padding:12px 16px;display:flex;flex-direction:column;gap:6px">
+                <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Detalle de Variantes</div>
+                ${variantesHTML}${masVariantes}
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid #F6F3EA">
+                <button onclick="tab('a')" class="btn-confirm" style="width:100%;padding:10px;font-size:12px;border-radius:50px"><i class="fas fa-edit"></i> Editar en Stock</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function filtrarRendimiento() {
+    const busq = (document.getElementById('rendimiento-buscador')?.value||'').toLowerCase();
+    const filtroStock = document.getElementById('rendimiento-filtro-stock')?.value||'todos';
+    const orden = document.getElementById('rendimiento-orden')?.value||'nombre';
+    let lista = [...productosRendimiento];
+    if (busq) lista = lista.filter(p => p.nombre.toLowerCase().includes(busq));
+    if (filtroStock==='con_stock') lista = lista.filter(p => p.variantes?.some(v=>v.stock>0));
+    else if (filtroStock==='sin_stock') lista = lista.filter(p => p.variantes?.every(v=>v.stock===0));
+    else if (filtroStock==='stock_bajo') lista = lista.filter(p => p.variantes?.some(v=>v.stock>0&&v.stock<=5));
+    if (orden==='nombre') lista.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    else if (orden==='precio_asc') lista.sort((a,b)=>a.precio-b.precio);
+    else if (orden==='precio_desc') lista.sort((a,b)=>b.precio-a.precio);
+    else if (orden==='stock_desc') lista.sort((a,b)=>b.variantes?.reduce((s,v)=>s+v.stock,0)-a.variantes?.reduce((s,v)=>s+v.stock,0));
+    else if (orden==='stock_asc') lista.sort((a,b)=>a.variantes?.reduce((s,v)=>s+v.stock,0)-b.variantes?.reduce((s,v)=>s+v.stock,0));
+    renderizarRendimiento(lista);
+}
     
 async function verStockBajo(){ let d=await safeFetch('/stock-bajo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minimo:5})}); if(!d.stockBajo?.length)mostrarToast('✅ Stock OK'); else mostrarToast(`⚠️ ${d.stockBajo.length} bajas`,true); }
 
