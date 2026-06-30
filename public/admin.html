@@ -227,10 +227,10 @@
         .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #8C7E74; }
         .modal-footer { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
 
-        .config-section { background: white; border-radius: 28px; padding: 24px; margin-bottom: 24px; border: 1px solid #E6E1DA; }
-        body.dark-mode .config-section { background: #29221F; border-color: #3D312A; }
-        .config-section h3 { color: #3D312A; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        body.dark-mode .config-section h3 { color: #C5A880; }
+        .config-section { background: white; border-radius: 28px; padding: 32px; margin-bottom: 0; border: 1px solid #E6E1DA; width:100%; }
+body.dark-mode .config-section { background: #29221F; border-color: #3D312A; }
+.config-section h3 { color: #3D312A; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+body.dark-mode .config-section h3 { color: #C5A880; }
 
         .logo-preview { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px; background: #FDFBF7; border-radius: 20px; margin-bottom: 20px; }
         .logo-preview img { max-width: 200px; max-height: 80px; object-fit: contain; border-radius: 12px; border: 1px solid #E6E1DA; padding: 8px; background: white; }
@@ -1066,15 +1066,24 @@ function renderPaginaPerfiles() { return `<div class="panel"><h3 style="display:
 function renderPaginaLogs() { return `<div class="panel"><h3><i class="fas fa-history"></i> Registro de Actividad</h3><div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"><input type="text" id="logs-filtro" placeholder="🔍 Buscar..." style="flex:1;min-width:200px" onkeyup="cargarLogs()"><input type="date" id="logs-desde" style="width:150px" onchange="cargarLogs()"><input type="date" id="logs-hasta" style="width:150px" onchange="cargarLogs()"><button type="button" onclick="document.getElementById('logs-filtro').value='';document.getElementById('logs-desde').value='';document.getElementById('logs-hasta').value='';cargarLogs();" class="tab-btn">Limpiar</button></div><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th>Fecha</th><th>Admin</th><th>Acción</th><th>Detalles</th></tr></thead><tbody id="logs-body"></tbody></table></div></div>`; }
 
 function renderPaginaConfiguracion() {
-    return `<div class="layout" style="grid-template-columns:1fr;gap:20px">
+    return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%">
 
-        <div class="config-section" style="background:linear-gradient(135deg,#3D312A,#52433A);color:#fff;border:none;padding:32px;border-radius:28px">
-            <h3 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:24px;display:flex;align-items:center;gap:12px"><i class="fas fa-sliders-h" style="color:#C5A880"></i> Configuración de la Tienda</h3>
-            <p style="margin:8px 0 0;font-size:13px;color:#E6E1DA;opacity:0.85">Todos los cambios se reflejan automáticamente en tu tienda online.</p>
+        <div class="config-section" style="grid-column:1/-1;background:linear-gradient(135deg,#3D312A,#52433A);border:none;padding:36px 40px;border-radius:28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+            <div>
+                <h3 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:28px;display:flex;align-items:center;gap:12px">
+                    <i class="fas fa-sliders-h" style="color:#C5A880"></i> Configuración de la Tienda
+                </h3>
+                <p style="margin:8px 0 0;font-size:13px;color:#E6E1DA;opacity:0.85">Todos los cambios se reflejan automáticamente en tu tienda online.</p>
+            </div>
+            <span style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:6px 16px;border-radius:50px;font-size:12px;font-weight:600">
+                <i class="fas fa-circle" style="color:#4E7A62;font-size:8px"></i> Sistema Activo
+            </span>
         </div>
 
-        <div class="config-section">
-            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px"><i class="fas fa-building" style="color:#C5A880"></i> Datos de la Empresa</h3>
+        <div class="config-section" style="grid-column:1/-1">
+            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
+                <i class="fas fa-building" style="color:#C5A880"></i> Datos de la Empresa
+            </h3>
             <div class="form-row">
                 <div><label class="form-label required">Nombre</label><input type="text" id="empresa-nombre" placeholder="Casa Elegida"></div>
                 <div><label class="form-label">Slogan</label><input type="text" id="empresa-slogan" placeholder="Textiles premium"></div>
@@ -1084,109 +1093,157 @@ function renderPaginaConfiguracion() {
                 <div><label class="form-label">Email</label><input type="email" id="empresa-email" placeholder="contacto@tutienda.com"></div>
             </div>
             <div><label class="form-label">Dirección</label><input type="text" id="empresa-direccion" placeholder="Calle, número, ciudad"></div>
-            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:18px;width:auto;padding:12px 32px"><i class="fas fa-save"></i> Guardar Datos</button>
+            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:20px;width:auto;padding:14px 36px">
+                <i class="fas fa-save"></i> Guardar Datos
+            </button>
         </div>
 
         <div class="config-section">
-            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px"><i class="fas fa-clock" style="color:#C5A880"></i> Horarios de Atención</h3>
-            <div class="form-row">
-                <div><label class="form-label">Lunes a Viernes</label><input type="text" id="horario-lv" placeholder="9:00 - 18:00"></div>
-                <div><label class="form-label">Sábados</label><input type="text" id="horario-sab" placeholder="9:00 - 13:00"></div>
-            </div>
-            <div><label class="form-label">Domingos</label><input type="text" id="horario-dom" placeholder="Cerrado"></div>
-            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:18px;width:auto;padding:12px 32px"><i class="fas fa-save"></i> Guardar Horarios</button>
+            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
+                <i class="fas fa-clock" style="color:#C5A880"></i> Horarios de Atención
+            </h3>
+            <div><label class="form-label">Lunes a Viernes</label><input type="text" id="horario-lv" placeholder="9:00 - 18:00"></div>
+            <div style="margin-top:14px"><label class="form-label">Sábados</label><input type="text" id="horario-sab" placeholder="9:00 - 13:00"></div>
+            <div style="margin-top:14px"><label class="form-label">Domingos</label><input type="text" id="horario-dom" placeholder="Cerrado"></div>
+            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:20px;width:auto;padding:14px 36px">
+                <i class="fas fa-save"></i> Guardar Horarios
+            </button>
         </div>
 
         <div class="config-section">
-            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px"><i class="fas fa-share-alt" style="color:#C5A880"></i> Redes Sociales</h3>
-            <div class="form-row">
-                <div><label class="form-label"><i class="fab fa-instagram"></i> Instagram</label><input type="text" id="red-instagram" placeholder="@usuario"></div>
-                <div><label class="form-label"><i class="fab fa-facebook"></i> Facebook</label><input type="text" id="red-facebook" placeholder="usuario"></div>
-            </div>
-            <div class="form-row">
-                <div><label class="form-label"><i class="fab fa-tiktok"></i> TikTok</label><input type="text" id="red-tiktok" placeholder="@usuario"></div>
-                <div><label class="form-label"><i class="fab fa-whatsapp"></i> WhatsApp</label><input type="text" id="red-whatsapp" placeholder="5491122334455"></div>
-            </div>
-            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:18px;width:auto;padding:12px 32px"><i class="fas fa-save"></i> Guardar Redes</button>
+            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
+                <i class="fas fa-share-alt" style="color:#C5A880"></i> Redes Sociales
+            </h3>
+            <div><label class="form-label"><i class="fab fa-instagram"></i> Instagram</label><input type="text" id="red-instagram" placeholder="@usuario"></div>
+            <div style="margin-top:14px"><label class="form-label"><i class="fab fa-facebook"></i> Facebook</label><input type="text" id="red-facebook" placeholder="usuario"></div>
+            <div style="margin-top:14px"><label class="form-label"><i class="fab fa-tiktok"></i> TikTok</label><input type="text" id="red-tiktok" placeholder="@usuario"></div>
+            <div style="margin-top:14px"><label class="form-label"><i class="fab fa-whatsapp"></i> WhatsApp</label><input type="text" id="red-whatsapp" placeholder="5491122334455"></div>
+            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:20px;width:auto;padding:14px 36px">
+                <i class="fas fa-save"></i> Guardar Redes
+            </button>
         </div>
 
         <div class="config-section">
-            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px"><i class="fas fa-credit-card" style="color:#C5A880"></i> Datos de Pago</h3>
-            <div class="form-row">
-                <div><label class="form-label">Alias</label><input type="text" id="pago-alias"></div>
-                <div><label class="form-label">CBU</label><input type="text" id="pago-cbu"></div>
-            </div>
-            <div class="form-row">
-                <div><label class="form-label">Banco</label><input type="text" id="pago-banco"></div>
-                <div><label class="form-label">Titular</label><input type="text" id="pago-titular"></div>
-            </div>
-            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:18px;width:auto;padding:12px 32px"><i class="fas fa-save"></i> Guardar Pagos</button>
+            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
+                <i class="fas fa-credit-card" style="color:#C5A880"></i> Datos de Pago
+            </h3>
+            <div><label class="form-label">Alias</label><input type="text" id="pago-alias"></div>
+            <div style="margin-top:14px"><label class="form-label">CBU</label><input type="text" id="pago-cbu"></div>
+            <div style="margin-top:14px"><label class="form-label">Banco</label><input type="text" id="pago-banco"></div>
+            <div style="margin-top:14px"><label class="form-label">Titular</label><input type="text" id="pago-titular"></div>
+            <button type="button" onclick="guardarConfiguracion()" class="btn-confirm" style="margin-top:20px;width:auto;padding:14px 36px">
+                <i class="fas fa-save"></i> Guardar Pagos
+            </button>
         </div>
 
         <div class="config-section">
-            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px"><i class="fas fa-palette" style="color:#C5A880"></i> Diseño de la Tienda</h3>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
-                <div style="background:#FDFBF7;border:1px solid #E6E1DA;border-radius:18px;padding:16px;text-align:center">
-                    <label class="form-label" style="margin-bottom:10px">Color Primario</label>
-                    <input type="color" id="tienda-color-primary" style="width:60px;height:60px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(61,49,42,0.1);cursor:pointer;padding:0">
+            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
+                <i class="fas fa-palette" style="color:#C5A880"></i> Diseño de la Tienda
+            </h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div style="background:#FDFBF7;border:1px solid #E6E1DA;border-radius:18px;padding:18px;text-align:center">
+                    <label class="form-label" style="margin-bottom:12px;display:block">Color Primario</label>
+                    <input type="color" id="tienda-color-primary" style="width:56px;height:56px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(61,49,42,0.15);cursor:pointer;padding:0">
                 </div>
-                <div style="background:#FDFBF7;border:1px solid #E6E1DA;border-radius:18px;padding:16px;text-align:center">
-                    <label class="form-label" style="margin-bottom:10px">Color Secundario</label>
-                    <input type="color" id="tienda-color-secondary" style="width:60px;height:60px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(61,49,42,0.1);cursor:pointer;padding:0">
+                <div style="background:#FDFBF7;border:1px solid #E6E1DA;border-radius:18px;padding:18px;text-align:center">
+                    <label class="form-label" style="margin-bottom:12px;display:block">Color Secundario</label>
+                    <input type="color" id="tienda-color-secondary" style="width:56px;height:56px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(61,49,42,0.15);cursor:pointer;padding:0">
                 </div>
-                <div style="background:#FDFBF7;border:1px solid #E6E1DA;border-radius:18px;padding:16px;text-align:center">
-                    <label class="form-label" style="margin-bottom:10px">Color de Fondo</label>
-                    <input type="color" id="tienda-color-bg" style="width:60px;height:60px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(61,49,42,0.1);cursor:pointer;padding:0">
+                <div style="background:#FDFBF7;border:1px solid #E6E1DA;border-radius:18px;padding:18px;text-align:center">
+                    <label class="form-label" style="margin-bottom:12px;display:block">Color de Fondo</label>
+                    <input type="color" id="tienda-color-bg" style="width:56px;height:56px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(61,49,42,0.15);cursor:pointer;padding:0">
                 </div>
-                <div style="background:#FDFBF7;border:1px solid #E6E1DA;border-radius:18px;padding:16px;text-align:center">
-                    <label class="form-label" style="margin-bottom:10px">Color de Texto</label>
-                    <input type="color" id="tienda-color-text" style="width:60px;height:60px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(61,49,42,0.1);cursor:pointer;padding:0">
+                <div style="background:#FDFBF7;border:1px solid #E6E1DA;border-radius:18px;padding:18px;text-align:center">
+                    <label class="form-label" style="margin-bottom:12px;display:block">Color de Texto</label>
+                    <input type="color" id="tienda-color-text" style="width:56px;height:56px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(61,49,42,0.15);cursor:pointer;padding:0">
                 </div>
             </div>
-            <button type="button" onclick="guardarDisenoTienda()" class="btn-confirm" style="margin-top:18px;width:auto;padding:12px 32px"><i class="fas fa-save"></i> Guardar Diseño</button>
+            <button type="button" onclick="guardarDisenoTienda()" class="btn-confirm" style="margin-top:20px;width:auto;padding:14px 36px">
+                <i class="fas fa-save"></i> Guardar Diseño
+            </button>
         </div>
 
-        <div class="config-section">
-            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px"><i class="fas fa-store" style="color:#C5A880"></i> Estado y Mensaje de la Tienda</h3>
-            <div style="display:flex;gap:12px;margin-bottom:18px">
-                <div class="modo-option active" id="tienda-on" onclick="setTiendaHabilitada(true)" style="cursor:pointer"><i class="fas fa-toggle-on" style="color:#4E7A62"></i><br>Habilitada</div>
-                <div class="modo-option" id="tienda-off" onclick="setTiendaHabilitada(false)" style="cursor:pointer"><i class="fas fa-toggle-off" style="color:#D96B6B"></i><br>Deshabilitada</div>
+        <div class="config-section" style="grid-column:1/-1">
+            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
+                <i class="fas fa-store" style="color:#C5A880"></i> Estado y Mensaje de la Tienda
+            </h3>
+            <div style="display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap">
+                <div class="modo-option active" id="tienda-on" onclick="setTiendaHabilitada(true)" style="cursor:pointer;flex:1;min-width:140px;text-align:center;padding:16px">
+                    <i class="fas fa-toggle-on" style="color:#4E7A62;font-size:22px;display:block;margin-bottom:6px"></i>
+                    <strong>Habilitada</strong><br><small style="color:#8C7E74">Tienda visible al público</small>
+                </div>
+                <div class="modo-option" id="tienda-off" onclick="setTiendaHabilitada(false)" style="cursor:pointer;flex:1;min-width:140px;text-align:center;padding:16px">
+                    <i class="fas fa-toggle-off" style="color:#D96B6B;font-size:22px;display:block;margin-bottom:6px"></i>
+                    <strong>Deshabilitada</strong><br><small style="color:#8C7E74">Solo admins pueden ver</small>
+                </div>
             </div>
-            <div><label class="form-label">Título</label><input type="text" id="tienda-titulo"></div>
+            <div class="form-row">
+                <div><label class="form-label">Título de la Tienda</label><input type="text" id="tienda-titulo"></div>
+                <div></div>
+            </div>
             <div style="margin-top:14px"><label class="form-label">Mensaje de Bienvenida</label><textarea id="tienda-mensaje" rows="3"></textarea></div>
-            <button type="button" onclick="guardarConfiguracionTienda()" class="btn-confirm" style="margin-top:18px;width:auto;padding:12px 32px"><i class="fas fa-save"></i> Guardar Tienda</button>
+            <button type="button" onclick="guardarConfiguracionTienda()" class="btn-confirm" style="margin-top:20px;width:auto;padding:14px 36px">
+                <i class="fas fa-save"></i> Guardar Tienda
+            </button>
         </div>
 
-        <div class="config-section">
-            <h3 style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px">
+        <div class="config-section" style="grid-column:1/-1">
+            <h3 style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
                 <span style="display:flex;align-items:center;gap:10px"><i class="fas fa-tags" style="color:#C5A880"></i> Precios Mayoristas</span>
-                <button type="button" id="btnMayoristaToggle" onclick="toggleMayorista()" class="tab-btn" style="background:#8C7E74;color:#fff"><i class="fas fa-toggle-off"></i> Desactivado</button>
+                <button type="button" id="btnMayoristaToggle" onclick="toggleMayorista()" class="tab-btn" style="background:#8C7E74;color:#fff;border-radius:50px">
+                    <i class="fas fa-toggle-off"></i> Desactivado
+                </button>
             </h3>
             <div id="mayoristaPanel" style="display:none">
-                <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap">
-                    <div class="modo-option" data-modo="cantidad" onclick="selectMayoristaModo('cantidad')" style="cursor:pointer"><i class="fas fa-cubes"></i><br>Por Cantidad</div>
-                    <div class="modo-option" data-modo="monto" onclick="selectMayoristaModo('monto')" style="cursor:pointer"><i class="fas fa-dollar-sign"></i><br>Por Monto</div>
-                    <div class="modo-option" data-modo="ambas" onclick="selectMayoristaModo('ambas')" style="cursor:pointer"><i class="fas fa-layer-group"></i><br>Ambas</div>
+                <div style="display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap">
+                    <div class="modo-option" data-modo="cantidad" onclick="selectMayoristaModo('cantidad')" style="cursor:pointer;flex:1;min-width:120px;text-align:center;padding:16px">
+                        <i class="fas fa-cubes" style="font-size:22px;display:block;margin-bottom:6px;color:#C5A880"></i>
+                        <strong>Por Cantidad</strong><br><small style="color:#8C7E74">Mínimo de prendas</small>
+                    </div>
+                    <div class="modo-option" data-modo="monto" onclick="selectMayoristaModo('monto')" style="cursor:pointer;flex:1;min-width:120px;text-align:center;padding:16px">
+                        <i class="fas fa-dollar-sign" style="font-size:22px;display:block;margin-bottom:6px;color:#C5A880"></i>
+                        <strong>Por Monto</strong><br><small style="color:#8C7E74">Mínimo en pesos</small>
+                    </div>
+                    <div class="modo-option" data-modo="ambas" onclick="selectMayoristaModo('ambas')" style="cursor:pointer;flex:1;min-width:120px;text-align:center;padding:16px">
+                        <i class="fas fa-layer-group" style="font-size:22px;display:block;margin-bottom:6px;color:#C5A880"></i>
+                        <strong>Ambas</strong><br><small style="color:#8C7E74">Cantidad y monto</small>
+                    </div>
                 </div>
-                <div id="configCantidad"><label class="form-label">Cantidad mínima de prendas</label><input type="number" id="mayoristaCantidad" value="3"></div>
-                <div id="configMonto" style="margin-top:14px"><label class="form-label">Monto mínimo ($)</label><input type="text" id="mayoristaMonto" value="80.000"></div>
-                <button type="button" onclick="guardarMayorista()" class="btn-confirm" style="margin-top:18px;width:auto;padding:12px 32px"><i class="fas fa-save"></i> Guardar Mayorista</button>
+                <div class="form-row">
+                    <div id="configCantidad"><label class="form-label">Cantidad mínima de prendas</label><input type="number" id="mayoristaCantidad" value="3"></div>
+                    <div id="configMonto"><label class="form-label">Monto mínimo ($)</label><input type="text" id="mayoristaMonto" value="80.000"></div>
+                </div>
+                <button type="button" onclick="guardarMayorista()" class="btn-confirm" style="margin-top:20px;width:auto;padding:14px 36px">
+                    <i class="fas fa-save"></i> Guardar Mayorista
+                </button>
             </div>
         </div>
 
         <div class="config-section">
-            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px"><i class="fas fa-truck" style="color:#C5A880"></i> Métodos de Envío</h3>
-            <textarea id="metodos-envio-lista" rows="4" placeholder="Un método por línea&#10;Ej: Andreani&#10;Correo Argentino"></textarea>
-            <button type="button" onclick="guardarMetodosEnvio()" class="btn-confirm" style="margin-top:18px;width:auto;padding:12px 32px"><i class="fas fa-save"></i> Guardar Métodos</button>
+            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
+                <i class="fas fa-truck" style="color:#C5A880"></i> Métodos de Envío
+            </h3>
+            <p style="font-size:12px;color:#8C7E74;margin-bottom:12px">Un método por línea. Ej: Andreani, Correo Argentino</p>
+            <textarea id="metodos-envio-lista" rows="5" placeholder="Via Cargo&#10;Correo Argentino&#10;Andreani&#10;Moto Mensajería"></textarea>
+            <button type="button" onclick="guardarMetodosEnvio()" class="btn-confirm" style="margin-top:20px;width:auto;padding:14px 36px">
+                <i class="fas fa-save"></i> Guardar Métodos
+            </button>
         </div>
 
         <div class="config-section">
-            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:18px;border-bottom:1px solid #E6E1DA;padding-bottom:14px"><i class="fas fa-image" style="color:#C5A880"></i> Logo de la Tienda</h3>
-            <div class="logo-preview">
-                <img id="logo-preview-img" style="display:none">
-                <div id="logo-placeholder" style="color:#8C7E74;font-size:13px"><i class="fas fa-image" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.4"></i>Sin logo cargado</div>
+            <h3 style="display:flex;align-items:center;gap:10px;color:#3D312A;font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;border-bottom:2px solid #F6F3EA;padding-bottom:14px">
+                <i class="fas fa-image" style="color:#C5A880"></i> Logo de la Tienda
+            </h3>
+            <div class="logo-preview" style="background:#FDFBF7;border:2px dashed #E6E1DA;border-radius:20px;padding:28px;text-align:center;margin-bottom:16px">
+                <img id="logo-preview-img" style="display:none;max-width:180px;max-height:80px;object-fit:contain;margin-bottom:12px">
+                <div id="logo-placeholder" style="color:#8C7E74;font-size:13px;margin-bottom:12px">
+                    <i class="fas fa-image" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.35"></i>
+                    Sin logo cargado
+                </div>
                 <div class="logo-actions">
-                    <button type="button" onclick="document.getElementById('logo-file-input').click()" class="tab-btn btn-info"><i class="fas fa-upload"></i> Subir Logo</button>
+                    <button type="button" onclick="document.getElementById('logo-file-input').click()" class="btn-confirm" style="width:auto;padding:12px 28px">
+                        <i class="fas fa-upload"></i> Subir Logo
+                    </button>
                     <input type="file" id="logo-file-input" accept="image/*" style="display:none" onchange="subirLogoAdmin(this)">
                 </div>
             </div>
