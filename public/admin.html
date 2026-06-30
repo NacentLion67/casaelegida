@@ -639,7 +639,7 @@ let adminToken = localStorage.getItem('adminToken');
 let adminActual = null;
 let productos = [], carrito = [], metodoPago = 'efectivo', logistica = 'local', totalVenta = 0;
 let ventasHistorial = [], pedidosTienda = [], categorias = [], metodosEnvio = [];
-let todosClientes = [], productosRendimiento = []; // ÚNICA DECLARACIÓN GLOBAL LIMPIA
+let todosClientes = [], productosRendimiento = [], costosProductos = {}; // ÚNICA DECLARACIÓN GLOBAL LIMPIA
 let varianteSeleccionada = {}, configuracion = {}, mayoristaHabilitado = false, mayoristaModo = 'cantidad';
 let notificaciones = [], notificacionesNoLeidas = 0;
 let chartsInstances = {};
@@ -703,7 +703,7 @@ function renderPaginaRendimiento() {
         <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:28px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
             <div>
                 <h2 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:26px;display:flex;align-items:center;gap:12px"><i class="fas fa-chart-line" style="color:#C5A880"></i> Rendimiento de Artículos</h2>
-                <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Stock, precios y estado de cada artículo del catálogo</p>
+                <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Costos, precios, ganancias y stock de cada artículo</p>
             </div>
             <span id="rend-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-box"></i> Cargando...</span>
         </div>
@@ -711,7 +711,7 @@ function renderPaginaRendimiento() {
             <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
                 <div style="flex:1;min-width:220px;position:relative">
                     <i class="fas fa-search" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#C5A880;font-size:14px"></i>
-                    <input type="text" id="rendimiento-buscador" placeholder="Buscar artículo por nombre..." onkeyup="filtrarRendimiento()" style="padding:13px 16px 13px 42px;border-radius:50px;border:1px solid #E6E1DA;width:100%;font-size:13px">
+                    <input type="text" id="rendimiento-buscador" placeholder="Buscar artículo..." onkeyup="filtrarRendimiento()" style="padding:13px 16px 13px 42px;border-radius:50px;border:1px solid #E6E1DA;width:100%;font-size:13px">
                 </div>
                 <select id="rendimiento-filtro-stock" onchange="filtrarRendimiento()" style="padding:13px 16px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px;background:#fff;cursor:pointer">
                     <option value="todos">Todos los estados</option>
@@ -729,9 +729,41 @@ function renderPaginaRendimiento() {
             </div>
         </div>
         <div id="rendimiento-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px"></div>
-        <div id="rendimiento-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+        <div id="rendimiento-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
             <div style="grid-column:1/-1;text-align:center;padding:48px;color:#8C7E74">
                 <i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;color:#C5A880;display:block"></i>Cargando artículos...
+            </div>
+        </div>
+        <div class="panel" style="padding:0;overflow:hidden;border-radius:24px">
+            <div style="background:linear-gradient(135deg,#3D312A,#52433A);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                <h3 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:20px;display:flex;align-items:center;gap:10px"><i class="fas fa-history" style="color:#C5A880"></i> Historial de Ganancias</h3>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <input type="date" id="gan-desde" style="padding:8px 14px;border-radius:50px;border:1px solid rgba(197,168,128,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:12px">
+                    <span style="color:#C5A880;font-size:12px">hasta</span>
+                    <input type="date" id="gan-hasta" style="padding:8px 14px;border-radius:50px;border:1px solid rgba(197,168,128,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:12px">
+                    <button onclick="cargarHistorialGanancias()" style="background:#C5A880;color:#3D312A;border:none;padding:8px 20px;border-radius:50px;font-weight:700;font-size:12px;cursor:pointer"><i class="fas fa-search"></i> Filtrar</button>
+                    <button onclick="document.getElementById('gan-desde').value='';document.getElementById('gan-hasta').value='';cargarHistorialGanancias()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:8px 14px;border-radius:50px;font-size:12px;cursor:pointer"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div style="padding:20px">
+                <div id="historial-ganancias-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px"></div>
+                <div style="overflow-x:auto">
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:#F6F3EA;font-size:12px;font-weight:600;color:#3D312A">
+                                <th style="padding:12px 14px;text-align:left;border-radius:12px 0 0 12px">Fecha</th>
+                                <th style="padding:12px 14px;text-align:left">ID Venta</th>
+                                <th style="padding:12px 14px;text-align:left">Cliente</th>
+                                <th style="padding:12px 14px;text-align:right">Total Venta</th>
+                                <th style="padding:12px 14px;text-align:right">Ganancia</th>
+                                <th style="padding:12px 14px;text-align:center;border-radius:0 12px 12px 0">Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historial-ganancias-body">
+                            <tr><td colspan="6" style="text-align:center;padding:32px;color:#8C7E74"><i class="fas fa-filter" style="margin-right:8px;color:#C5A880"></i>Seleccioná un período y presioná Filtrar</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>`;
@@ -1559,10 +1591,107 @@ async function cargarVentas(){ try{ const d=await safeFetch('/listar-ventas',{me
 
 async function cargarProductosRendimiento() {
     try {
-        const d = await safeFetch('/listar', { method: 'POST' });
+        const [d, c] = await Promise.all([
+            safeFetch('/listar', { method: 'POST' }),
+            safeFetch('/admin/costos/obtener-todos', { method: 'POST' })
+        ]);
         productosRendimiento = d.lista || [];
+        costosProductos = c.costos || {};
         renderizarRendimiento(productosRendimiento);
     } catch(e) {}
+}
+
+function toggleEditorCosto(pid) {
+    const editor = document.getElementById(`editor-costo-${pid}`);
+    if (!editor) return;
+    const isOpen = editor.style.display !== 'none';
+    editor.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+        const costo = costosProductos[pid];
+        if (document.getElementById(`costo-base-${pid}`)) document.getElementById(`costo-base-${pid}`).value = costo?.costoBase || 0;
+        if (document.getElementById(`costo-envio-${pid}`)) document.getElementById(`costo-envio-${pid}`).value = costo?.costoEnvio || 0;
+        const container = document.getElementById(`gastos-adicionales-${pid}`);
+        if (container) { container.innerHTML = ''; (costo?.gastosAdicionales||[]).forEach(g => { const div = document.createElement('div'); div.className='gasto-fila'; div.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:6px'; div.innerHTML=`<input type="text" class="gasto-nombre" value="${escapeHtml(g.nombre)}" placeholder="Nombre gasto..." style="flex:1;padding:7px 12px;border:1px solid #E6E1DA;border-radius:50px;font-size:12px"><input type="number" class="gasto-monto" value="${g.monto}" oninput="calcularCostoTotal('${pid}')" style="width:90px;padding:7px 10px;border:1px solid #E6E1DA;border-radius:50px;font-size:12px;text-align:right"><button onclick="this.closest('.gasto-fila').remove();calcularCostoTotal('${pid}')" style="background:none;border:none;color:#D96B6B;cursor:pointer;font-size:15px"><i class="fas fa-times-circle"></i></button>`; container.appendChild(div); }); }
+        calcularCostoTotal(pid);
+    }
+}
+
+function agregarFilaGasto(pid) {
+    const container = document.getElementById(`gastos-adicionales-${pid}`);
+    if (!container) return;
+    const div = document.createElement('div'); div.className='gasto-fila'; div.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:6px';
+    div.innerHTML=`<input type="text" class="gasto-nombre" placeholder="Ej: Bolsa, flete..." style="flex:1;padding:7px 12px;border:1px solid #E6E1DA;border-radius:50px;font-size:12px"><input type="number" class="gasto-monto" placeholder="0" oninput="calcularCostoTotal('${pid}')" style="width:90px;padding:7px 10px;border:1px solid #E6E1DA;border-radius:50px;font-size:12px;text-align:right"><button onclick="this.closest('.gasto-fila').remove();calcularCostoTotal('${pid}')" style="background:none;border:none;color:#D96B6B;cursor:pointer;font-size:15px"><i class="fas fa-times-circle"></i></button>`;
+    container.appendChild(div);
+}
+
+function calcularCostoTotal(pid) {
+    const base = parseFloat(document.getElementById(`costo-base-${pid}`)?.value)||0;
+    const envio = parseFloat(document.getElementById(`costo-envio-${pid}`)?.value)||0;
+    let gastos = 0;
+    document.querySelectorAll(`#gastos-adicionales-${pid} .gasto-monto`).forEach(inp => { gastos += parseFloat(inp.value)||0; });
+    const total = base + envio + gastos;
+    const totalEl = document.getElementById(`costo-total-${pid}`);
+    if (totalEl) totalEl.textContent = fmt.format(total);
+    const p = productosRendimiento.find(x => x.id == pid);
+    if (p) {
+        const gmc = document.getElementById(`gan-menor-calc-${pid}`);
+        const gmayc = document.getElementById(`gan-mayor-calc-${pid}`);
+        if (gmc) { const g = p.precio-total; gmc.textContent=fmt.format(g); gmc.style.color=g>=0?'#4E7A62':'#D96B6B'; }
+        if (gmayc && p.precioMayor>0) { const g = p.precioMayor-total; gmayc.textContent=fmt.format(g); gmayc.style.color=g>=0?'#4E7A62':'#D96B6B'; }
+    }
+}
+
+async function guardarCostoProducto(pid) {
+    const base = parseFloat(document.getElementById(`costo-base-${pid}`)?.value)||0;
+    const envio = parseFloat(document.getElementById(`costo-envio-${pid}`)?.value)||0;
+    const gastos = [];
+    document.querySelectorAll(`#gastos-adicionales-${pid} .gasto-fila`).forEach(fila => { const nombre=fila.querySelector('.gasto-nombre')?.value?.trim(); const monto=parseFloat(fila.querySelector('.gasto-monto')?.value)||0; if(nombre) gastos.push({nombre,monto}); });
+    try {
+        const res = await safeFetch('/admin/costos/guardar', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({productoId:pid,costoBase:base,costoEnvio:envio,gastosAdicionales:gastos}) });
+        if (res.success) { costosProductos[pid]={costoBase:base,costoEnvio:envio,gastosAdicionales:gastos,costoTotal:res.costoTotal}; mostrarToast(`✅ Costo guardado: ${fmt.format(res.costoTotal)}`); document.getElementById(`editor-costo-${pid}`).style.display='none'; renderizarRendimiento(productosRendimiento); }
+    } catch(e) { mostrarToast('❌ Error al guardar costo', true); }
+}
+
+async function cargarHistorialGanancias() {
+    const desde = document.getElementById('gan-desde')?.value;
+    const hasta = document.getElementById('gan-hasta')?.value;
+    const tbody = document.getElementById('historial-ganancias-body');
+    if (tbody) tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:24px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="color:#C5A880;margin-right:8px"></i>Calculando ganancias...</td></tr>`;
+    try {
+        const d = await safeFetch('/admin/ganancias/historial', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({desde,hasta}) });
+        const {historial=[],totalGanancia=0,totalVentas=0,cantidadVentas=0} = d;
+        const summary = document.getElementById('historial-ganancias-summary');
+        if (summary) summary.innerHTML=`
+            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-shopping-bag" style="color:#C5A880;font-size:24px;margin-bottom:6px"></i><h3>${fmt.format(totalVentas)}</h3><p style="color:#8C7E74;font-size:12px">Total Ventas</p></div>
+            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-chart-line" style="color:#4E7A62;font-size:24px;margin-bottom:6px"></i><h3 style="color:#4E7A62">${fmt.format(totalGanancia)}</h3><p style="color:#8C7E74;font-size:12px">Ganancia Total</p></div>
+            <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-receipt" style="color:#3D312A;font-size:24px;margin-bottom:6px"></i><h3>${cantidadVentas}</h3><p style="color:#8C7E74;font-size:12px">Ventas</p></div>
+            <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-percentage" style="color:#DE9B72;font-size:24px;margin-bottom:6px"></i><h3>${totalVentas>0?Math.round((totalGanancia/totalVentas)*100):0}%</h3><p style="color:#8C7E74;font-size:12px">Margen promedio</p></div>`;
+        if (!historial.length) { if(tbody) tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:32px;color:#8C7E74">No hay ventas en el período seleccionado</td></tr>`; return; }
+        if (tbody) tbody.innerHTML = historial.map(v => {
+            const ganColor = v.gananciaVenta>=0?'#4E7A62':'#D96B6B';
+            return `<tr style="border-bottom:1px solid #F6F3EA">
+                <td style="padding:11px 14px;font-size:12px;color:#8C7E74">${v.fecha}</td>
+                <td style="padding:11px 14px;font-size:12px;font-weight:600">${v.id}</td>
+                <td style="padding:11px 14px;font-size:12px">${escapeHtml(v.cliente?.nombre||'Mostrador')}</td>
+                <td style="padding:11px 14px;font-weight:700;text-align:right">${fmt.format(v.total)}</td>
+                <td style="padding:11px 14px;font-weight:800;text-align:right;color:${ganColor}">${fmt.format(v.gananciaVenta)}</td>
+                <td style="padding:11px 14px;text-align:center"><button onclick="toggleDetalleVenta('${v.id}')" style="background:#F6F3EA;border:none;border-radius:50px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:600;color:#3D312A"><i class="fas fa-eye"></i> Ver</button></td>
+            </tr>
+            <tr id="detalle-gan-${v.id}" style="display:none;background:#FDFBF7">
+                <td colspan="6" style="padding:10px 20px">
+                    ${v.items.map(it=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #F0EDE8;font-size:11px;gap:8px">
+                        <span style="flex:1"><strong>${escapeHtml(it.pNom||'')}</strong> — ${escapeHtml(it.vNom||'')} x${it.cant}</span>
+                        <span style="flex-shrink:0">Precio: <strong>${fmt.format(it.precio)}</strong> | Costo: <strong>${fmt.format(it.costoTotal)}</strong> | Gan: <strong style="color:${it.gananciaTotal>=0?'#4E7A62':'#D96B6B'}">${fmt.format(it.gananciaTotal)}</strong></span>
+                    </div>`).join('')}
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) { mostrarToast('Error al cargar historial', true); }
+}
+
+function toggleDetalleVenta(id) {
+    const row = document.getElementById(`detalle-gan-${id}`);
+    if (row) row.style.display = row.style.display==='none'?'table-row':'none';
 }
 
 function renderizarRendimiento(lista) {
