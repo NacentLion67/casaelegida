@@ -435,7 +435,7 @@ app.post('/admin/login', async (req, res) => {
         if (!p) return res.status(401).json({ error: 'Usuario no encontrado' });
         if (!(await bcrypt.compare(password, p.password))) return res.status(401).json({ error: 'Contraseña incorrecta' });
         await logActividad(p.nombre, 'LOGIN_ADMIN', 'Inicio de sesión', req);
-        res.json({ success: true, token: jwt.sign({ id: p.id, usuario: p.usuario, nombre: p.nombre, rol: p.rol, permisos: JSON.parse(p.permisos||'[]'), tipo: 'admin' }, JWT_SECRET, { expiresIn: '8h' }), perfil: { id: p.id, usuario: p.usuario, nombre: p.nombre, rol: p.rol, permisos: JSON.parse(p.permisos||'[]') } });
+        res.json({ success: true, token: jwt.sign({ id: p.id, usuario: p.usuario, nombre: p.nombre, rol: p.rol, permisos: JSON.parse(p.permisos||'[]'), tipo: 'admin' }, JWT_SECRET, { expiresIn: '7d' }), perfil: { id: p.id, usuario: p.usuario, nombre: p.nombre, rol: p.rol, permisos: JSON.parse(p.permisos||'[]') } });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
