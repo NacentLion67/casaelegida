@@ -2436,10 +2436,17 @@ function verDetallePedido(id) {
                     <span style="font-family:'Playfair Display',serif;font-size:24px;font-weight:800;color:#C5A880">${fmt.format(p.total||0)}</span>
                 </div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-                    ${p.estado!=='cancelado'&&p.estado!=='entregado'&&p.estado!=='armado'?`<button onclick="this.closest('.modal').remove();iniciarArmadoPedido('${p.id}')" style="background:linear-gradient(135deg,#C5A880,#A8845A);color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(197,168,128,0.4)"><i class="fas fa-box-open"></i> Armar Pedido</button>`:''}
-                    ${p.estado==='pendiente'?`<button onclick="confirmarPedidoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#4E7A62;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-check"></i> Confirmar</button>`:''}
-                    ${p.estado==='confirmado'||p.estado==='abonado'||p.estado==='armado'?`<button onclick="marcarEnviadoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#3D312A;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-truck"></i> Enviado</button>`:''}
-                    ${p.estado==='pendiente'?`<button onclick="cancelarPedidoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-times"></i> Cancelar</button>`:''}
+                    ${p.estado==='pendiente'?`
+                        <button onclick="abonarPedido('${p.id}');this.closest('.modal').remove()" style="background:#4E7A62;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-money-bill-wave"></i> Abonar</button>
+                        <button onclick="cancelarPedidoAdmin('${p.id}',false);this.closest('.modal').remove()" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-times"></i> Cancelar</button>
+                    `:''}
+                    ${p.estado==='abonado'?`
+                        <button onclick="this.closest('.modal').remove();iniciarArmadoPedido('${p.id}')" style="background:linear-gradient(135deg,#C5A880,#A8845A);color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(197,168,128,0.4)"><i class="fas fa-box-open"></i> Armar Pedido</button>
+                        <button onclick="cancelarPedidoAdmin('${p.id}',true);this.closest('.modal').remove()" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-times"></i> Cancelar</button>
+                    `:''}
+                    ${p.estado==='armado'?`
+                        <button onclick="marcarEnviadoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#3D312A;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-truck"></i> Marcar Enviado</button>
+                    `:''}
                     <button onclick="this.closest('.modal').remove()" style="background:#F6F3EA;color:#3D312A;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:600">Cerrar</button>
                 </div>
             </div>
