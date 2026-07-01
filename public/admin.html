@@ -2391,8 +2391,8 @@ async function abonarPedido(id) {
     try {
         await safeFetch('/tienda/marcar-abonado', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pedidoId:id}) });
         mostrarToast('✅ Pedido marcado como abonado');
-        cargarPedidosTienda();
-    } catch(e) {}
+        await cargarPedidosTienda();
+    } catch(e) { mostrarToast('❌ Error al abonar: ' + e.message, true); }
 }
 
 async function cancelarPedidoAdmin(id, requierePassword=false) {
