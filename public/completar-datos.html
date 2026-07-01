@@ -124,20 +124,44 @@
     const token = localStorage.getItem('token');
     if (!token) window.location.href = '/login';
 
-    async function cargarDatos() {
+ async function cargarDatos() {
         try {
             const res = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
             const u = await res.json();
-            if (u.datosCompletos == 1) { window.location.href = '/tienda'; return; }
-            document.getElementById('f-nombre').value = u.nombre || '';
-            document.getElementById('f-apellido').value = u.apellido || '';
-            document.getElementById('f-dni').value = u.dni || '';
-            document.getElementById('f-telefono').value = u.telefono || '';
+
             document.getElementById('f-email').value = u.email || '';
+            document.getElementById('f-telefono').value = u.telefono || '';
             if (u.provincia) document.getElementById('f-provincia').value = u.provincia;
             document.getElementById('f-localidad').value = u.localidad || '';
             document.getElementById('f-cp').value = u.cp || '';
             document.getElementById('f-direccion').value = u.direccion || '';
+
+            if (u.datosCompletos == 1) {
+                // Campos bloqueados permanentemente
+                document.getElementById('f-nombre').value = u.nombre || '';
+                document.getElementById('f-apellido').value = u.apellido || '';
+                document.getElementById('f-dni').value = u.dni || '';
+
+                ['f-nombre','f-apellido','f-dni','f-email'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.readOnly = true;
+                        el.style.background = '#F0EDE8';
+                        el.style.color = '#8C7E74';
+                        el.style.cursor = 'not-allowed';
+                    }
+                });
+
+                // Cambiar título y aviso
+                document.querySelector('.header h1').textContent = 'Editar mis datos';
+                document.querySelector('.header p').textContent = 'Podés actualizar tu teléfono y domicilio. Nombre, apellido, DNI y email no pueden modificarse.';
+                document.querySelector('.aviso span').innerHTML = 'Nombre, apellido, DNI y email están <strong>bloqueados permanentemente</strong>. Solo podés editar teléfono y domicilio.';
+                document.getElementById('btn-guardar').innerHTML = '<i class="fas fa-save"></i> Actualizar Datos';
+            } else {
+                document.getElementById('f-nombre').value = u.nombre || '';
+                document.getElementById('f-apellido').value = u.apellido || '';
+                document.getElementById('f-dni').value = u.dni || '';
+            }
         } catch(e) { window.location.href = '/login'; }
     }
 
