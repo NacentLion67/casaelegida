@@ -586,10 +586,29 @@ app.post('/auth/update-profile', authMiddleware, async (req, res) => {
 
 app.post('/auth/completar-datos', authMiddleware, async (req, res) => {
     try {
+        const u = (await pool.query('SELECT * FROM usuarios WHERE id=$1', [req.usuario.id])).rows[0];
+        if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
+
         const { nombre, apellido, dni, telefono, direccion, provincia, localidad, cp } = req.body;
-        if (!nombre || !apellido || !dni || !telefono || !direccion || !provincia || !localidad || !cp) return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-        await pool.query('UPDATE usuarios SET nombre=$1, apellido=$2, dni=$3, telefono=$4, direccion=$5, provincia=$6, localidad=$7, cp=$8, "datosCompletos"=1 WHERE id=$9',
-            [nombre, apellido, dni, telefono, direccion, provincia, localidad, cp, req.usuario.id]);
+
+        if (u.datosCompletos == 0) {
+            // Primera vez: guardamos todo incluyendo los campos bloqueados
+            if (!nombre || !apellido || !dni || !telefono || !direccion || !provincia || !localidad || !cp)
+                return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+            await pool.query(
+                'UPDATE usuarios SET nombre=$1, apellido=$2, dni=$3, telefono=$4, direccion=$5, provincia=$6, localidad=$7, cp=$8, "datosCompletos"=1 WHERE id=$9',
+                [nombre, apellido, dni, telefono, direccion, provincia, localidad, cp, u.id]
+            );
+        } else {
+            // Ya completó datos: solo actualizamos los campos permitidos
+            if (!telefono || !provincia || !localidad || !cp || !direccion)
+                return res.status(400).json({ error: 'Completá todos los campos editables' });
+            await pool.query(
+                'UPDATE usuarios SET telefono=$1, direccion=$2, provincia=$3, localidad=$4, cp=$5 WHERE id=$6',
+                [telefono, direccion, provincia, localidad, cp, u.id]
+            );
+        }
+
         res.json({ success: true });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
