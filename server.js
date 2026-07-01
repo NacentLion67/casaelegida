@@ -42,6 +42,10 @@ async function initDB() {
     const client = await pool.connect();
     try {
         await client.query(`
+            CREATE INDEX IF NOT EXISTS idx_variantes_productoid ON variantes("productoId");
+            CREATE INDEX IF NOT EXISTS idx_productos_orden ON productos(orden ASC, id DESC);
+        `).catch(()=>{});
+        await client.query(`
             CREATE TABLE IF NOT EXISTS productos (
                 id BIGINT PRIMARY KEY,
                 nombre TEXT NOT NULL,
@@ -616,9 +620,17 @@ app.post('/auth/completar-datos', authMiddleware, async (req, res) => {
 });
 
 app.post('/listar', async (req, res) => {
-    const prods = (await pool.query('SELECT * FROM productos ORDER BY orden ASC, id DESC')).rows;
-    const variantes = (await pool.query('SELECT * FROM variantes ORDER BY "productoId", id ASC')).rows;
-    prods.forEach(p => { p.variantes = variantes.filter(v => v.productoId == p.id); });
+    const [prodsResult, variantesResult] = await Promise.all([
+        pool.query('SELECT * FROM productos ORDER BY orden ASC, id DESC'),
+        pool.query('SELECT * FROM variantes ORDER BY "productoId", id ASC')
+    ]);
+    const prods = prodsResult.rows;
+    const varMap = {};
+    variantesResult.rows.forEach(v => {
+        if (!varMap[v.productoId]) varMap[v.productoId] = [];
+        varMap[v.productoId].push(v);
+    });
+    prods.forEach(p => { p.variantes = varMap[p.id] || []; });
     res.json({ lista: prods });
 });
 
@@ -772,15 +784,28 @@ app.post('/corte-caja', async (req, res) => {
 });
 
 app.post('/tienda/listar-productos', async (req, res) => {
-    const c = await getConfig();
+    const [c, prodsResult, variantesResult, catsResult, metodosResult] = await Promise.all([
+        getConfig(),
+        pool.query('SELECT * FROM productos ORDER BY id DESC'),
+        pool.query('SELECT * FROM variantes ORDER BY "productoId", id ASC'),
+        pool.query('SELECT * FROM categorias'),
+        pool.query('SELECT nombre FROM metodos_envio')
+    ]);
     c.banners = c.banners || [];
     c.anuncios = c.anuncios || [];
-    const prods = (await pool.query('SELECT * FROM productos ORDER BY id DESC')).rows;
-    const variantes = (await pool.query('SELECT * FROM variantes ORDER BY "productoId", id ASC')).rows;
-    prods.forEach(p => { p.variantes = variantes.filter(v => v.productoId == p.id); });
-    const cats = (await pool.query('SELECT * FROM categorias')).rows;
-    const metodos = (await pool.query('SELECT nombre FROM metodos_envio')).rows;
-    res.json({ productos: prods, categorias: cats.map(x => ({ ...x, subcategorias: JSON.parse(x.subcategorias||'[]') })), metodosEnvio: metodos.map(m => m.nombre), configuracion: c });
+    const prods = prodsResult.rows;
+    const varMap = {};
+    variantesResult.rows.forEach(v => {
+        if (!varMap[v.productoId]) varMap[v.productoId] = [];
+        varMap[v.productoId].push(v);
+    });
+    prods.forEach(p => { p.variantes = varMap[p.id] || []; });
+    res.json({
+        productos: prods,
+        categorias: catsResult.rows.map(x => ({ ...x, subcategorias: JSON.parse(x.subcategorias||'[]') })),
+        metodosEnvio: metodosResult.rows.map(m => m.nombre),
+        configuracion: c
+    });
 });
 
 app.post('/tienda/crear-pedido', authMiddleware, async (req, res) => {
