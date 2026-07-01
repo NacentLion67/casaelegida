@@ -2571,6 +2571,8 @@ async function cargarLogs() {
                 <td style="padding:11px 14px;font-size:12px;color:#8C7E74;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(l.detalles||'')}</td>
             </tr>`;
         }).join('');
+    } catch(e) {}
+}
     
 async function cargarPerfiles(){ try{ const d=await safeFetch('/admin/perfiles',{method:'POST'}); document.getElementById('lista-perfiles').innerHTML=d.lista.map(p=>`<div class="perfil-card"><h5>${p.nombre}</h5></div>`).join(''); }catch(e){} }
 
