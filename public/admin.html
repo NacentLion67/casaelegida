@@ -2021,6 +2021,39 @@ function filtrarRendimiento() {
     else if (orden==='stock_asc') lista.sort((a,b)=>a.variantes?.reduce((s,v)=>s+v.stock,0)-b.variantes?.reduce((s,v)=>s+v.stock,0));
     renderizarRendimiento(lista);
 }
+
+function renderPaginaEdicionWeb() { return `<div class="panel"><h3><i class="fas fa-paint-brush"></i> Edición Web</h3><div class="config-section"><h4><i class="fas fa-swatchbook"></i> Plantillas de Tienda</h4><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px"><div class="plantilla-card" style="border:2px solid #3D312A;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('moderna')"><div style="background:linear-gradient(135deg,#1a1a1a,#333);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Moderna</strong></div><div class="plantilla-card" style="border:2px solid #e2e8f0;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('clasica')"><div style="background:linear-gradient(135deg,#3D312A,#52433A);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Clásica</strong></div><div class="plantilla-card" style="border:2px solid #e2e8f0;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('minimalista')"><div style="background:linear-gradient(135deg,#fafafa,#e2e8f0);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Minimalista</strong></div></div></div></div>`; }
+
+function renderPaginaClientes() {
+    return `<div style="display:flex;flex-direction:column;gap:20px;width:100%">
+        <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:28px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+            <div>
+                <h2 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:26px;display:flex;align-items:center;gap:12px"><i class="fas fa-users" style="color:#C5A880"></i> Clientes Registrados</h2>
+                <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Base de datos completa de clientes de la tienda online</p>
+            </div>
+            <span id="clientes-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-users"></i> Cargando...</span>
+        </div>
+        <div class="panel" style="padding:20px">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+                <div style="flex:1;min-width:220px;position:relative">
+                    <i class="fas fa-search" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#C5A880;font-size:14px"></i>
+                    <input type="text" id="clientes-buscador" placeholder="Buscar por nombre, apellido, DNI o email..." onkeyup="filtrarClientes()" style="padding:13px 16px 13px 42px;border-radius:50px;border:1px solid #E6E1DA;width:100%;font-size:13px">
+                </div>
+                <button onclick="cargarClientes()" style="padding:13px 20px;border-radius:50px;border:none;background:#F6F3EA;color:#3D312A;font-weight:600;cursor:pointer;font-size:13px"><i class="fas fa-sync-alt"></i> Actualizar</button>
+            </div>
+        </div>
+        <div id="clientes-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px"></div>
+        <div id="clientes-grid" style="display:flex;flex-direction:column;gap:12px">
+            <div style="text-align:center;padding:48px;color:#8C7E74">
+                <i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;color:#C5A880;display:block"></i>Cargando clientes...
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderPaginaBackup() {
+    return `<div class="panel"><div class="backup-hero"><div class="backup-hero-icon">🗄️</div><h2>Sistema de Backup</h2><p>Protegé toda la información del sistema</p><button class="btn-backup-master" onclick="iniciarBackupTotal()"><i class="fas fa-download"></i> Crear Respaldo Total</button></div><div class="restore-zone" onclick="document.getElementById('restore-file').click()" id="restore-zone"><i class="fas fa-upload" style="font-size:48px;color:#C5A880;margin-bottom:16px;display:block"></i><h3>Restaurar desde Backup</h3><p style="color:#8C7E74">Arrastrá o hacé clic para seleccionar</p><input type="file" id="restore-file" accept=".backup,.zip" style="display:none" onchange="procesarArchivoRestore(this)"></div><button id="btn-restaurar" style="display:none;width:100%;padding:16px;background:#D96B6B;color:white;border:none;border-radius:50px;font-weight:700;cursor:pointer;margin-bottom:24px" onclick="confirmarRestauracionTotal()"><i class="fas fa-exclamation-triangle"></i> Ejecutar Restauración</button><h4 style="margin-bottom:16px">Historial de Backups</h4><div id="historial-backups"></div></div>`;
+}
     
 async function verStockBajo(){ let d=await safeFetch('/stock-bajo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minimo:5})}); if(!d.stockBajo?.length)mostrarToast('✅ Stock OK'); else mostrarToast(`⚠️ ${d.stockBajo.length} bajas`,true); }
 
@@ -2062,10 +2095,8 @@ async function verEstadoCaja(){ try { const d=await safeFetch('/admin/estado-caj
 function abrirCajaProfesional(){}
 async function cerrarCajaProfesional(){ const d = await safeFetch('/admin/cierre-caja-profesional', { method: 'POST' }); verEstadoCaja(); }
 
-async function cargarClientes() { const d = await safeFetch('/admin/listar-clientes', { method: 'POST' }); todosClientes = d.lista || []; renderizarTablaClientes(todosClientes); }
-function renderizarTablaClientes(lista) { document.getElementById('lista-clientes-body').innerHTML = lista.map(c=>`<tr><td>${escapeHtml(c.nombre)}</td><td><button onclick="verHistorialClienteCompleto('${c.id}','${c.nombre}')">Historial</button></td></tr>`).join(''); }
-function verHistorialClienteCompleto(id, n) { alert('Historial de ' + n); }
-async function eliminarCliente(id, n) { await safeFetch('/admin/eliminar-cliente', { method: 'POST' }); }
+// clientes manejados arriba
+    
 let variantesManuales = [];
 function agregarProductoManual() { mostrarToast('Manual'); }
 function generarVariantesColorTalle(pid) { mostrarToast('Generar'); }
