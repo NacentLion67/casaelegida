@@ -404,7 +404,7 @@ app.get('/api/tienda/producto/:id', async (req, res) => {
         if (!p) return res.status(404).json({ error: 'Producto no encontrado' });
         
         // Traemos sus variantes reales asociadas
-        p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1', [p.id])).rows;
+        p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1 ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC', [p.id])).rows;
         
         // Traemos la configuración global para el tema de los colores y reglas mayoristas
         const resultConfig = await pool.query('SELECT clave, valor FROM configuracion');
@@ -618,7 +618,7 @@ app.post('/auth/completar-datos', authMiddleware, async (req, res) => {
 app.post('/listar', async (req, res) => {
     const prods = (await pool.query('SELECT * FROM productos ORDER BY orden ASC, id DESC')).rows;
     for (const p of prods) {
-        p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1', [p.id])).rows;
+        p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1 ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC', [p.id])).rows;
     }
     res.json({ lista: prods });
 });
@@ -777,7 +777,7 @@ app.post('/tienda/listar-productos', async (req, res) => {
     c.banners = c.banners || [];
     c.anuncios = c.anuncios || [];
     const prods = (await pool.query('SELECT * FROM productos ORDER BY id DESC')).rows;
-    for (const p of prods) p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1', [p.id])).rows;
+    for (const p of prods) p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1 ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC', [p.id])).rows;
     const cats = (await pool.query('SELECT * FROM categorias')).rows;
     const metodos = (await pool.query('SELECT nombre FROM metodos_envio')).rows;
     res.json({ productos: prods, categorias: cats.map(x => ({ ...x, subcategorias: JSON.parse(x.subcategorias||'[]') })), metodosEnvio: metodos.map(m => m.nombre), configuracion: c });
