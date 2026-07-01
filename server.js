@@ -917,6 +917,9 @@ app.post('/tienda/retirar-pedido', async (req, res) => {
 
 app.post('/tienda/verificar-pin', async (req, res) => {
     const p = (await pool.query("SELECT * FROM pedidos WHERE pin=$1 AND estado IN ('confirmado','abonado','armado')", [req.body.pin])).rows[0];
+    if (!p) return res.status(400).json({ error: 'PIN no encontrado' });
+    res.json({ success: true, pedido: { ...p, cliente: JSON.parse(p.cliente||'{}'), items: JSON.parse(p.items||'[]') } });
+});
 
 app.post('/dashboard/stats', async (req, res) => {
     const v = (await pool.query("SELECT COUNT(*) as c, COALESCE(SUM(total),0) as t FROM ventas WHERE fecha LIKE TO_CHAR(CURRENT_DATE, 'DD/MM/YYYY') || '%'")).rows[0];
