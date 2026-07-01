@@ -629,8 +629,7 @@
                 document.getElementById('prod-precio-mayorista').textContent = `💰 Mayorista: ${fmt.format(producto.precioMayor)}`;
             }
 
-            varianteSeleccionadaIdx = variantes.findIndex(v => parseInt(v.stock, 10) > 0);
-            if(varianteSeleccionadaIdx === -1) varianteSeleccionadaIdx = 0;
+            varianteSeleccionadaIdx = 0;
 
             renderizarCajonVariantes();
             actualizarAmbienteVariante();
@@ -650,22 +649,27 @@
     }
 
     function renderizarCajonVariantes() {
-        const cajon = document.getElementById('cajon-variantes');
-        if (!cajon) return;
-        cajon.innerHTML = '';
-        
-        variantes.forEach((v, i) => {
-            const esActiva = i === varianteSeleccionadaIdx;
-            cajon.innerHTML += `
-                <div class="variante-fila ${esActiva ? 'activa' : ''} ${parseInt(v.stock, 10) === 0 ? 'sin-stock' : ''}" 
-                     onclick="cambiarOpcionVariante(${i})" 
-                     title="${escapeHtml(v.nombre)}">
-                    <img src="${sanitizarUrl(v.foto)}" class="variante-thumb">
-                    <span class="variante-titulo-micro">${escapeHtml(v.nombre)}</span>
-                </div>
-            `;
-        });
-    }
+    const cajon = document.getElementById('cajon-variantes');
+    if (!cajon) return;
+    cajon.innerHTML = '';
+    
+    variantes.forEach((v, i) => {
+        const esActiva = i === varianteSeleccionadaIdx;
+        const stock = parseInt(v.stock, 10) || 0;
+        const sinStock = stock === 0;
+        const stockColor = sinStock ? '#D96B6B' : stock <= 5 ? '#DE9B72' : '#4E7A62';
+        const stockTexto = sinStock ? 'Sin stock' : `Stock: ${stock}`;
+        cajon.innerHTML += `
+            <div class="variante-fila ${esActiva ? 'activa' : ''} ${sinStock ? 'sin-stock' : ''}" 
+                 onclick="cambiarOpcionVariante(${i})" 
+                 title="${escapeHtml(v.nombre)}">
+                <img src="${sanitizarUrl(v.foto)}" class="variante-thumb">
+                <span class="variante-titulo-micro">${escapeHtml(v.nombre)}</span>
+                <span style="font-size:10px;font-weight:700;color:${stockColor};margin-top:2px">${stockTexto}</span>
+            </div>
+        `;
+    });
+}
 
     function cambiarOpcionVariante(idx) {
         varianteSeleccionadaIdx = idx;
