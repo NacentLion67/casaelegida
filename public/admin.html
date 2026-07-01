@@ -1551,14 +1551,39 @@ function renderProductosVenta() {
 function toggleVariantesVenta(id){ const c=document.getElementById(`variantes-container-${id}`); const b=document.getElementById(`btn-desplegar-${id}`); const t=document.getElementById(`btn-texto-${id}`); const ic=document.getElementById(`btn-icono-${id}`); if(!c||!b)return; if(c.classList.contains('desplegado')){c.classList.remove('desplegado');b.classList.remove('activo');t.textContent=`Desplegar variantes (${productos.find(p=>p.id==id)?.variantes.length||0})`;ic.className='fas fa-chevron-down';}else{c.classList.add('desplegado');b.classList.add('activo');t.textContent='Ocultar variantes';ic.className='fas fa-chevron-up';setTimeout(()=>{const a=c.querySelector('.variante-item-venta.activa');if(a)a.scrollIntoView({behavior:'smooth',block:'nearest'});},100);} }
 
 function seleccionarVarianteVisual(id, idx){
-    const p = productos.find(x => x.id == id); if (!p) return; const v = p.variantes[idx]; if (v.stock === 0) { mostrarToast('⚠️ Sin stock', true); return; } varianteSeleccionada[id] = idx;
-    document.querySelectorAll(`#variantes-container-${id} .variante-item-venta`).forEach(el => { const i = parseInt(el.getAttribute('data-index') || el.id.split('-').pop()); el.classList.toggle('activa', i === idx); el.classList.toggle('sin-stock', p.variantes[i]?.stock === 0); });
-    const img = document.getElementById(`img-principal-${id}`); if (img) { img.style.opacity = '0.4'; setTimeout(() => { img.src = sanitizarUrl(v.foto); img.style.opacity = '1'; }, 150); }
-    const inp = document.getElementById(`q-${id}`); if (inp) { inp.max = v.stock; if (parseInt(inp.value) > v.stock) inp.value = v.stock; }
-    const badge = document.getElementById(`stock-badge-${id}`); if (badge) { badge.innerHTML = `<i class="fas fa-box"></i> Stock: ${v.stock}`; badge.className = `stock-badge ${v.stock <= 5 ? 'stock-bajo' : ''}`; }
-    const btn = document.getElementById(`btn-add-${id}`); if (btn) { btn.disabled = v.stock === 0; btn.innerHTML = v.stock === 0 ? '<i class="fas fa-cart-plus"></i> Sin Stock' : '<i class="fas fa-cart-plus"></i> Agregar al Pedido'; }
-}
+    const p = productos.find(x => x.id == id); if (!p) return;
+    const v = p.variantes[idx];
+    if (v.stock === 0) { mostrarToast('⚠️ Sin stock', true); return; }
+    varianteSeleccionada[id] = idx;
 
+    document.querySelectorAll(`#variantes-container-${id} .variante-item-venta`).forEach(el => {
+        const i = parseInt(el.getAttribute('data-index'));
+        const esActiva = i === idx;
+        const sinStock = p.variantes[i]?.stock === 0;
+        el.classList.toggle('activa', esActiva);
+        el.classList.toggle('sin-stock', sinStock);
+        el.style.border = esActiva ? '2px solid #3D312A' : '2px solid #E6E1DA';
+        el.style.background = esActiva ? '#F6F3EA' : 'white';
+        el.style.boxShadow = esActiva ? '0 2px 8px rgba(61,49,42,0.12)' : 'none';
+        const nombreEl = el.querySelector('.variante-nombre');
+        if (nombreEl) {
+            const nombreBase = p.variantes[i]?.nombre || '';
+            nombreEl.textContent = esActiva ? nombreBase + ' ✓' : nombreBase;
+            nombreEl.style.fontWeight = esActiva ? '800' : '600';
+            nombreEl.style.color = esActiva ? '#3D312A' : '#8C7E74';
+        }
+    });
+
+    const img = document.getElementById(`img-principal-${id}`);
+    if (img) { img.style.opacity = '0.4'; setTimeout(() => { img.src = sanitizarUrl(v.foto); img.style.opacity = '1'; }, 150); }
+    const inp = document.getElementById(`q-${id}`);
+    if (inp) { inp.max = v.stock; if (parseInt(inp.value) > v.stock) inp.value = v.stock; }
+    const badge = document.getElementById(`stock-badge-${id}`);
+    if (badge) { badge.innerHTML = `<i class="fas fa-box"></i> Stock: ${v.stock}`; badge.className = `stock-badge ${v.stock <= 5 ? 'stock-bajo' : ''}`; }
+    const btn = document.getElementById(`btn-add-${id}`);
+    if (btn) { btn.disabled = v.stock === 0; btn.innerHTML = v.stock === 0 ? '<i class="fas fa-cart-plus"></i> Sin Stock' : '<i class="fas fa-cart-plus"></i> Agregar al Pedido'; }
+}
+    
 function validarCantidad(id){ const i=document.getElementById(`q-${id}`); if(!i)return; const m=parseInt(i.max)||999; const v=parseInt(i.value)||1; if(v>m)i.value=m; if(v<1)i.value=1; }
 function cambiarCantidad(id,d){ const i=document.getElementById('q-'+id); if(i){let n=(parseInt(i.value)||1)+d;n=Math.max(1,Math.min(n,parseInt(i.max)||999));i.value=n;} }
 
