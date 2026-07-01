@@ -2195,10 +2195,19 @@ function renderPedidosWeb() {
                 <button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
                 <button onclick="iniciarArmadoPedido('${p.id}')" style="background:linear-gradient(135deg,#C5A880,#A8845A);color:white;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px"><i class="fas fa-box-open"></i> Armar</button>
                 <button onclick="cancelarPedidoAdmin('${p.id}',true)" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-times"></i> Cancelar</button>`;
-        } else if (p.estado === 'armado') {
-            botones = `
+      } else if (p.estado === 'armado') {
+            if (p.tipoEntrega === 'local') {
+                botones = `
+                <button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
+                <div style="background:#F0FDF4;border:2px solid #4E7A62;border-radius:50px;padding:6px 16px;display:flex;align-items:center;gap:8px">
+                    <i class="fas fa-key" style="color:#4E7A62;font-size:12px"></i>
+                    <span style="font-size:16px;font-weight:800;letter-spacing:6px;color:#4E7A62">${p.pin||'----'}</span>
+                </div>`;
+            } else {
+                botones = `
                 <button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
                 <button onclick="marcarEnviadoAdmin('${p.id}')" style="background:#3D312A;color:white;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px"><i class="fas fa-truck"></i> Enviado ✓</button>`;
+            }
         } else {
             botones = `<button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>`;
         }
