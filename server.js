@@ -869,9 +869,21 @@ app.post('/tienda/cancelar-pedido', authMiddleware, async (req, res) => {
 });
 
 app.post('/tienda/marcar-abonado', async (req, res) => {
-    await pool.query("UPDATE pedidos SET estado='abonado' WHERE id=$1", [req.body.pedidoId]);
+    const p = (await pool.query('SELECT * FROM pedidos WHERE id=$1', [req.body.pedidoId])).rows[0];
+    if (!p) return res.status(404).json({ error: 'Pedido no encontrado' });
+    const esRetiroLocal = p.tipoEntrega === 'local';
+    const pin = esRetiroLocal ? generarPIN() : null;
+    await pool.query("UPDATE pedidos SET estado='abonado', pin=$1 WHERE id=$2", [pin, req.body.pedidoId]);
     await logActividad('Admin', 'PEDIDO_ABONADO', `Pedido ${req.body.pedidoId} abonado`, req);
-    res.json({ success: true });
+    if (pin) {
+        const cliente = JSON.parse(p.cliente || '{}');
+        if (cliente.email) {
+            await enviarEmail(cliente.email, `PIN de Retiro - Pedido ${p.id}`,
+                `<h1>Casa Elegida</h1><h2>Tu pedido fue abonado ✅</h2><p>Tu PIN de retiro es:</p><h1 style="letter-spacing:8px;color:#3D312A">${pin}</h1><p>Presentá este código al retirar tu pedido en el local.</p>`
+            );
+        }
+    }
+    res.json({ success: true, pin });
 });
 
 app.post('/tienda/marcar-enviado', async (req, res) => {
@@ -904,10 +916,7 @@ app.post('/tienda/retirar-pedido', async (req, res) => {
 });
 
 app.post('/tienda/verificar-pin', async (req, res) => {
-    const p = (await pool.query("SELECT * FROM pedidos WHERE pin=$1 AND estado IN ('confirmado','abonado')", [req.body.pin])).rows[0];
-    if (!p) return res.status(400).json({ error: 'PIN no encontrado' });
-    res.json({ success: true, pedido: { ...p, cliente: JSON.parse(p.cliente||'{}'), items: JSON.parse(p.items||'[]') } });
-});
+    const p = (await pool.query("SELECT * FROM pedidos WHERE pin=$1 AND estado IN ('confirmado','abonado','armado')", [req.body.pin])).rows[0];
 
 app.post('/dashboard/stats', async (req, res) => {
     const v = (await pool.query("SELECT COUNT(*) as c, COALESCE(SUM(total),0) as t FROM ventas WHERE fecha LIKE TO_CHAR(CURRENT_DATE, 'DD/MM/YYYY') || '%'")).rows[0];
