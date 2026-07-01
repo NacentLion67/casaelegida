@@ -1184,6 +1184,20 @@ document.addEventListener('click',(e)=>{const menu=document.getElementById('user
 
 async function cargarDatos(){
     try{
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const meRes = await fetch('/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (meRes.ok) {
+                    const me = await meRes.json();
+                    if (parseInt(me.datosCompletos) === 0 || !me.datosCompletos) {
+                        window.location.href = '/completar-datos';
+                        return;
+                    }
+                }
+            } catch(e) {}
+        }
+
         const data = await safeFetch('/tienda/listar-productos',{method:'POST'});
         productos = data.productos || [];
         categorias = data.categorias || [];
@@ -1196,7 +1210,6 @@ async function cargarDatos(){
             try { return JSON.parse(campo); } catch(e) { return {}; }
         };
 
-        // Guardamos todo de forma limpia en la variable unificada
         misConfiguraciones.empresa = deserializar(conf.empresa);
         misConfiguraciones.horarios = deserializar(conf.horarios);
         misConfiguraciones.redes = deserializar(conf.redes);
@@ -1207,7 +1220,6 @@ async function cargarDatos(){
         misConfiguraciones.banners = conf.banners || [];
         misConfiguraciones.anuncios = conf.anuncios || [];
 
-        // 🔥 ENLACE MAESTRO: Seteamos la configuración global unificada para evitar ReferenceErrors
         configuracion = { ...conf, ...misConfiguraciones };
 
         const esMobile = window.innerWidth <= 768;
@@ -1318,7 +1330,7 @@ async function cargarDatos(){
         renderizarCategorias();
         renderizarSubcategorias();
         renderizarProductos();
-        await cargarCarritoLocal(); // Esperamos de forma segura la carga del pedido
+        await cargarCarritoLocal();
         checkLogin();
         mostrarProductoDestacado();
 
@@ -1331,7 +1343,7 @@ async function cargarDatos(){
     } catch(e) {
         console.error("Error crítico al cargar configuraciones:", e);
     }
-}        
+}   
     
 // Función auxiliar interna para desempaquetar config de manera segura
 function obtenerDatosEmpresa() {
