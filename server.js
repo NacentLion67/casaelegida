@@ -423,10 +423,10 @@ app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login?error=google' }),
     async (req, res) => {
         try {
-            console.log('✅ Usuario autenticado:', req.user?.email);
             if (!req.user) return res.redirect('/login?error=nouser');
             const token = jwt.sign({ id: req.user.id, email: req.user.email, nombre: req.user.nombre, rol: req.user.rol }, JWT_SECRET, { expiresIn: '7d' });
-            const returnUrl = '/tienda';   // ← Siempre redirige a la tienda
+            const datosCompletos = parseInt(req.user.datosCompletos);
+            const returnUrl = (datosCompletos === 0 || isNaN(datosCompletos)) ? '/completar-datos' : '/tienda';
             res.send(`
                 <!DOCTYPE html><html><head><meta charset="utf-8"><title>Redirigiendo...</title>
                 <script>
