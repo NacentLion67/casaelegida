@@ -404,7 +404,7 @@ app.get('/api/tienda/producto/:id', async (req, res) => {
         if (!p) return res.status(404).json({ error: 'Producto no encontrado' });
         
         // Traemos sus variantes reales asociadas
-        p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1 ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC ORDER BY id ASC', [p.id])).rows;
+        p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1 ORDER BY id ASC', [p.id])).rows;
         
         // Traemos la configuración global para el tema de los colores y reglas mayoristas
         const resultConfig = await pool.query('SELECT clave, valor FROM configuracion');
