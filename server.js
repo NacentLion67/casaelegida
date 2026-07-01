@@ -1291,6 +1291,15 @@ app.post('/admin/ganancias/historial', adminMiddleware(), async (req, res) => {
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/admin/verificar-password', adminMiddleware(), async (req, res) => {
+    try {
+        const { password } = req.body;
+        const perfil = (await pool.query('SELECT * FROM perfiles WHERE id=$1', [req.admin.id])).rows[0];
+        if (!perfil) return res.status(404).json({ error: 'Perfil no encontrado' });
+        const valida = await bcrypt.compare(password, perfil.password);
+        res.json({ valida });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 app.use((err, req, res, next) => { console.error(err); res.status(500).json({ error: 'Error interno' }); });
 
