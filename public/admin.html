@@ -717,6 +717,9 @@ function renderizarClientes(lista) {
                     <button onclick="toggleDatosCliente('datos-${c.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
                         <i class="fas fa-info-circle"></i> Datos
                     </button>
+                    <button onclick="eliminarCliente('${c.id}','${escapeHtml(c.nombre||'')} ${escapeHtml(c.apellido||'')}')" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+                        <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
                 </div>
             </div>
             <div id="datos-${c.id}" style="display:none;padding:0 20px 16px;border-top:1px solid #F6F3EA;margin-top:0">
