@@ -1292,7 +1292,30 @@ function renderPaginaPedidosWeb() {
     
 function renderPaginaPerfiles() { return `<div class="panel"><h3 style="display:flex;justify-content:space-between"><span><i class="fas fa-users-cog"></i> Gestión de Perfiles</span><button type="button" onclick="abrirModalCrearPerfil()" class="tab-btn btn-success"><i class="fas fa-user-plus"></i> Nuevo Perfil</button></h3><div id="lista-perfiles"></div></div>`; }
 
-function renderPaginaLogs() { return `<div class="panel"><h3><i class="fas fa-history"></i> Registro de Actividad</h3><div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"><input type="text" id="logs-filtro" placeholder="🔍 Buscar..." style="flex:1;min-width:200px" onkeyup="cargarLogs()"><input type="date" id="logs-desde" style="width:150px" onchange="cargarLogs()"><input type="date" id="logs-hasta" style="width:150px" onchange="cargarLogs()"><button type="button" onclick="document.getElementById('logs-filtro').value='';document.getElementById('logs-desde').value='';document.getElementById('logs-hasta').value='';cargarLogs();" class="tab-btn">Limpiar</button></div><div style="overflow-x:auto;border-radius:16px;border:1px solid #E6E1DA;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:linear-gradient(135deg,#3D312A,#52433A)"><th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2);white-space:nowrap">Fecha y Hora</th><th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2)">Usuario</th><th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2)">Acción</th><th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Detalles</th></tr></thead><tbody id="logs-body"></tbody></table></div></div>`; }
+function renderPaginaLogs() {
+    return `<div class="panel">
+        <h3><i class="fas fa-history"></i> Registro de Actividad</h3>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <input type="text" id="logs-filtro" placeholder="🔍 Buscar..." style="flex:1;min-width:200px" onkeyup="cargarLogs()">
+            <input type="date" id="logs-desde" style="width:150px" onchange="cargarLogs()">
+            <input type="date" id="logs-hasta" style="width:150px" onchange="cargarLogs()">
+            <button type="button" onclick="document.getElementById('logs-filtro').value='';document.getElementById('logs-desde').value='';document.getElementById('logs-hasta').value='';cargarLogs();" class="tab-btn">Limpiar</button>
+        </div>
+        <div style="overflow-x:auto;border-radius:16px;border:1px solid #E6E1DA;overflow:hidden">
+            <table style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="background:linear-gradient(135deg,#3D312A,#52433A)">
+                        <th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2);white-space:nowrap">Fecha y Hora</th>
+                        <th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2)">Usuario</th>
+                        <th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2)">Acción</th>
+                        <th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Detalles</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body"></tbody>
+            </table>
+        </div>
+    </div>`;
+}
     
 function renderPaginaConfiguracion() {
     return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%">
