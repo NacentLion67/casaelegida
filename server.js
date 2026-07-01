@@ -856,6 +856,12 @@ app.post('/tienda/marcar-enviado', async (req, res) => {
 });
 
 app.post('/tienda/marcar-entregado', async (req, res) => { await pool.query("UPDATE pedidos SET estado='entregado' WHERE id=$1", [req.body.pedidoId]); res.json({ success: true }); });
+app.post('/tienda/marcar-armado', async (req, res) => {
+    await pool.query("UPDATE pedidos SET estado='armado' WHERE id=$1", [req.body.pedidoId]);
+    await logActividad('Admin', 'PEDIDO_ARMADO', `Pedido ${req.body.pedidoId} armado`, req);
+    res.json({ success: true });
+});
+
 app.post('/tienda/cancelar-pedido-admin', async (req, res) => {
     const p = (await pool.query('SELECT * FROM pedidos WHERE id=$1', [req.body.pedidoId])).rows[0];
     if (!p) return res.status(400).json({ error: 'No encontrado' });
