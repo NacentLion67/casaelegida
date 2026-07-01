@@ -2104,19 +2104,20 @@ async function eliminarCat(id){ if(!confirm('¿Eliminar?')) return; await safeFe
 async function cargarPedidosTienda(){ try{ const d=await safeFetch('/tienda/listar-pedidos',{method:'POST'}); pedidosTienda=d.lista||[]; renderPedidosWeb(); }catch(e){} }
 
 function renderPedidosWeb() {
-    const estados = {pendiente:'#DE9B72',confirmado:'#3D312A',abonado:'#4E7A62',enviado:'#C5A880',entregado:'#4E7A62',cancelado:'#D96B6B'};
-    
+    const estados = {pendiente:'#DE9B72',confirmado:'#3D312A',abonado:'#4E7A62',armado:'#C5A880',enviado:'#3D312A',entregado:'#4E7A62',cancelado:'#D96B6B'};
+
     const stats = document.getElementById('pedidos-stats');
     if (stats) {
         const pendientes = pedidosTienda.filter(p=>p.estado==='pendiente').length;
-        const confirmados = pedidosTienda.filter(p=>p.estado==='confirmado'||p.estado==='abonado').length;
-        const enviados = pedidosTienda.filter(p=>p.estado==='enviado').length;
-        const entregados = pedidosTienda.filter(p=>p.estado==='entregado').length;
+        const abonados = pedidosTienda.filter(p=>p.estado==='abonado').length;
+        const armados = pedidosTienda.filter(p=>p.estado==='armado').length;
+        const enviados = pedidosTienda.filter(p=>p.estado==='enviado'||p.estado==='entregado').length;
         const cancelados = pedidosTienda.filter(p=>p.estado==='cancelado').length;
         stats.innerHTML = `
-            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-shopping-cart" style="color:#C5A880;font-size:24px;margin-bottom:6px"></i><h3>${pedidosTienda.length}</h3><p style="color:#8C7E74;font-size:12px">Total pedidos</p></div>
+            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-shopping-cart" style="color:#C5A880;font-size:24px;margin-bottom:6px"></i><h3>${pedidosTienda.length}</h3><p style="color:#8C7E74;font-size:12px">Total</p></div>
             <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-clock" style="color:#DE9B72;font-size:24px;margin-bottom:6px"></i><h3>${pendientes}</h3><p style="color:#8C7E74;font-size:12px">Pendientes</p></div>
-            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-check-circle" style="color:#4E7A62;font-size:24px;margin-bottom:6px"></i><h3>${confirmados}</h3><p style="color:#8C7E74;font-size:12px">Confirmados</p></div>
+            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-money-bill-wave" style="color:#4E7A62;font-size:24px;margin-bottom:6px"></i><h3>${abonados}</h3><p style="color:#8C7E74;font-size:12px">Abonados</p></div>
+            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-box-open" style="color:#C5A880;font-size:24px;margin-bottom:6px"></i><h3>${armados}</h3><p style="color:#8C7E74;font-size:12px">Armados</p></div>
             <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-truck" style="color:#3D312A;font-size:24px;margin-bottom:6px"></i><h3>${enviados}</h3><p style="color:#8C7E74;font-size:12px">Enviados</p></div>
             <div class="stat-card" style="border-left:4px solid #D96B6B"><i class="fas fa-times-circle" style="color:#D96B6B;font-size:24px;margin-bottom:6px"></i><h3>${cancelados}</h3><p style="color:#8C7E74;font-size:12px">Cancelados</p></div>
         `;
@@ -2133,12 +2134,30 @@ function renderPedidosWeb() {
     grid.innerHTML = pedidosTienda.map(p => {
         const color = estados[p.estado] || '#8C7E74';
         const cliente = p.cliente || {};
+
+        let botones = '';
+        if (p.estado === 'pendiente') {
+            botones = `
+                <button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
+                <button onclick="abonarPedido('${p.id}')" style="background:#4E7A62;color:white;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-money-bill-wave"></i> Abonar</button>
+                <button onclick="cancelarPedidoAdmin('${p.id}',false)" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-times"></i> Cancelar</button>`;
+        } else if (p.estado === 'abonado') {
+            botones = `
+                <button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
+                <button onclick="iniciarArmadoPedido('${p.id}')" style="background:linear-gradient(135deg,#C5A880,#A8845A);color:white;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px"><i class="fas fa-box-open"></i> Armar</button>
+                <button onclick="cancelarPedidoAdmin('${p.id}',true)" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-times"></i> Cancelar</button>`;
+        } else if (p.estado === 'armado') {
+            botones = `
+                <button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
+                <button onclick="marcarEnviadoAdmin('${p.id}')" style="background:#3D312A;color:white;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px"><i class="fas fa-truck"></i> Enviado ✓</button>`;
+        } else {
+            botones = `<button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>`;
+        }
+
         return `<div style="background:#fff;border-radius:20px;border:1px solid #E6E1DA;overflow:hidden;transition:all 0.3s" onmouseover="this.style.boxShadow='0 4px 16px rgba(61,49,42,0.08)'" onmouseout="this.style.boxShadow=''">
             <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid #F6F3EA">
                 <div style="display:flex;align-items:center;gap:14px">
-                    <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#3D312A,#52433A);display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:16px;flex-shrink:0">
-                        <i class="fas fa-shopping-bag"></i>
-                    </div>
+                    <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#3D312A,#52433A);display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:16px;flex-shrink:0"><i class="fas fa-shopping-bag"></i></div>
                     <div>
                         <div style="font-weight:700;font-size:14px;color:#3D312A">${escapeHtml(p.id)}</div>
                         <div style="font-size:12px;color:#8C7E74;margin-top:2px">${escapeHtml(p.fecha||'')}</div>
@@ -2155,17 +2174,12 @@ function renderPedidosWeb() {
                     <span><i class="fas fa-box" style="color:#C5A880;margin-right:5px"></i>${p.items?.length||0} artículos</span>
                     <span><i class="fas ${p.tipoEntrega==='envio'?'fa-truck':'fa-store'}" style="color:#C5A880;margin-right:5px"></i>${p.tipoEntrega==='envio'?'Envío a domicilio':'Retiro en local'}</span>
                 </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <button onclick="verDetallePedido('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
-                    ${p.estado==='pendiente'?`<button onclick="confirmarPedidoAdmin('${p.id}')" style="background:#4E7A62;color:white;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-check"></i> Confirmar</button>`:''}
-                    ${p.estado==='confirmado'||p.estado==='abonado'?`<button onclick="marcarEnviadoAdmin('${p.id}')" style="background:#3D312A;color:white;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-truck"></i> Enviado</button>`:''}
-                    ${p.estado==='pendiente'?`<button onclick="cancelarPedidoAdmin('${p.id}')" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-times"></i> Cancelar</button>`:''}
-                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">${botones}</div>
             </div>
         </div>`;
     }).join('');
 }
-
+    
 let _armadoPedidoData = null;
 
 function iniciarArmadoPedido(id) {
@@ -2314,11 +2328,34 @@ async function marcarEnviadoAdmin(id) {
     } catch(e) {}
 }
 
-async function cancelarPedidoAdmin(id) {
-    if (!confirm('¿Cancelar este pedido?')) return;
+async function abonarPedido(id) {
+    if (!confirm('¿Marcar este pedido como abonado?')) return;
+    try {
+        await safeFetch('/tienda/marcar-abonado', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pedidoId:id}) });
+        mostrarToast('✅ Pedido marcado como abonado');
+        cargarPedidosTienda();
+    } catch(e) {}
+}
+
+async function cancelarPedidoAdmin(id, requierePassword=false) {
+    if (!confirm('¿Cancelar este pedido? Se restaurará el stock.')) return;
+    if (requierePassword) {
+        const pwd = prompt('Este pedido ya fue abonado. Ingresá tu contraseña de admin para confirmar la cancelación:');
+        if (!pwd) return;
+        try {
+            const perfil = await safeFetch('/admin/perfiles', { method:'POST' });
+            const adminPerfil = perfil?.lista?.find(p => p.usuario === adminActual?.usuario);
+            const res = await safeFetch('/admin/verificar-password', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ password: pwd })
+            });
+            if (!res?.valida) { mostrarToast('❌ Contraseña incorrecta', true); return; }
+        } catch(e) { mostrarToast('❌ Error al verificar contraseña', true); return; }
+    }
     try {
         await safeFetch('/tienda/cancelar-pedido-admin', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pedidoId:id}) });
-        mostrarToast('✅ Pedido cancelado');
+        mostrarToast('✅ Pedido cancelado y stock restaurado');
         cargarPedidosTienda();
     } catch(e) {}
 }
