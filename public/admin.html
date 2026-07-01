@@ -1291,8 +1291,9 @@ function renderPaginaPedidosWeb() {
 }
     
 function renderPaginaPerfiles() { return `<div class="panel"><h3 style="display:flex;justify-content:space-between"><span><i class="fas fa-users-cog"></i> Gestión de Perfiles</span><button type="button" onclick="abrirModalCrearPerfil()" class="tab-btn btn-success"><i class="fas fa-user-plus"></i> Nuevo Perfil</button></h3><div id="lista-perfiles"></div></div>`; }
-function renderPaginaLogs() { return `<div class="panel"><h3><i class="fas fa-history"></i> Registro de Actividad</h3><div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"><input type="text" id="logs-filtro" placeholder="🔍 Buscar..." style="flex:1;min-width:200px" onkeyup="cargarLogs()"><input type="date" id="logs-desde" style="width:150px" onchange="cargarLogs()"><input type="date" id="logs-hasta" style="width:150px" onchange="cargarLogs()"><button type="button" onclick="document.getElementById('logs-filtro').value='';document.getElementById('logs-desde').value='';document.getElementById('logs-hasta').value='';cargarLogs();" class="tab-btn">Limpiar</button></div><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th>Fecha</th><th>Admin</th><th>Acción</th><th>Detalles</th></tr></thead><tbody id="logs-body"></tbody></table></div></div>`; }
 
+function renderPaginaLogs() { return `<div class="panel"><h3><i class="fas fa-history"></i> Registro de Actividad</h3><div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"><input type="text" id="logs-filtro" placeholder="🔍 Buscar..." style="flex:1;min-width:200px" onkeyup="cargarLogs()"><input type="date" id="logs-desde" style="width:150px" onchange="cargarLogs()"><input type="date" id="logs-hasta" style="width:150px" onchange="cargarLogs()"><button type="button" onclick="document.getElementById('logs-filtro').value='';document.getElementById('logs-desde').value='';document.getElementById('logs-hasta').value='';cargarLogs();" class="tab-btn">Limpiar</button></div><div style="overflow-x:auto;border-radius:16px;border:1px solid #E6E1DA;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:linear-gradient(135deg,#3D312A,#52433A)"><th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2);white-space:nowrap">Fecha y Hora</th><th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2)">Usuario</th><th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px;border-right:1px solid rgba(197,168,128,0.2)">Acción</th><th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Detalles</th></tr></thead><tbody id="logs-body"></tbody></table></div></div>`; }
+    
 function renderPaginaConfiguracion() {
     return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%">
 
@@ -2526,27 +2527,27 @@ async function cargarLogs() {
             GUARDAR_CATEGORIA: {ic:'fa-folder', col:'#DE9B72'},
             GUARDAR_MAYORISTA: {ic:'fa-tags', col:'#C5A880'},
         };
-        tbody.innerHTML = lista.map(l => {
+        tbody.innerHTML = lista.map((l, index) => {
+            const esImpar = index % 2 === 0;
+            const bgRow = esImpar ? '#ffffff' : '#F6F3EA';
             const icono = iconos[l.accion] || {ic:'fa-circle', col:'#8C7E74'};
             const fecha = l.fechalocal || l.fechaLocal || new Date(l.fecha).toLocaleString('es-AR');
-            return `<tr style="border-bottom:1px solid #F6F3EA">
-                <td style="padding:12px 14px;font-size:12px;color:#8C7E74;white-space:nowrap">${escapeHtml(fecha)}</td>
-                <td style="padding:12px 14px">
+            return `<tr style="border-bottom:1px solid #E6E1DA;background:${bgRow};transition:background 0.2s" onmouseover="this.style.background='#EDE8E1'" onmouseout="this.style.background='${bgRow}'">
+                <td style="padding:11px 14px;font-size:12px;color:#8C7E74;white-space:nowrap;border-right:1px solid #E6E1DA">${escapeHtml(fecha)}</td>
+                <td style="padding:11px 14px;border-right:1px solid #E6E1DA">
                     <div style="display:flex;align-items:center;gap:8px">
-                        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3D312A,#52433A);display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:12px;flex-shrink:0">${(l.admin||'?')[0].toUpperCase()}</div>
-                        <span style="font-weight:600;font-size:13px;color:#3D312A">${escapeHtml(l.admin||'')}</span>
+                        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3D312A,#52433A);display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:11px;flex-shrink:0;font-weight:700">${(l.admin||'?')[0].toUpperCase()}</div>
+                        <span style="font-weight:600;font-size:12px;color:#3D312A">${escapeHtml(l.admin||'')}</span>
                     </div>
                 </td>
-                <td style="padding:12px 14px">
-                    <span style="background:${icono.col}20;color:${icono.col};padding:4px 10px;border-radius:50px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
+                <td style="padding:11px 14px;border-right:1px solid #E6E1DA">
+                    <span style="background:${icono.col}20;color:${icono.col};padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
                         <i class="fas ${icono.ic}"></i> ${escapeHtml(l.accion||'')}
                     </span>
                 </td>
-                <td style="padding:12px 14px;font-size:12px;color:#8C7E74;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(l.detalles||'')}</td>
+                <td style="padding:11px 14px;font-size:12px;color:#8C7E74;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(l.detalles||'')}</td>
             </tr>`;
         }).join('');
-    } catch(e) {}
-}
     
 async function cargarPerfiles(){ try{ const d=await safeFetch('/admin/perfiles',{method:'POST'}); document.getElementById('lista-perfiles').innerHTML=d.lista.map(p=>`<div class="perfil-card"><h5>${p.nombre}</h5></div>`).join(''); }catch(e){} }
 
