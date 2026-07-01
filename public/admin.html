@@ -1750,8 +1750,17 @@ async function cargarCategorias(){ try{ const d=await safeFetch('/listar-categor
 
 async function cargar(){ try{ const d=await safeFetch('/listar',{method:'POST'}); productos=d.lista||[]; renderProductosVenta(); }catch(e){} }
 
-async function cargarMetodosEnvio(){ try{ const d=await safeFetch('/listar-metodos-envio',{method:'POST'}); metodosEnvio=d.lista||[]; }catch(e){ metodosEnvio=[]; } }
-
+async function cargarMetodosEnvio(){ 
+    try{ 
+        const d=await safeFetch('/listar-metodos-envio',{method:'POST'}); 
+        metodosEnvio=d.lista||[]; 
+        const textarea=document.getElementById('metodos-envio-lista'); 
+        if(textarea) textarea.value=metodosEnvio.join('\n'); 
+    }catch(e){ 
+        metodosEnvio=[]; 
+    } 
+}
+    
 async function cargarVentas(){ try{ const d=await safeFetch('/listar-ventas',{method:'POST'}); ventasHistorial=d.lista||[]; const b=document.getElementById('lista-ventas-body'); if(b) b.innerHTML=ventasHistorial.map(v=>`<tr><td>${v.id}</td><td>${escapeHtml(v.cliente?.nombre||'')}</td><td>${v.items?.length||0}</td><td>${fmt.format(v.total||0)}</td><td></td></tr>`).join(''); }catch(e){} }
 
 async function cargarProductosRendimiento() {
