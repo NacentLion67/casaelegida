@@ -229,12 +229,14 @@ async function initConfig() {
 }
 
 async function initMetodosEnvio() {
-    const metodos = ['Via Cargo', 'Correo Argentino', 'Andreani', 'Moto Mensajería'];
-    for (const m of metodos) {
-        await pool.query('INSERT INTO metodos_envio (nombre) SELECT $1 WHERE NOT EXISTS (SELECT 1 FROM metodos_envio WHERE nombre = $1)', [m]);
+    const existe = await pool.query('SELECT COUNT(*) as c FROM metodos_envio');
+    if (parseInt(existe.rows[0].c) === 0) {
+        const metodos = ['Via Cargo', 'Correo Argentino', 'Andreani', 'Moto Mensajería'];
+        for (const m of metodos) {
+            await pool.query('INSERT INTO metodos_envio (nombre) VALUES ($1)', [m]);
+        }
     }
 }
-
 async function initAdmin() {
     const existe = await pool.query("SELECT id FROM perfiles WHERE usuario = 'admin'");
     if (existe.rows.length === 0) {
