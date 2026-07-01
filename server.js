@@ -617,9 +617,8 @@ app.post('/auth/completar-datos', authMiddleware, async (req, res) => {
 
 app.post('/listar', async (req, res) => {
     const prods = (await pool.query('SELECT * FROM productos ORDER BY orden ASC, id DESC')).rows;
-    for (const p of prods) {
-        p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1 ORDER BY id ASC', [p.id])).rows;
-    }
+    const variantes = (await pool.query('SELECT * FROM variantes ORDER BY "productoId", id ASC')).rows;
+    prods.forEach(p => { p.variantes = variantes.filter(v => v.productoId == p.id); });
     res.json({ lista: prods });
 });
 
@@ -777,7 +776,8 @@ app.post('/tienda/listar-productos', async (req, res) => {
     c.banners = c.banners || [];
     c.anuncios = c.anuncios || [];
     const prods = (await pool.query('SELECT * FROM productos ORDER BY id DESC')).rows;
-    for (const p of prods) p.variantes = (await pool.query('SELECT * FROM variantes WHERE "productoId"=$1 ORDER BY id ASC', [p.id])).rows;
+    const variantes = (await pool.query('SELECT * FROM variantes ORDER BY "productoId", id ASC')).rows;
+    prods.forEach(p => { p.variantes = variantes.filter(v => v.productoId == p.id); });
     const cats = (await pool.query('SELECT * FROM categorias')).rows;
     const metodos = (await pool.query('SELECT nombre FROM metodos_envio')).rows;
     res.json({ productos: prods, categorias: cats.map(x => ({ ...x, subcategorias: JSON.parse(x.subcategorias||'[]') })), metodosEnvio: metodos.map(m => m.nombre), configuracion: c });
