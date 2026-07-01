@@ -2166,6 +2166,138 @@ function renderPedidosWeb() {
     }).join('');
 }
 
+let _armadoPedidoData = null;
+
+function iniciarArmadoPedido(id) {
+    const p = pedidosTienda.find(x => x.id === id);
+    if (!p) return;
+    document.querySelectorAll('.modal').forEach(m => m.remove());
+    _armadoPedidoData = { pedido: p, paso: 0 };
+    _renderPasoArmado();
+}
+
+function _siguientePasoArmado() {
+    if (!_armadoPedidoData) return;
+    _armadoPedidoData.paso++;
+    _renderPasoArmado();
+}
+
+function _renderPasoArmado() {
+    document.getElementById('modal-armado')?.remove();
+    if (!_armadoPedidoData) return;
+    const { pedido, paso } = _armadoPedidoData;
+    const items = pedido.items || [];
+    const cliente = pedido.cliente || {};
+
+    const modal = document.createElement('div');
+    modal.id = 'modal-armado';
+    modal.className = 'modal active';
+    modal.style.cssText = 'background:rgba(20,14,10,0.92);backdrop-filter:blur(8px)';
+
+    if (paso < items.length) {
+        const it = items[paso];
+        const esUltimo = paso === items.length - 1;
+        const progreso = Math.round(((paso) / items.length) * 100);
+
+        modal.innerHTML = `
+            <div style="background:#fff;border-radius:32px;padding:40px 36px;max-width:560px;width:92%;text-align:center;position:relative;box-shadow:0 32px 80px rgba(0,0,0,0.3)">
+                <div style="position:absolute;top:20px;right:20px;font-size:12px;font-weight:700;color:#8C7E74">${paso+1} / ${items.length}</div>
+                <div style="font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px"><i class="fas fa-box-open"></i> Armando pedido ${escapeHtml(pedido.id)}</div>
+                
+                <div style="background:#F6F3EA;border-radius:50px;height:6px;margin-bottom:28px;overflow:hidden">
+                    <div style="height:100%;width:${progreso}%;background:linear-gradient(90deg,#C5A880,#3D312A);border-radius:50px;transition:width 0.4s ease"></div>
+                </div>
+
+                <div style="width:220px;height:220px;margin:0 auto 24px;border-radius:24px;overflow:hidden;background:#F6F3EA;border:3px solid #E6E1DA;box-shadow:0 8px 32px rgba(61,49,42,0.12)">
+                    ${it.vFoto ? `<img src="${sanitizarUrl(it.vFoto)}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:64px"><i class="fas fa-image"></i></div>`}
+                </div>
+
+                <h2 style="font-family:'Playfair Display',serif;font-size:22px;color:#3D312A;margin-bottom:6px;line-height:1.3">${escapeHtml(it.pNom||'')}</h2>
+                <div style="font-size:13px;color:#8C7E74;margin-bottom:24px">Variante: <strong style="color:#3D312A">${escapeHtml(it.vNom||'')}</strong></div>
+
+                <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:24px;padding:24px 32px;margin-bottom:28px;display:inline-block;min-width:200px">
+                    <div style="font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Cantidad a separar</div>
+                    <div style="font-size:80px;font-weight:800;color:#fff;line-height:1;font-family:'Playfair Display',serif">${it.cant}</div>
+                    <div style="font-size:13px;color:#E6E1DA;margin-top:6px">${it.cant === 1 ? 'unidad' : 'unidades'}</div>
+                </div>
+
+                <br>
+                <button onclick="_siguientePasoArmado()" style="background:${esUltimo?'linear-gradient(135deg,#4E7A62,#3D5E4A)':'linear-gradient(135deg,#3D312A,#52433A)'};color:white;border:none;padding:16px 48px;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(61,49,42,0.25);transition:all 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+                    <i class="fas ${esUltimo?'fa-flag-checkered':'fa-check'}"></i>
+                    ${esUltimo ? 'Ver Resumen Final' : 'Listo, siguiente →'}
+                </button>
+                <br><br>
+                <button onclick="document.getElementById('modal-armado').remove();_armadoPedidoData=null" style="background:none;border:none;color:#8C7E74;cursor:pointer;font-size:12px">Cancelar y salir</button>
+            </div>`;
+    } else {
+        modal.innerHTML = `
+            <div style="background:#fff;border-radius:32px;padding:36px;max-width:580px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,0,0.3)">
+                <div style="text-align:center;margin-bottom:28px">
+                    <div style="width:72px;height:72px;background:linear-gradient(135deg,#4E7A62,#3D5E4A);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px;color:#fff">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <h2 style="font-family:'Playfair Display',serif;font-size:24px;color:#3D312A;margin-bottom:6px">¡Pedido Completo!</h2>
+                    <p style="color:#8C7E74;font-size:13px">Revisá el resumen antes de marcar como armado</p>
+                </div>
+
+                <div style="background:#F6F3EA;border-radius:18px;padding:18px;margin-bottom:14px">
+                    <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px"><i class="fas fa-user" style="color:#C5A880;margin-right:6px"></i>Cliente</div>
+                    <div style="font-size:13px;display:flex;flex-direction:column;gap:7px;color:#3D312A">
+                        <div><strong>${escapeHtml((cliente.nombre||'')+' '+(cliente.apellido||''))}</strong></div>
+                        ${cliente.telefono?`<div><i class="fas fa-phone" style="color:#C5A880;width:16px"></i> ${escapeHtml(cliente.telefono)}</div>`:''}
+                        ${cliente.email?`<div><i class="fas fa-envelope" style="color:#C5A880;width:16px"></i> ${escapeHtml(cliente.email)}</div>`:''}
+                        ${pedido.tipoEntrega==='envio'?`
+                            <div style="padding-top:8px;border-top:1px solid #E6E1DA;margin-top:4px">
+                                <div><i class="fas fa-truck" style="color:#C5A880;width:16px"></i> <strong>Envío</strong>${pedido.metodoEnvio?' — '+escapeHtml(pedido.metodoEnvio):''}</div>
+                                ${cliente.direccion?`<div style="margin-top:4px;color:#8C7E74;font-size:12px">${escapeHtml(cliente.direccion)}, ${escapeHtml(cliente.localidad||'')} ${escapeHtml(cliente.cp?'('+cliente.cp+')':'')} — ${escapeHtml(cliente.provincia||'')}</div>`:''}
+                            </div>
+                        `:`<div><i class="fas fa-store" style="color:#C5A880;width:16px"></i> <strong>Retiro en local</strong></div>`}
+                    </div>
+                </div>
+
+                <div style="background:#F6F3EA;border-radius:18px;padding:18px;margin-bottom:14px">
+                    <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px"><i class="fas fa-boxes" style="color:#C5A880;margin-right:6px"></i>Artículos Armados</div>
+                    ${items.map(it => `
+                        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #E6E1DA">
+                            <div style="width:44px;height:44px;border-radius:10px;overflow:hidden;background:#fff;border:1px solid #E6E1DA;flex-shrink:0">
+                                ${it.vFoto?`<img src="${sanitizarUrl(it.vFoto)}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#C5A880"><i class="fas fa-image"></i></div>`}
+                            </div>
+                            <div style="flex:1;font-size:12px">
+                                <strong style="color:#3D312A">${escapeHtml(it.pNom||'')}</strong>
+                                <div style="color:#8C7E74">${escapeHtml(it.vNom||'')} × <strong style="color:#3D312A">${it.cant}</strong></div>
+                            </div>
+                            <div style="background:#E4EDE1;color:#4E7A62;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0"><i class="fas fa-check"></i></div>
+                        </div>`).join('')}
+                </div>
+
+                <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:16px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                    <span style="color:#E6E1DA;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Total del Pedido</span>
+                    <span style="font-family:'Playfair Display',serif;font-size:22px;font-weight:800;color:#C5A880">${fmt.format(pedido.total||0)}</span>
+                </div>
+
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <button onclick="marcarPedidoArmado('${pedido.id}');document.getElementById('modal-armado').remove();_armadoPedidoData=null"
+                            style="flex:1;background:linear-gradient(135deg,#4E7A62,#3D5E4A);color:white;border:none;padding:15px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(78,122,98,0.3)">
+                        <i class="fas fa-box-open"></i> Marcar como Armado
+                    </button>
+                    <button onclick="document.getElementById('modal-armado').remove();_armadoPedidoData=null"
+                            style="background:#F6F3EA;color:#3D312A;border:none;padding:15px 22px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer">
+                        Cerrar
+                    </button>
+                </div>
+            </div>`;
+    }
+    document.body.appendChild(modal);
+}
+
+async function marcarPedidoArmado(id) {
+    try {
+        await safeFetch('/tienda/marcar-armado', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pedidoId:id}) });
+        mostrarToast('✅ Pedido marcado como armado');
+        cargarPedidosTienda();
+    } catch(e) {}
+}
+    
 async function confirmarPedidoAdmin(id) {
     try {
         await safeFetch('/tienda/confirmar-pedido', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pedidoId:id}) });
@@ -2266,10 +2398,10 @@ function verDetallePedido(id) {
                     <span style="color:#E6E1DA;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Total del Pedido</span>
                     <span style="font-family:'Playfair Display',serif;font-size:24px;font-weight:800;color:#C5A880">${fmt.format(p.total||0)}</span>
                 </div>
-
                 <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-                    ${p.estado==='pendiente'?`<button onclick="confirmarPedidoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#4E7A62;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-check"></i> Confirmar Pedido</button>`:''}
-                    ${p.estado==='confirmado'||p.estado==='abonado'?`<button onclick="marcarEnviadoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#3D312A;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-truck"></i> Marcar Enviado</button>`:''}
+                    ${p.estado!=='cancelado'&&p.estado!=='entregado'&&p.estado!=='armado'?`<button onclick="this.closest('.modal').remove();iniciarArmadoPedido('${p.id}')" style="background:linear-gradient(135deg,#C5A880,#A8845A);color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(197,168,128,0.4)"><i class="fas fa-box-open"></i> Armar Pedido</button>`:''}
+                    ${p.estado==='pendiente'?`<button onclick="confirmarPedidoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#4E7A62;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-check"></i> Confirmar</button>`:''}
+                    ${p.estado==='confirmado'||p.estado==='abonado'||p.estado==='armado'?`<button onclick="marcarEnviadoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#3D312A;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-truck"></i> Enviado</button>`:''}
                     ${p.estado==='pendiente'?`<button onclick="cancelarPedidoAdmin('${p.id}');this.closest('.modal').remove()" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-times"></i> Cancelar</button>`:''}
                     <button onclick="this.closest('.modal').remove()" style="background:#F6F3EA;color:#3D312A;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:600">Cerrar</button>
                 </div>
