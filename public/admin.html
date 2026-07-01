@@ -667,35 +667,197 @@ async function safeFetch(url, options={}) {
     } catch(e) { mostrarToast(e.message, true); throw e; } 
 }
 
-// 🔥 INYECTADO: RENDER DE PÁGINA CLIENTES
-function renderPaginaClientes() {
-    return `
-        <div class="panel" style="border: 1px solid #E6E1DA; background: #ffffff;">
-            <h3 style="color: #3D312A; font-family: 'Playfair Display', serif; font-weight: 800; font-size: 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-users" style="color: #C5A880;"></i> Clientes Registrados
-            </h3>
-            <div class="ventas-buscador" style="margin-bottom: 20px;">
-                <input type="text" id="clientes-buscador" placeholder="🔍 Buscar cliente por nombre o datos..." onkeyup="filtrarClientes()" style="border-radius: 50px; padding: 14px 20px;">
+async function cargarClientes() {
+    try {
+        const d = await safeFetch('/admin/listar-clientes', { method: 'POST' });
+        todosClientes = d.lista || [];
+        renderizarClientes(todosClientes);
+    } catch(e) {}
+}
+
+function renderizarClientes(lista) {
+    const badge = document.getElementById('clientes-total-badge');
+    if (badge) badge.innerHTML = `<i class="fas fa-users"></i> ${lista.length} clientes`;
+
+    const stats = document.getElementById('clientes-stats');
+    if (stats) {
+        const conDatos = lista.filter(c => c.dni && c.dni.trim() !== '').length;
+        const conTel = lista.filter(c => c.telefono && c.telefono.trim() !== '').length;
+        stats.innerHTML = `
+            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-users" style="color:#C5A880;font-size:26px;margin-bottom:8px"></i><h3>${lista.length}</h3><p style="color:#8C7E74;font-size:12px">Total clientes</p></div>
+            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-id-card" style="color:#4E7A62;font-size:26px;margin-bottom:8px"></i><h3>${conDatos}</h3><p style="color:#8C7E74;font-size:12px">Con DNI cargado</p></div>
+            <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-phone" style="color:#3D312A;font-size:26px;margin-bottom:8px"></i><h3>${conTel}</h3><p style="color:#8C7E74;font-size:12px">Con teléfono</p></div>
+        `;
+    }
+
+    const grid = document.getElementById('clientes-grid');
+    if (!grid) return;
+
+    if (!lista.length) {
+        grid.innerHTML = `<div style="text-align:center;padding:48px;color:#8C7E74"><i class="fas fa-users" style="font-size:40px;margin-bottom:12px;display:block;opacity:0.3"></i>No se encontraron clientes</div>`;
+        return;
+    }
+
+    grid.innerHTML = lista.map(c => `
+        <div style="background:#fff;border-radius:20px;border:1px solid #E6E1DA;overflow:hidden;transition:all 0.3s" onmouseover="this.style.boxShadow='0 4px 16px rgba(61,49,42,0.08)'" onmouseout="this.style.boxShadow=''">
+            <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                <div style="display:flex;align-items:center;gap:14px">
+                    <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#3D312A,#52433A);display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:18px;font-weight:700;flex-shrink:0">
+                        ${(c.nombre||'?')[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:15px;color:#3D312A">${escapeHtml(c.nombre||'')} ${escapeHtml(c.apellido||'')}</div>
+                        <div style="font-size:12px;color:#8C7E74;margin-top:2px">${escapeHtml(c.email||'')}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                    <button onclick="verHistorialClienteCompleto('${c.id}','${escapeHtml(c.nombre||'')} ${escapeHtml(c.apellido||'')}')" style="background:#3D312A;color:white;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+                        <i class="fas fa-history"></i> Ver Historial
+                    </button>
+                    <button onclick="toggleDatosCliente('datos-${c.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+                        <i class="fas fa-info-circle"></i> Datos
+                    </button>
+                </div>
             </div>
-            <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #F6F3EA; color: #3D312A; font-size: 13px; font-weight: 600;">
-                            <th style="padding: 14px; text-align: left; border-top-left-radius: 14px; border-bottom-left-radius: 14px;">Cliente / Información</th>
-                            <th style="padding: 14px; text-align: right; border-top-right-radius: 14px; border-bottom-right-radius: 14px;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lista-clientes-body">
-                        <tr>
-                            <td colspan="2" style="text-align:center; padding: 32px; color: #8C7E74;">
-                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px; color: #C5A880;"></i><br>Sincronizando base de clientes...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div id="datos-${c.id}" style="display:none;padding:0 20px 16px;border-top:1px solid #F6F3EA;margin-top:0">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding-top:14px">
+                    <div style="background:#F6F3EA;border-radius:12px;padding:10px 14px">
+                        <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">DNI</div>
+                        <div style="font-size:13px;font-weight:600;color:#3D312A">${escapeHtml(c.dni||'—')}</div>
+                    </div>
+                    <div style="background:#F6F3EA;border-radius:12px;padding:10px 14px">
+                        <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Teléfono</div>
+                        <div style="font-size:13px;font-weight:600;color:#3D312A">${escapeHtml(c.telefono||'—')}</div>
+                    </div>
+                    <div style="background:#F6F3EA;border-radius:12px;padding:10px 14px">
+                        <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Provincia</div>
+                        <div style="font-size:13px;font-weight:600;color:#3D312A">${escapeHtml(c.provincia||'—')}</div>
+                    </div>
+                    <div style="background:#F6F3EA;border-radius:12px;padding:10px 14px">
+                        <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Localidad</div>
+                        <div style="font-size:13px;font-weight:600;color:#3D312A">${escapeHtml(c.localidad||'—')}</div>
+                    </div>
+                    <div style="background:#F6F3EA;border-radius:12px;padding:10px 14px">
+                        <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">CP</div>
+                        <div style="font-size:13px;font-weight:600;color:#3D312A">${escapeHtml(c.cp||'—')}</div>
+                    </div>
+                    <div style="background:#F6F3EA;border-radius:12px;padding:10px 14px">
+                        <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Dirección</div>
+                        <div style="font-size:13px;font-weight:600;color:#3D312A">${escapeHtml(c.direccion||'—')}</div>
+                    </div>
+                </div>
             </div>
         </div>
-    `;
+    `).join('');
+}
+
+function toggleDatosCliente(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function filtrarClientes() {
+    const busq = (document.getElementById('clientes-buscador')?.value || '').toLowerCase();
+    const lista = busq ? todosClientes.filter(c =>
+        (c.nombre||'').toLowerCase().includes(busq) ||
+        (c.apellido||'').toLowerCase().includes(busq) ||
+        (c.dni||'').toLowerCase().includes(busq) ||
+        (c.email||'').toLowerCase().includes(busq) ||
+        (c.telefono||'').toLowerCase().includes(busq)
+    ) : todosClientes;
+    renderizarClientes(lista);
+}
+
+async function verHistorialClienteCompleto(id, nombre) {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:700px">
+            <div class="modal-header">
+                <h3><i class="fas fa-history" style="color:#C5A880;margin-right:8px"></i> Historial de ${escapeHtml(nombre)}</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div id="historial-modal-body" style="padding:20px;text-align:center;color:#8C7E74">
+                <i class="fas fa-spinner fa-spin" style="font-size:28px;color:#C5A880;margin-bottom:12px;display:block"></i>Cargando historial...
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+
+    try {
+        const d = await safeFetch('/admin/historial-cliente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: id })
+        });
+
+        const ventas = d.ventas || [];
+        const pedidos = d.pedidos || [];
+        const body = document.getElementById('historial-modal-body');
+
+        if (!ventas.length && !pedidos.length) {
+            body.innerHTML = `<div style="text-align:center;padding:32px;color:#8C7E74"><i class="fas fa-inbox" style="font-size:36px;opacity:0.3;display:block;margin-bottom:12px"></i>Este cliente aún no tiene actividad registrada</div>`;
+            return;
+        }
+
+        let html = '';
+
+        if (pedidos.length) {
+            html += `<div style="margin-bottom:20px">
+                <h4 style="font-size:13px;font-weight:700;color:#3D312A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fas fa-shopping-cart" style="color:#C5A880"></i> Pedidos Web (${pedidos.length})</h4>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                    ${pedidos.map(p => {
+                        const estados = {pendiente:'#DE9B72',confirmado:'#3D312A',abonado:'#4E7A62',enviado:'#C5A880',entregado:'#4E7A62',cancelado:'#D96B6B'};
+                        const color = estados[p.estado] || '#8C7E74';
+                        return `<div style="background:#F6F3EA;border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                            <div>
+                                <div style="font-weight:700;font-size:13px;color:#3D312A">${escapeHtml(p.id)}</div>
+                                <div style="font-size:11px;color:#8C7E74;margin-top:2px">${escapeHtml(p.fecha||'')}</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <strong style="font-size:14px;color:#3D312A">${fmt.format(p.total||0)}</strong>
+                                <span style="background:${color}20;color:${color};font-size:10px;font-weight:700;padding:4px 10px;border-radius:50px;text-transform:uppercase">${escapeHtml(p.estado||'')}</span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
+        if (ventas.length) {
+            html += `<div>
+                <h4 style="font-size:13px;font-weight:700;color:#3D312A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fas fa-receipt" style="color:#C5A880"></i> Ventas en Local (${ventas.length})</h4>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                    ${ventas.map(v => `
+                        <div style="background:#F6F3EA;border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                            <div>
+                                <div style="font-weight:700;font-size:13px;color:#3D312A">${escapeHtml(v.id||'')}</div>
+                                <div style="font-size:11px;color:#8C7E74;margin-top:2px">${escapeHtml(v.fecha||'')}</div>
+                            </div>
+                            <strong style="font-size:14px;color:#4E7A62">${fmt.format(v.total||0)}</strong>
+                        </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        body.innerHTML = html;
+    } catch(e) {
+        document.getElementById('historial-modal-body').innerHTML = `<div style="text-align:center;padding:24px;color:#D96B6B"><i class="fas fa-exclamation-circle"></i> Error al cargar el historial</div>`;
+    }
+}
+
+async function eliminarCliente(id, nombre) {
+    if (!confirm(`¿Eliminar al cliente ${nombre}? Esta acción no se puede deshacer.`)) return;
+    const pwd = prompt('Ingresá tu contraseña de admin para confirmar:');
+    if (!pwd) return;
+    try {
+        await safeFetch('/admin/eliminar-cliente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: id, adminPassword: pwd })
+        });
+        mostrarToast('✅ Cliente eliminado');
+        cargarClientes();
+    } catch(e) {}
 }
 
 function renderPaginaRendimiento() {
