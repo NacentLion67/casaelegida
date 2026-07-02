@@ -868,13 +868,11 @@ function renderPaginaRendimiento() {
         <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:28px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
             <div>
                 <h2 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:26px;display:flex;align-items:center;gap:12px"><i class="fas fa-chart-line" style="color:#C5A880"></i> Rendimiento de Artículos</h2>
-                <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Costos, precios, ganancias y stock de cada artículo</p>
+                <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Ventas por producto — admin y tienda web</p>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-                <span id="rend-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-box"></i> Cargando...</span>
-                <button onclick="sincronizarVentasWeb()" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer"><i class="fas fa-sync-alt"></i> Sincronizar ventas web</button>
-            </div>
+            <span id="rend-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-box"></i> Cargando...</span>
         </div>
+
         <div class="panel" style="padding:20px">
             <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
                 <div style="flex:1;min-width:220px;position:relative">
@@ -896,45 +894,81 @@ function renderPaginaRendimiento() {
                 </select>
             </div>
         </div>
+
         <div id="rendimiento-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px"></div>
         <div id="rendimiento-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
             <div style="grid-column:1/-1;text-align:center;padding:48px;color:#8C7E74">
                 <i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;color:#C5A880;display:block"></i>Cargando artículos...
             </div>
         </div>
+
         <div class="panel" style="padding:0;overflow:hidden;border-radius:24px">
             <div style="background:linear-gradient(135deg,#3D312A,#52433A);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-                <h3 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:20px;display:flex;align-items:center;gap:10px"><i class="fas fa-history" style="color:#C5A880"></i> Historial de Ganancias</h3>
+                <h3 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:20px;display:flex;align-items:center;gap:10px">
+                    <i class="fas fa-chart-bar" style="color:#C5A880"></i> Ventas por Producto
+                </h3>
                 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                    <input type="date" id="gan-desde" style="padding:8px 14px;border-radius:50px;border:1px solid rgba(197,168,128,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:12px">
+                    <input type="date" id="rend-desde" style="padding:8px 14px;border-radius:50px;border:1px solid rgba(197,168,128,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:12px">
                     <span style="color:#C5A880;font-size:12px">hasta</span>
-                    <input type="date" id="gan-hasta" style="padding:8px 14px;border-radius:50px;border:1px solid rgba(197,168,128,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:12px">
-                    <button onclick="cargarHistorialGanancias()" style="background:#C5A880;color:#3D312A;border:none;padding:8px 20px;border-radius:50px;font-weight:700;font-size:12px;cursor:pointer"><i class="fas fa-search"></i> Filtrar</button>
-                    <button onclick="document.getElementById('gan-desde').value='';document.getElementById('gan-hasta').value='';cargarHistorialGanancias()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:8px 14px;border-radius:50px;font-size:12px;cursor:pointer"><i class="fas fa-times"></i></button>
+                    <input type="date" id="rend-hasta" style="padding:8px 14px;border-radius:50px;border:1px solid rgba(197,168,128,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:12px">
+                    <button onclick="cargarRendimientoProductos()" style="background:#C5A880;color:#3D312A;border:none;padding:8px 20px;border-radius:50px;font-weight:700;font-size:12px;cursor:pointer"><i class="fas fa-search"></i> Filtrar</button>
+                    <button onclick="document.getElementById('rend-desde').value='';document.getElementById('rend-hasta').value='';cargarRendimientoProductos()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:8px 14px;border-radius:50px;font-size:12px;cursor:pointer"><i class="fas fa-times"></i></button>
                 </div>
             </div>
             <div style="padding:20px">
-                <div id="historial-ganancias-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px"></div>
-                <div style="overflow-x:auto">
-                    <table style="width:100%;border-collapse:collapse">
-                        <thead>
-                            <tr style="background:#F6F3EA;font-size:12px;font-weight:600;color:#3D312A">
-                                <th style="padding:12px 14px;text-align:left;border-radius:12px 0 0 12px">Fecha</th>
-                                <th style="padding:12px 14px;text-align:left">ID Venta</th>
-                                <th style="padding:12px 14px;text-align:left">Cliente</th>
-                                <th style="padding:12px 14px;text-align:right">Total Venta</th>
-                                <th style="padding:12px 14px;text-align:right">Ganancia</th>
-                                <th style="padding:12px 14px;text-align:center;border-radius:0 12px 12px 0">Detalle</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historial-ganancias-body">
-                            <tr><td colspan="6" style="text-align:center;padding:32px;color:#8C7E74"><i class="fas fa-filter" style="margin-right:8px;color:#C5A880"></i>Seleccioná un período y presioná Filtrar</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+                <div id="rend-prod-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px"></div>
+                <div id="rend-prod-tabla"></div>
             </div>
         </div>
     </div>`;
+}
+
+async function cargarRendimientoProductos() {
+    const desde = document.getElementById('rend-desde')?.value || '';
+    const hasta = document.getElementById('rend-hasta')?.value || '';
+    const tablaDiv = document.getElementById('rend-prod-tabla');
+    const statsDiv = document.getElementById('rend-prod-stats');
+    if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:32px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="color:#C5A880;margin-right:8px"></i>Calculando...</div>`;
+    try {
+        const d = await safeFetch('/admin/rendimiento-productos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({desde,hasta}) });
+        const lista = d.rendimiento || [];
+        if (statsDiv) statsDiv.innerHTML = `
+            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-shopping-bag" style="color:#C5A880;font-size:24px;margin-bottom:6px"></i><h3>${fmt.format(d.totalIngresos||0)}</h3><p style="color:#8C7E74;font-size:12px">Total ingresos</p></div>
+            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-receipt" style="color:#4E7A62;font-size:24px;margin-bottom:6px"></i><h3>${d.totalVentas||0}</h3><p style="color:#8C7E74;font-size:12px">Ventas totales</p></div>
+            <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-boxes" style="color:#3D312A;font-size:24px;margin-bottom:6px"></i><h3>${lista.reduce((s,x)=>s+x.unidades,0)}</h3><p style="color:#8C7E74;font-size:12px">Unidades vendidas</p></div>
+            <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-layer-group" style="color:#DE9B72;font-size:24px;margin-bottom:6px"></i><h3>${lista.length}</h3><p style="color:#8C7E74;font-size:12px">Productos distintos</p></div>`;
+        if (!lista.length) { if(tablaDiv) tablaDiv.innerHTML=`<div style="text-align:center;padding:32px;color:#8C7E74">No hay ventas en el período seleccionado</div>`; return; }
+        if (tablaDiv) tablaDiv.innerHTML = `
+            <div style="overflow-x:auto;border-radius:16px;border:1px solid #E6E1DA;overflow:hidden">
+                <table style="width:100%;border-collapse:collapse">
+                    <thead>
+                        <tr style="background:linear-gradient(135deg,#3D312A,#52433A)">
+                            <th style="padding:13px 14px;text-align:left;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Producto</th>
+                            <th style="padding:13px 14px;text-align:center;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Unidades</th>
+                            <th style="padding:13px 14px;text-align:center;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Admin</th>
+                            <th style="padding:13px 14px;text-align:center;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Web</th>
+                            <th style="padding:13px 14px;text-align:right;font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:0.5px">Ingresos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${lista.map((r, i) => `
+                            <tr style="border-bottom:1px solid #E6E1DA;background:${i%2===0?'#fff':'#F6F3EA'}" onmouseover="this.style.background='#EDE8E1'" onmouseout="this.style.background='${i%2===0?'#fff':'#F6F3EA'}'">
+                                <td style="padding:12px 14px;font-size:13px;font-weight:600;color:#3D312A">${escapeHtml(r.nombre||'')}</td>
+                                <td style="padding:12px 14px;text-align:center">
+                                    <span style="background:#3D312A;color:#C5A880;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700">${r.unidades}</span>
+                                </td>
+                                <td style="padding:12px 14px;text-align:center">
+                                    <span style="background:#F6F3EA;color:#3D312A;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:600"><i class="fas fa-store" style="color:#C5A880"></i> ${r.ventasAdmin}</span>
+                                </td>
+                                <td style="padding:12px 14px;text-align:center">
+                                    <span style="background:#E4EDE1;color:#4E7A62;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:600"><i class="fas fa-globe" style="color:#4E7A62"></i> ${r.ventasWeb}</span>
+                                </td>
+                                <td style="padding:12px 14px;text-align:right;font-weight:800;font-size:14px;color:#3D312A">${fmt.format(r.ingresos)}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    } catch(e) { if(tablaDiv) tablaDiv.innerHTML=`<div style="text-align:center;padding:32px;color:#D96B6B"><i class="fas fa-exclamation-circle"></i> Error al cargar datos</div>`; }
 }
 
 async function sincronizarVentasWeb() {
@@ -1136,6 +1170,7 @@ function tab(t) {
         container.innerHTML=renderPaginaRendimiento(); 
         cartPanel.classList.add('hidden'); 
         cargarProductosRendimiento();
+        setTimeout(cargarRendimientoProductos, 300);
         setTimeout(cargarHistorialGanancias, 300); 
     }
     else if (t==='web') { 
