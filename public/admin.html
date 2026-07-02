@@ -2185,39 +2185,90 @@ async function cargarDatosRendProd(pid) {
     const hasta = document.getElementById(`rp-hasta-${pid}`)?.value || '';
     const statsDiv = document.getElementById(`rp-stats-${pid}`);
     const tablaDiv = document.getElementById(`rp-tabla-${pid}`);
+
     if (!desde && !hasta) {
         if (statsDiv) statsDiv.innerHTML = '';
         if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#8C7E74;background:#F6F3EA;border-radius:16px"><i class="fas fa-calendar-alt" style="font-size:36px;display:block;margin-bottom:12px;opacity:0.4;color:#C5A880"></i><strong>Seleccioná un período</strong><br><span style="font-size:12px">Elegí fecha desde y hasta, luego presioná Filtrar</span></div>`;
         return;
     }
+
     if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:24px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="color:#C5A880;margin-right:8px"></i>Calculando...</div>`;
+
     try {
         const d = await safeFetch('/admin/rendimiento-productos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({desde,hasta}) });
         const prod = (d.rendimiento||[]).find(r => r.productoId == pid);
+
         if (!prod) {
             if (statsDiv) statsDiv.innerHTML = '';
             if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:32px;color:#8C7E74"><i class="fas fa-inbox" style="font-size:32px;display:block;margin-bottom:12px;opacity:0.3"></i>Sin ventas en el período seleccionado</div>`;
             return;
         }
+
+        const costo = costosProductos[pid];
+        const costoTotal = costo ? parseFloat(costo.costoTotal) : 0;
+        const prodData = productosRendimiento.find(p => p.id == pid);
+        const precioMenor = prodData?.precio || 0;
+        const precioMayor = prodData?.precioMayor || 0;
+        const ganMenorUnit = precioMenor - costoTotal;
+        const ganMayorUnit = precioMayor - costoTotal;
+        const ganMenorTotal = ganMenorUnit * prod.ventasAdmin;
+        const ganMayorTotal = ganMayorUnit * prod.ventasWeb;
+        const ganTotal = ganMenorTotal + ganMayorTotal;
+
         if (statsDiv) statsDiv.innerHTML = `
-            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-boxes" style="color:#C5A880;font-size:22px;margin-bottom:6px"></i><h3>${prod.unidades}</h3><p style="color:#8C7E74;font-size:12px">Unidades vendidas</p></div>
-            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-dollar-sign" style="color:#4E7A62;font-size:22px;margin-bottom:6px"></i><h3>${fmt.format(prod.ingresos)}</h3><p style="color:#8C7E74;font-size:12px">Ingresos totales</p></div>
-            <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-store" style="color:#3D312A;font-size:22px;margin-bottom:6px"></i><h3>${prod.ventasAdmin}</h3><p style="color:#8C7E74;font-size:12px">Vendidas en local</p></div>
-            <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-globe" style="color:#DE9B72;font-size:22px;margin-bottom:6px"></i><h3>${prod.ventasWeb}</h3><p style="color:#8C7E74;font-size:12px">Vendidas en web</p></div>`;
-        if (tablaDiv) tablaDiv.innerHTML = `
-            <div style="background:#F6F3EA;border-radius:16px;padding:16px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                    <span style="font-size:13px;color:#8C7E74">Origen Admin</span>
-                    <div style="background:#3D312A;border-radius:50px;height:8px;flex:1;margin:0 12px;overflow:hidden"><div style="height:100%;background:#C5A880;width:${prod.unidades>0?Math.round((prod.ventasAdmin/prod.unidades)*100):0}%"></div></div>
-                    <strong style="font-size:13px;color:#3D312A;min-width:30px;text-align:right">${prod.unidades>0?Math.round((prod.ventasAdmin/prod.unidades)*100):0}%</strong>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div style="background:#F6F3EA;border-radius:16px;padding:16px;text-align:center">
+                    <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px"><i class="fas fa-boxes" style="color:#C5A880"></i> Unidades vendidas</div>
+                    <div style="font-size:28px;font-weight:800;color:#3D312A">${prod.unidades}</div>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="font-size:13px;color:#8C7E74">Origen Web</span>
-                    <div style="background:#3D312A;border-radius:50px;height:8px;flex:1;margin:0 12px;overflow:hidden"><div style="height:100%;background:#4E7A62;width:${prod.unidades>0?Math.round((prod.ventasWeb/prod.unidades)*100):0}%"></div></div>
-                    <strong style="font-size:13px;color:#3D312A;min-width:30px;text-align:right">${prod.unidades>0?Math.round((prod.ventasWeb/prod.unidades)*100):0}%</strong>
+                <div style="background:#F6F3EA;border-radius:16px;padding:16px;text-align:center">
+                    <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px"><i class="fas fa-dollar-sign" style="color:#4E7A62"></i> Ingresos totales</div>
+                    <div style="font-size:22px;font-weight:800;color:#4E7A62">${fmt.format(prod.ingresos)}</div>
                 </div>
-            </div>`;
-    } catch(e) { if(tablaDiv) tablaDiv.innerHTML=`<div style="text-align:center;padding:24px;color:#D96B6B"><i class="fas fa-exclamation-circle"></i> Error al cargar</div>`; }
+                <div style="background:#F6F3EA;border-radius:16px;padding:16px;text-align:center">
+                    <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px"><i class="fas fa-store" style="color:#3D312A"></i> Vendidas en local</div>
+                    <div style="font-size:28px;font-weight:800;color:#3D312A">${prod.ventasAdmin}</div>
+                </div>
+                <div style="background:#F6F3EA;border-radius:16px;padding:16px;text-align:center">
+                    <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px"><i class="fas fa-globe" style="color:#DE9B72"></i> Vendidas en web</div>
+                    <div style="font-size:28px;font-weight:800;color:#DE9B72">${prod.ventasWeb}</div>
+                </div>
+            </div>
+
+            ${costoTotal > 0 ? `
+            <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px">
+                <div style="font-size:10px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px"><i class="fas fa-chart-line"></i> Ganancias del producto</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,255,255,0.07);border-radius:12px">
+                    <div>
+                        <div style="font-size:11px;color:#C5A880;font-weight:700">Precio Menor — ${prod.ventasAdmin} u. × ${fmt.format(ganMenorUnit)}/u</div>
+                        <div style="font-size:10px;color:#E6E1DA;opacity:0.6;margin-top:2px">Precio ${fmt.format(precioMenor)} − Costo ${fmt.format(costoTotal)}</div>
+                    </div>
+                    <div style="font-size:18px;font-weight:800;color:${ganMenorTotal>=0?'#4E7A62':'#D96B6B'}">${fmt.format(ganMenorTotal)}</div>
+                </div>
+                ${precioMayor > 0 ? `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(255,255,255,0.07);border-radius:12px">
+                    <div>
+                        <div style="font-size:11px;color:#C5A880;font-weight:700">Precio Mayor — ${prod.ventasWeb} u. × ${fmt.format(ganMayorUnit)}/u</div>
+                        <div style="font-size:10px;color:#E6E1DA;opacity:0.6;margin-top:2px">Precio ${fmt.format(precioMayor)} − Costo ${fmt.format(costoTotal)}</div>
+                    </div>
+                    <div style="font-size:18px;font-weight:800;color:${ganMayorTotal>=0?'#4E7A62':'#D96B6B'}">${fmt.format(ganMayorTotal)}</div>
+                </div>` : ''}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:rgba(197,168,128,0.15);border-radius:12px;border:1px solid rgba(197,168,128,0.3)">
+                    <div style="font-size:13px;font-weight:700;color:#C5A880">GANANCIA TOTAL</div>
+                    <div style="font-size:22px;font-weight:800;color:${ganTotal>=0?'#C5A880':'#D96B6B'}">${fmt.format(ganTotal)}</div>
+                </div>
+            </div>` : `
+            <div style="background:#FFF8F0;border:2px dashed #DE9B72;border-radius:16px;padding:20px;text-align:center">
+                <i class="fas fa-exclamation-triangle" style="color:#DE9B72;font-size:24px;display:block;margin-bottom:8px"></i>
+                <p style="color:#8C7E74;font-size:13px;margin:0">Sin costo cargado — no se puede calcular ganancia</p>
+            </div>`}`;
+
+        if (tablaDiv) tablaDiv.innerHTML = '';
+
+    } catch(e) {
+        if (statsDiv) statsDiv.innerHTML = '';
+        if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:24px;color:#D96B6B"><i class="fas fa-exclamation-circle"></i> Error al cargar datos</div>`;
+    }
 }
     
 function filtrarRendimiento() {
