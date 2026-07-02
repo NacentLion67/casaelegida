@@ -2884,18 +2884,74 @@ async function cambiarPassword(){}
 function abrirBuscadorClientes(){}
 async function exportarVentasCSV(){ const r=await fetch('/admin/exportar-ventas',{method:'POST',headers:{'Authorization':`Bearer ${adminToken}`}}); }
 
-async function verEstadoCaja() {
-    try {
-        const d = await safeFetch('/admin/estado-caja', { method:'POST' });
-        cajaActual = d.turno;
-        const indicador = document.getElementById('caja-indicador');
-        if (!indicador) return;
+async function verEstadoCaja(){ 
+    try { 
+        const d = await safeFetch('/admin/estado-caja-profesional', {method:'POST'}); 
+        const c = document.getElementById('estado-caja'); 
+        if (!c) return;
+        
         if (d.abierta) {
-            indicador.innerHTML = `<button onclick="abrirCajaProfesional()" style="background:#E4EDE1;border:2px solid #4E7A62;color:#4E7A62;padding:7px 16px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="fas fa-cash-register"></i> CAJA ABIERTA <span style="opacity:0.7">• ${escapeHtml(d.turno.perfilnombre||'')}</span></button>`;
+            c.innerHTML = `
+                <div style="background:#E4EDE1; border:1px solid #4E7A62; border-radius:16px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                    <div style="color:#3C763D; font-size:14px; font-weight:600;">
+                        <i class="fas fa-lock-open"></i> Caja Abierta por: <strong>${escapeHtml(d.abiertaPor)}</strong>
+                        <span style="font-size:12px; display:block; color:#4E7A62; font-weight:500; margin-top:2px;">
+                            Esperado en Efectivo: ${fmt.format(d.totalEsperadoEfectivo)} | Transferencias: ${fmt.format(d.totalEsperadoTransferencia)}
+                        </span>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="number" id="cierre-efectivo-entregado" placeholder="Efectivo real en caja" style="max-width:160px; padding:8px 12px; border-radius:50px;">
+                        <input type="number" id="cierre-transferencia-entregada" placeholder="Transf. real en cuenta" style="max-width:160px; padding:8px 12px; border-radius:50px;">
+                        <button onclick="ejecutarCierreCaja()" class="tab-btn btn-danger" style="padding:10px 20px; border-radius:50px;"><i class="fas fa-lock"></i> Cerrar Caja</button>
+                    </div>
+                </div>`;
         } else {
-            indicador.innerHTML = `<button onclick="abrirCajaProfesional()" style="background:#FFF0F0;border:2px solid #D96B6B;color:#D96B6B;padding:7px 16px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="fas fa-cash-register"></i> CAJA CERRADA</button>`;
+            c.innerHTML = `
+                <div style="background:#FFF8F0; border:1px solid #DE9B72; border-radius:16px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                    <div style="color:#A94442; font-size:14px; font-weight:600;">
+                        <i class="fas fa-lock"></i> La caja del día de hoy se encuentra cerrada.
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="number" id="apertura-monto-efectivo" placeholder="Monto inicial Ef." style="max-width:150px; padding:8px 12px; border-radius:50px;">
+                        <input type="number" id="apertura-monto-transferencia" placeholder="Monto inicial Tr." style="max-width:150px; padding:8px 12px; border-radius:50px;">
+                        <button onclick="ejecutarAperturaCaja()" class="tab-btn btn-success" style="padding:10px 20px; border-radius:50px;"><i class="fas fa-key"></i> Abrir Turno Caja</button>
+                    </div>
+                </div>`;
         }
-    } catch(e) {}
+    } catch(e){} 
+}
+
+async function ejecutarAperturaCaja() {
+    const montoEfectivo = parseFloat(document.getElementById('apertura-monto-efectivo')?.value) || 0;
+    const montoTransferencia = parseFloat(document.getElementById('apertura-monto-transferencia')?.value) || 0;
+    try {
+        await safeFetch('/admin/apertura-caja-profesional', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ montoEfectivo, montoTransferencia })
+        });
+        mostrarToast('✅ Caja abierta exitosamente');
+        verEstadoCaja();
+    } catch(e){}
+}
+
+async function ejecutarCierreCaja() {
+    const efectivoEntregado = parseFloat(document.getElementById('cierre-efectivo-entregado')?.value);
+    const transferenciaEntregada = parseFloat(document.getElementById('cierre-transferencia-entregada')?.value);
+    if(isNaN(efectivoEntregado) || isNaN(transferenciaEntregada)) {
+        mostrarToast('❌ Por favor ingrese los montos reales antes de cerrar', true);
+        return;
+    }
+    if(!confirm('¿Está seguro de que desea realizar el cierre de caja?')) return;
+    try {
+        await safeFetch('/admin/cierre-caja-profesional', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ efectivoEntregado, transferenciaEntregada })
+        });
+        mostrarToast('🔒 Caja cerrada y turno guardado');
+        verEstadoCaja();
+    } catch(e){}
 }
 
 function abrirCajaProfesional() {
