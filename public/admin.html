@@ -919,11 +919,42 @@ async function cargarRendimientoProductos() {
     try {
         const d = await safeFetch('/admin/rendimiento-productos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({desde,hasta}) });
         const lista = d.rendimiento || [];
+        const costo = costosProductos[pid];
+        const costoTotal = costo ? parseFloat(costo.costoTotal) : 0;
+        const prodData = productosRendimiento.find(p => p.id == pid);
+        const precioMenor = prodData?.precio || 0;
+        const precioMayor = prodData?.precioMayor || 0;
+        const ganMenorUnit = precioMenor - costoTotal;
+        const ganMayorUnit = precioMayor - costoTotal;
+        const ganMenorTotal = ganMenorUnit * prod.unidades;
+        const ganMayorTotal = ganMayorUnit * prod.unidades;
+
         if (statsDiv) statsDiv.innerHTML = `
-            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-shopping-bag" style="color:#C5A880;font-size:24px;margin-bottom:6px"></i><h3>${fmt.format(d.totalIngresos||0)}</h3><p style="color:#8C7E74;font-size:12px">Total ingresos</p></div>
-            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-receipt" style="color:#4E7A62;font-size:24px;margin-bottom:6px"></i><h3>${d.totalVentas||0}</h3><p style="color:#8C7E74;font-size:12px">Ventas totales</p></div>
-            <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-boxes" style="color:#3D312A;font-size:24px;margin-bottom:6px"></i><h3>${lista.reduce((s,x)=>s+x.unidades,0)}</h3><p style="color:#8C7E74;font-size:12px">Unidades vendidas</p></div>
-            <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-layer-group" style="color:#DE9B72;font-size:24px;margin-bottom:6px"></i><h3>${lista.length}</h3><p style="color:#8C7E74;font-size:12px">Productos distintos</p></div>`;
+            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-boxes" style="color:#C5A880;font-size:22px;margin-bottom:6px"></i><h3>${prod.unidades}</h3><p style="color:#8C7E74;font-size:12px">Unidades vendidas</p></div>
+            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-dollar-sign" style="color:#4E7A62;font-size:22px;margin-bottom:6px"></i><h3>${fmt.format(prod.ingresos)}</h3><p style="color:#8C7E74;font-size:12px">Ingresos totales</p></div>
+            <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-store" style="color:#3D312A;font-size:22px;margin-bottom:6px"></i><h3>${prod.ventasAdmin}</h3><p style="color:#8C7E74;font-size:12px">Vendidas en local</p></div>
+            <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-globe" style="color:#DE9B72;font-size:22px;margin-bottom:6px"></i><h3>${prod.ventasWeb}</h3><p style="color:#8C7E74;font-size:12px">Vendidas en web</p></div>
+            ${costoTotal > 0 ? `
+            <div class="stat-card" style="border-left:4px solid ${ganMenorUnit>=0?'#4E7A62':'#D96B6B'}">
+                <i class="fas fa-tag" style="color:${ganMenorUnit>=0?'#4E7A62':'#D96B6B'};font-size:22px;margin-bottom:6px"></i>
+                <h3 style="color:${ganMenorUnit>=0?'#4E7A62':'#D96B6B'}">${fmt.format(ganMenorTotal)}</h3>
+                <p style="color:#8C7E74;font-size:11px">Gan. x Menor (${fmt.format(ganMenorUnit)}/u)</p>
+            </div>
+            ${precioMayor > 0 ? `
+            <div class="stat-card" style="border-left:4px solid ${ganMayorUnit>=0?'#C5A880':'#D96B6B'}">
+                <i class="fas fa-tags" style="color:${ganMayorUnit>=0?'#C5A880':'#D96B6B'};font-size:22px;margin-bottom:6px"></i>
+                <h3 style="color:${ganMayorUnit>=0?'#C5A880':'#D96B6B'}">${fmt.format(ganMayorTotal)}</h3>
+                <p style="color:#8C7E74;font-size:11px">Gan. x Mayor (${fmt.format(ganMayorUnit)}/u)</p>
+            </div>` : ''}
+            <div class="stat-card" style="border-left:4px solid #3D312A">
+                <i class="fas fa-calculator" style="color:#3D312A;font-size:22px;margin-bottom:6px"></i>
+                <h3 style="color:#3D312A">${fmt.format(costoTotal)}</h3>
+                <p style="color:#8C7E74;font-size:11px">Costo unitario</p>
+            </div>` : `
+            <div class="stat-card" style="border-left:4px solid #DE9B72;grid-column:span 2">
+                <i class="fas fa-exclamation-triangle" style="color:#DE9B72;font-size:22px;margin-bottom:6px"></i>
+                <p style="color:#8C7E74;font-size:12px;margin:0">Sin costo cargado — no se puede calcular ganancia</p>
+            </div>`}`;
         if (!lista.length) { if(tablaDiv) tablaDiv.innerHTML=`<div style="text-align:center;padding:32px;color:#8C7E74">No hay ventas en el período seleccionado</div>`; return; }
         if (tablaDiv) tablaDiv.innerHTML = `
             <div style="overflow-x:auto;border-radius:16px;border:1px solid #E6E1DA;overflow:hidden">
