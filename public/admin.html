@@ -557,11 +557,13 @@ body.dark-mode .config-section h3 { color: #C5A880; }
         <button id="t-rendimiento" class="tab-btn btn-success" data-permiso="ventas" onclick="tab('rendimiento')"><i class="fas fa-chart-line"></i> Rendimiento</button>
         <button id="t-web" class="tab-btn" data-permiso="web" onclick="tab('web')"><i class="fas fa-paint-brush"></i> Edición Web</button>
         <button id="t-backup" class="tab-btn btn-warning" data-permiso="config" onclick="tab('backup')"><i class="fas fa-database"></i> Backup</button>
+        <button id="t-historial-caja" class="tab-btn" data-permiso="ventas" onclick="tab('historial-caja')"><i class="fas fa-cash-register"></i> Historial Caja</button>
         <div style="margin-left:auto;position:relative">
             <button class="tab-btn" onclick="toggleNotificaciones()" style="position:relative"><i class="fas fa-bell"></i><span id="notif-count" class="notif-badge" style="display:none">0</span></button>
             <div id="notif-panel" class="notif-panel" style="display:none"><div class="notif-header"><h4>Notificaciones</h4><button onclick="marcarTodasLeidas()" style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:12px">Todas leídas</button></div><div id="notif-list" class="notif-list"></div></div>
         </div>
         <button class="tab-btn" onclick="abrirModalCambiarPassword()"><i class="fas fa-key"></i></button>
+        <div id="caja-indicador" style="display:flex;align-items:center"></div>
         <button class="tab-btn btn-danger" onclick="cerrarSesionAdmin()"><i class="fas fa-sign-out-alt"></i> Salir</button>
     </div>
     <div id="main-container" class="layout"></div>
@@ -1007,7 +1009,8 @@ async function sincronizarVentasWeb() {
             adminActual = data.perfil; 
             document.getElementById('login-screen').style.display = 'none'; 
             document.getElementById('main-screen').style.display = 'block'; 
-            tab('v'); 
+            tab('v');
+            setTimeout(verEstadoCaja, 500); 
         } else { 
             document.getElementById('login-error').textContent = data.error || 'Error'; 
         } 
@@ -1201,6 +1204,12 @@ function tab(t) {
         container.innerHTML=renderPaginaBackup(); 
         cartPanel.classList.add('hidden'); 
         setTimeout(cargarHistorialBackups,100); 
+    }
+    else if (t==='historial-caja') {
+        container.className='layout';
+        container.innerHTML=renderPaginaHistorialCaja();
+        cartPanel.classList.add('hidden');
+        setTimeout(cargarHistorialCaja, 200);
     }
     
     document.querySelectorAll('.nav-tabs .tab-btn').forEach(b => b.classList.remove('active'));
