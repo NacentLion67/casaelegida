@@ -1344,6 +1344,23 @@ app.post('/admin/ganancias/historial', adminMiddleware(), async (req, res) => {
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/admin/sincronizar-ventas-web', adminMiddleware(), async (req, res) => {
+    try {
+        const pedidos = (await pool.query(
+            "SELECT * FROM pedidos WHERE estado IN ('abonado','armado','enviado','entregado') AND (\"ventaId\" IS NULL OR \"ventaId\" NOT IN (SELECT id FROM ventas))"
+        )).rows;
+        let creados = 0;
+        for (const p of pedidos) {
+            const vid = 'FAC-' + Date.now() + '-' + creados;
+            await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\") VALUES ($1,$2,$3,$4,$5,'pedido_online',$6,$7,'completada','tienda',$8)",
+                [vid, p.fecha, p.fechatimestamp || Date.now(), p.items, p.total, p.tipoentrega==='envio'?'envio':'local', p.cliente, p.id]);
+            await pool.query('UPDATE pedidos SET "ventaId"=$1 WHERE id=$2', [vid, p.id]);
+            creados++;
+        }
+        res.json({ success: true, creados });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/admin/verificar-password', adminMiddleware(), async (req, res) => {
     try {
         const { password } = req.body;
