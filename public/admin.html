@@ -655,6 +655,9 @@ let varianteSeleccionada = {}, configuracion = {}, mayoristaHabilitado = false, 
 let notificaciones = [], notificacionesNoLeidas = 0;
 let chartsInstances = {};
 let archivoRestoreSeleccionado = null;
+let cajaActual = null;
+let _ticketActual = null;
+let _historialCaja = [];
 const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
 
 function mostrarToast(msg, error=false) { const t = document.createElement('div'); t.className = `toast-notification ${error?'error':''}`; t.innerHTML = `<i class="fas ${error?'fa-exclamation-circle':'fa-check-circle'}"></i> ${msg}`; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
@@ -1106,6 +1109,10 @@ function tab(t) {
             if (permiso && permiso !== 'admin' && !adminActual.permisos.includes(permiso)) {
                 mostrarToast('🔒 Sin autorización para acceder a esta sección', true);
                 return;
+                case 'historial-caja':
+    container.innerHTML = renderPaginaHistorialCaja();
+    setTimeout(cargarHistorialCaja, 200);
+    break;
             }
         }
     }
@@ -2872,9 +2879,119 @@ async function cambiarPassword(){}
 function abrirBuscadorClientes(){}
 async function exportarVentasCSV(){ const r=await fetch('/admin/exportar-ventas',{method:'POST',headers:{'Authorization':`Bearer ${adminToken}`}}); }
 async function verEstadoCaja(){ try { const d=await safeFetch('/admin/estado-caja-profesional',{method:'POST'}); const c=document.getElementById('estado-caja'); if(c) c.innerHTML=d.abierta?'Caja abierta':'Caja Cerrada'; } catch(e){} }
-function abrirCajaProfesional(){}
-async function cerrarCajaProfesional(){ const d = await safeFetch('/admin/cierre-caja-profesional', { method: 'POST' }); verEstadoCaja(); }
 
+    function abrirModalGasto() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:420px">
+            <div class="modal-header">
+                <h3><i class="fas fa-hand-holding-usd" style="color:#C5A880"></i> Anotar Gasto de Caja</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div>
+                    <label style="font-size:12px;font-weight:700;color:#3D312A;display:block;margin-bottom:6px">Descripción del gasto</label>
+                    <input type="text" id="gasto-descripcion" placeholder="Ej: Bolsas, flete, etc." style="width:100%;padding:12px 16px;border:1.5px solid #E6E1DA;border-radius:50px;font-size:13px;outline:none">
+                </div>
+                <div>
+                    <label style="font-size:12px;font-weight:700;color:#3D312A;display:block;margin-bottom:6px">Monto</label>
+                    <input type="number" id="gasto-monto" placeholder="0" style="width:100%;padding:12px 16px;border:1.5px solid #E6E1DA;border-radius:50px;font-size:18px;font-weight:700;text-align:center;outline:none" min="0">
+                </div>
+                <button onclick="confirmarGastoCaja()" style="width:100%;background:#3D312A;color:#C5A880;border:none;padding:14px;border-radius:50px;font-weight:700;cursor:pointer;font-size:14px">
+                    <i class="fas fa-save"></i> Registrar Gasto
+                </button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('gasto-descripcion')?.focus(), 100);
+}
+
+async function confirmarGastoCaja() {
+    const descripcion = document.getElementById('gasto-descripcion')?.value?.trim();
+    const monto = parseFloat(document.getElementById('gasto-monto')?.value) || 0;
+    if (!descripcion) { mostrarToast('❌ Ingresá una descripción', true); return; }
+    if (!monto) { mostrarToast('❌ Ingresá un monto', true); return; }
+    try {
+        await safeFetch('/admin/gasto-caja', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ descripcion, monto }) });
+        document.querySelectorAll('.modal').forEach(m => m.remove());
+        mostrarToast(`✅ Gasto registrado: ${fmt.format(monto)}`);
+    } catch(e) { mostrarToast('❌ ' + (e.message||'Error al registrar gasto'), true); }
+}
+
+function renderPaginaHistorialCaja() {
+    return `<div style="display:flex;flex-direction:column;gap:20px;width:100%">
+        <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:28px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+            <div>
+                <h2 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:26px;display:flex;align-items:center;gap:12px"><i class="fas fa-history" style="color:#C5A880"></i> Historial de Caja</h2>
+                <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Registro de todos los turnos y cierres de caja</p>
+            </div>
+        </div>
+        <div class="panel" style="padding:20px">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+                <input type="date" id="caja-hist-desde" style="padding:12px 16px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px">
+                <span style="color:#8C7E74;font-size:12px">hasta</span>
+                <input type="date" id="caja-hist-hasta" style="padding:12px 16px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px">
+                <button onclick="cargarHistorialCaja()" style="background:#3D312A;color:#C5A880;border:none;padding:12px 24px;border-radius:50px;font-weight:700;font-size:13px;cursor:pointer"><i class="fas fa-search"></i> Filtrar</button>
+                <button onclick="document.getElementById('caja-hist-desde').value='';document.getElementById('caja-hist-hasta').value='';cargarHistorialCaja()" style="background:#F6F3EA;color:#3D312A;border:none;padding:12px 16px;border-radius:50px;font-size:13px;cursor:pointer"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div id="historial-caja-lista" style="display:flex;flex-direction:column;gap:12px">
+            <div style="text-align:center;padding:48px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;color:#C5A880;display:block"></i>Cargando historial...</div>
+        </div>
+    </div>`;
+}
+
+async function cargarHistorialCaja() {
+    const desde = document.getElementById('caja-hist-desde')?.value || '';
+    const hasta = document.getElementById('caja-hist-hasta')?.value || '';
+    const container = document.getElementById('historial-caja-lista');
+    if (!container) return;
+    container.innerHTML = `<div style="text-align:center;padding:48px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;color:#C5A880;display:block"></i>Cargando...</div>`;
+    try {
+        const d = await safeFetch('/admin/historial-caja', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({desde,hasta}) });
+        _historialCaja = d.historial || [];
+        if (!_historialCaja.length) {
+            container.innerHTML = `<div style="text-align:center;padding:48px;color:#8C7E74;background:#fff;border-radius:20px;border:1px solid #E6E1DA"><i class="fas fa-inbox" style="font-size:40px;margin-bottom:12px;display:block;opacity:0.3"></i>No hay cierres de caja registrados</div>`;
+            return;
+        }
+        container.innerHTML = _historialCaja.map(h => {
+            const t = h.ticket;
+            const todoOk = Math.abs(t.balanceEfectivo||0)<1 && Math.abs(t.balanceTransferencia||0)<1;
+            return `<div style="background:#fff;border-radius:20px;border:1px solid #E6E1DA;overflow:hidden">
+                <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid #F6F3EA">
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div style="width:44px;height:44px;border-radius:50%;background:${todoOk?'linear-gradient(135deg,#4E7A62,#3D5E4A)':'linear-gradient(135deg,#D96B6B,#B85454)'};display:flex;align-items:center;justify-content:center;color:white;font-size:16px;flex-shrink:0">
+                            <i class="fas ${todoOk?'fa-check':'fa-exclamation-triangle'}"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700;font-size:14px;color:#3D312A">${escapeHtml(h.id)}</div>
+                            <div style="font-size:12px;color:#8C7E74">${escapeHtml(h.fechaApertura||'')} → ${escapeHtml(h.fechaCierre||'')}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                        <span style="font-size:12px;color:#8C7E74">Abrió: <strong>${escapeHtml(h.perfilAbre||'')}</strong> | Cerró: <strong>${escapeHtml(h.perfilCierra||'')}</strong></span>
+                        <span style="background:${todoOk?'#E4EDE1':'#FFF0F0'};color:${todoOk?'#4E7A62':'#D96B6B'};font-size:11px;font-weight:700;padding:4px 12px;border-radius:50px">${todoOk?'✅ SIN IRREGULARIDADES':'🔴 IRREGULARIDADES'}</span>
+                    </div>
+                </div>
+                <div style="padding:10px 20px;display:flex;gap:16px;font-size:12px;color:#8C7E74;flex-wrap:wrap;border-bottom:1px solid #F6F3EA">
+                    <span><i class="fas fa-money-bill-wave" style="color:#C5A880;margin-right:4px"></i>Ef: <strong>${fmt.format(t.ventasEfectivo)}</strong></span>
+                    <span><i class="fas fa-exchange-alt" style="color:#C5A880;margin-right:4px"></i>Tr: <strong>${fmt.format(t.ventasTransferencia)}</strong></span>
+                    <span><i class="fas fa-globe" style="color:#C5A880;margin-right:4px"></i>Web: <strong>${fmt.format(t.ventasTransferenciaWeb)}</strong></span>
+                    <span><i class="fas fa-receipt" style="color:#D96B6B;margin-right:4px"></i>Gastos: <strong style="color:#D96B6B">-${fmt.format(t.totalGastos)}</strong></span>
+                </div>
+                <div style="padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap">
+                    <button onclick="_ticketActual=_historialCaja.find(x=>x.id==='${h.id}')?.ticket;mostrarTicketCierre(_ticketActual)" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
+                    <button onclick="_ticketActual=_historialCaja.find(x=>x.id==='${h.id}')?.ticket;imprimirTicketTermico()" style="background:#3D312A;color:#C5A880;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-print"></i> Ticket Térmico</button>
+                    <button onclick="_ticketActual=_historialCaja.find(x=>x.id==='${h.id}')?.ticket;imprimirTicketA4()" style="background:#C5A880;color:#3D312A;border:none;padding:8px 16px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-file-alt"></i> Imprimir A4</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        container.innerHTML = `<div style="text-align:center;padding:48px;color:#D96B6B"><i class="fas fa-exclamation-circle"></i> Error al cargar historial</div>`;
+    }
+}
+    
 // clientes manejados arriba
     
 let variantesManuales = [];
