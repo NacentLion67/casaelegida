@@ -204,6 +204,22 @@ async function initDB() {
                 "fechaTimestamp" BIGINT,
                 "fechaCreacion" TEXT DEFAULT NOW()
             );
+            CREATE TABLE IF NOT EXISTS turnos_caja (
+                id TEXT PRIMARY KEY,
+                "perfilId" TEXT, "perfilNombre" TEXT,
+                "perfilCierreId" TEXT, "perfilCierreNombre" TEXT,
+                "fechaApertura" TEXT, "fechaCierre" TEXT,
+                "timestampApertura" BIGINT, "timestampCierre" BIGINT,
+                "efectivoInicial" REAL DEFAULT 0,
+                "entregaEfectivo" REAL DEFAULT 0,
+                "entregaTransferencia" REAL DEFAULT 0,
+                estado TEXT DEFAULT 'abierto'
+            );
+            CREATE TABLE IF NOT EXISTS gastos_caja (
+                id TEXT PRIMARY KEY, "turnoId" TEXT,
+                descripcion TEXT, monto REAL DEFAULT 0,
+                fecha TEXT, "fechaTimestamp" BIGINT
+            );
         `);
         console.log('✅ PostgreSQL listo');
     } finally {
@@ -765,6 +781,8 @@ app.post('/confirmar-venta', async (req, res) => {
         }
         for (let it of carrito) { if(it.esManual) continue; await pool.query('UPDATE variantes SET stock=stock-$1 WHERE "productoId"=$2 AND nombre=$3', [it.cant, it.pId, it.vNom]); }
         const id = 'FAC-' + Date.now();
+        const montoEfectivo = pago.metodo === 'efectivo' ? totalFinal : (pago.metodo === 'mixto' ? (pago.efectivo||0) : 0);
+        const montoTransferencia = pago.metodo === 'transferencia' ? totalFinal : (pago.metodo === 'mixto' ? (pago.transferencia||0) : 0);
         await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen) VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'completada','admin')",
             [id, Date.now(), JSON.stringify(carrito), pago.total, pago.metodo, logistica, JSON.stringify(cliente||{nombre:'Mostrador'})]);
         await crearNotificacion('venta', '💰 Venta', `${id}`);
@@ -870,6 +888,8 @@ app.post('/tienda/cancelar-pedido', authMiddleware, async (req, res) => {
 
 app.post('/tienda/marcar-abonado', async (req, res) => {
     try {
+        const cajaabierta = (await pool.query("SELECT id FROM turnos_caja WHERE estado='abierto' LIMIT 1")).rows[0];
+        if (!cajaabierta) return res.status(400).json({ error: 'Debe abrir caja antes de abonar un pedido web' });
         const p = (await pool.query('SELECT * FROM pedidos WHERE id=$1', [req.body.pedidoId])).rows[0];
         if (!p) return res.status(404).json({ error: 'Pedido no encontrado' });
         const esRetiroLocal = p.tipoEntrega === 'local';
@@ -883,7 +903,7 @@ app.post('/tienda/marcar-abonado', async (req, res) => {
                 [vid, Date.now(), p.items, p.total, p.tipoEntrega==='envio'?'envio':'local', p.cliente, p.id]);
         }
 
-        await pool.query("UPDATE pedidos SET estado='abonado', pin=$1, \"ventaId\"=$2 WHERE id=$3", [pin, vid, req.body.pedidoId]);
+        await pool.query("UPDATE pedidos SET estado='abonado', pin=$1, \"ventaId\"=$2, \"timestampAbono\"=$3 WHERE id=$4", [pin, vid, Date.now(), req.body.pedidoId]);
         await logActividad('Admin', 'PEDIDO_ABONADO', `Pedido ${req.body.pedidoId} abonado`, req);
         res.json({ success: true, pin });
         if (pin) {
@@ -1403,6 +1423,125 @@ app.post('/admin/verificar-password', adminMiddleware(), async (req, res) => {
         res.json({ valida });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
+
+app.post('/admin/abrir-caja', adminMiddleware(), async (req, res) => {
+    try {
+        const abierta = (await pool.query("SELECT id FROM turnos_caja WHERE estado='abierto' LIMIT 1")).rows[0];
+        if (abierta) return res.status(400).json({ error: 'Ya hay una caja abierta' });
+        const id = 'CAJA-' + Date.now();
+        const fecha = new Date().toLocaleString('es-AR', {timeZone:'America/Argentina/Buenos_Aires',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        await pool.query(
+            'INSERT INTO turnos_caja (id,"perfilId","perfilNombre","fechaApertura","timestampApertura","efectivoInicial",estado) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+            [id, req.admin.id, req.admin.nombre, fecha, Date.now(), parseFloat(req.body.efectivoInicial)||0, 'abierto']
+        );
+        await logActividad(req.admin.nombre, 'ABRIR_CAJA', `Caja abierta con $${req.body.efectivoInicial} de efectivo inicial`, req);
+        res.json({ success: true, turnoId: id, fecha });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/admin/estado-caja', adminMiddleware(), async (req, res) => {
+    try {
+        const turno = (await pool.query("SELECT * FROM turnos_caja WHERE estado='abierto' LIMIT 1")).rows[0];
+        res.json({ abierta: !!turno, turno: turno || null });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/admin/gasto-caja', adminMiddleware(), async (req, res) => {
+    try {
+        const turno = (await pool.query("SELECT id FROM turnos_caja WHERE estado='abierto' LIMIT 1")).rows[0];
+        if (!turno) return res.status(400).json({ error: 'No hay caja abierta' });
+        const id = 'GASTO-' + Date.now();
+        const fecha = new Date().toLocaleString('es-AR', {timeZone:'America/Argentina/Buenos_Aires',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        await pool.query(
+            'INSERT INTO gastos_caja (id,"turnoId",descripcion,monto,fecha,"fechaTimestamp") VALUES ($1,$2,$3,$4,$5,$6)',
+            [id, turno.id, req.body.descripcion, parseFloat(req.body.monto)||0, fecha, Date.now()]
+        );
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/admin/cerrar-caja', adminMiddleware(), async (req, res) => {
+    try {
+        const turno = (await pool.query("SELECT * FROM turnos_caja WHERE estado='abierto' LIMIT 1")).rows[0];
+        if (!turno) return res.status(400).json({ error: 'No hay caja abierta' });
+        const ts = turno.timestampapertura;
+        const tsNow = Date.now();
+        const [efRes, trRes, mixEfRes, mixTrRes, webRes, gastosRes] = await Promise.all([
+            pool.query("SELECT COALESCE(SUM(total),0) as t FROM ventas WHERE \"metodoPago\"='efectivo' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsNow]),
+            pool.query("SELECT COALESCE(SUM(total),0) as t FROM ventas WHERE \"metodoPago\"='transferencia' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsNow]),
+            pool.query("SELECT COALESCE(SUM(\"montoEfectivo\"),0) as t FROM ventas WHERE \"metodoPago\"='mixto' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsNow]),
+            pool.query("SELECT COALESCE(SUM(\"montoTransferencia\"),0) as t FROM ventas WHERE \"metodoPago\"='mixto' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsNow]),
+            pool.query("SELECT COALESCE(SUM(total),0) as t FROM pedidos WHERE \"timestampAbono\">=$1 AND \"timestampAbono\"<=$2", [ts, tsNow]),
+            pool.query("SELECT * FROM gastos_caja WHERE \"turnoId\"=$1", [turno.id])
+        ]);
+        const ventasEf = parseFloat(efRes.rows[0].t) + parseFloat(mixEfRes.rows[0].t);
+        const ventasTr = parseFloat(trRes.rows[0].t) + parseFloat(mixTrRes.rows[0].t);
+        const ventasWeb = parseFloat(webRes.rows[0].t);
+        const gastos = gastosRes.rows;
+        const totalGastos = gastos.reduce((s,g) => s+(g.monto||0), 0);
+        const entregaEf = parseFloat(req.body.entregaEfectivo)||0;
+        const entregaTr = parseFloat(req.body.entregaTransferencia)||0;
+        const balanceEf = ventasEf - totalGastos - entregaEf;
+        const balanceTr = (ventasTr + ventasWeb) - entregaTr;
+        const fechaCierre = new Date().toLocaleString('es-AR', {timeZone:'America/Argentina/Buenos_Aires',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        await pool.query(
+            `UPDATE turnos_caja SET "perfilCierreId"=$1,"perfilCierreNombre"=$2,"fechaCierre"=$3,"timestampCierre"=$4,"entregaEfectivo"=$5,"entregaTransferencia"=$6,estado='cerrado' WHERE id=$7`,
+            [req.admin.id, req.admin.nombre, fechaCierre, tsNow, entregaEf, entregaTr, turno.id]
+        );
+        await logActividad(req.admin.nombre, 'CERRAR_CAJA', `Caja ${turno.id} cerrada`, req);
+        res.json({ success: true, ticket: {
+            id: turno.id, perfilAbre: turno.perfilnombre, perfilCierra: req.admin.nombre,
+            fechaApertura: turno.fechaapertura, fechaCierre,
+            efectivoInicial: turno.efectivoinicial||0,
+            ventasEfectivo: ventasEf, ventasTransferencia: ventasTr, ventasTransferenciaWeb: ventasWeb,
+            gastos, totalGastos, entregaEfectivo: entregaEf, entregaTransferencia: entregaTr,
+            balanceEfectivo: balanceEf, balanceTransferencia: balanceTr
+        }});
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/admin/historial-caja', adminMiddleware(), async (req, res) => {
+    try {
+        const { desde, hasta } = req.body;
+        let q = "SELECT * FROM turnos_caja WHERE estado='cerrado'";
+        let params = [];
+        if (desde) { q += ` AND "timestampApertura">=$${params.length+1}`; params.push(new Date(desde).getTime()); }
+        if (hasta) { q += ` AND "timestampCierre"<=$${params.length+1}`; params.push(new Date(hasta+'T23:59:59').getTime()); }
+        q += ' ORDER BY "timestampCierre" DESC LIMIT 100';
+        const turnos = (await pool.query(q, params)).rows;
+        const historial = [];
+        for (const t of turnos) {
+            const ts = t.timestampapertura; const tsCierre = t.timestampcierre;
+            const [efRes, trRes, mixEfRes, mixTrRes, webRes, gastosRes] = await Promise.all([
+                pool.query("SELECT COALESCE(SUM(total),0) as t FROM ventas WHERE \"metodoPago\"='efectivo' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsCierre]),
+                pool.query("SELECT COALESCE(SUM(total),0) as t FROM ventas WHERE \"metodoPago\"='transferencia' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsCierre]),
+                pool.query("SELECT COALESCE(SUM(\"montoEfectivo\"),0) as t FROM ventas WHERE \"metodoPago\"='mixto' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsCierre]),
+                pool.query("SELECT COALESCE(SUM(\"montoTransferencia\"),0) as t FROM ventas WHERE \"metodoPago\"='mixto' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsCierre]),
+                pool.query("SELECT COALESCE(SUM(total),0) as t FROM pedidos WHERE \"timestampAbono\">=$1 AND \"timestampAbono\"<=$2", [ts, tsCierre]),
+                pool.query("SELECT * FROM gastos_caja WHERE \"turnoId\"=$1", [t.id])
+            ]);
+            const ventasEf = parseFloat(efRes.rows[0].t) + parseFloat(mixEfRes.rows[0].t);
+            const ventasTr = parseFloat(trRes.rows[0].t) + parseFloat(mixTrRes.rows[0].t);
+            const ventasWeb = parseFloat(webRes.rows[0].t);
+            const gastos = gastosRes.rows;
+            const totalGastos = gastos.reduce((s,g) => s+(g.monto||0), 0);
+            const balanceEf = ventasEf - totalGastos - (t.entregaefectivo||0);
+            const balanceTr = (ventasTr + ventasWeb) - (t.entregatransferencia||0);
+            historial.push({ id: t.id, perfilAbre: t.perfilnombre, perfilCierra: t.perfilcierrenombre,
+                fechaApertura: t.fechaapertura, fechaCierre: t.fechacierre,
+                ticket: { id: t.id, perfilAbre: t.perfilnombre, perfilCierra: t.perfilcierrenombre,
+                    fechaApertura: t.fechaapertura, fechaCierre: t.fechacierre,
+                    efectivoInicial: t.efectivoinicial||0, ventasEfectivo: ventasEf,
+                    ventasTransferencia: ventasTr, ventasTransferenciaWeb: ventasWeb,
+                    gastos, totalGastos, entregaEfectivo: t.entregaefectivo||0,
+                    entregaTransferencia: t.entregatransferencia||0,
+                    balanceEfectivo: balanceEf, balanceTransferencia: balanceTr }
+            });
+        }
+        res.json({ historial });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 app.use((err, req, res, next) => { console.error(err); res.status(500).json({ error: 'Error interno' }); });
 
@@ -1419,6 +1558,11 @@ async function start() {
         await initConfig();
         await initMetodosEnvio();
         await initAdmin();
+        try {
+            await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS "timestampAbono" BIGINT');
+            await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoEfectivo" REAL DEFAULT 0');
+            await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoTransferencia" REAL DEFAULT 0');
+        } catch(e) {}
         
         // Agrega la columna si no existe
         try {
