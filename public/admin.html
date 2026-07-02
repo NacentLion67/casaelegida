@@ -2178,7 +2178,6 @@ function renderizarRendimiento(lista) {
             </div>
         </div>`;
     document.body.appendChild(modal);
-    await cargarDatosRendProd(pid);
 }
 
 async function cargarDatosRendProd(pid) {
@@ -2186,6 +2185,11 @@ async function cargarDatosRendProd(pid) {
     const hasta = document.getElementById(`rp-hasta-${pid}`)?.value || '';
     const statsDiv = document.getElementById(`rp-stats-${pid}`);
     const tablaDiv = document.getElementById(`rp-tabla-${pid}`);
+    if (!desde && !hasta) {
+        if (statsDiv) statsDiv.innerHTML = '';
+        if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#8C7E74;background:#F6F3EA;border-radius:16px"><i class="fas fa-calendar-alt" style="font-size:36px;display:block;margin-bottom:12px;opacity:0.4;color:#C5A880"></i><strong>Seleccioná un período</strong><br><span style="font-size:12px">Elegí fecha desde y hasta, luego presioná Filtrar</span></div>`;
+        return;
+    }
     if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:24px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="color:#C5A880;margin-right:8px"></i>Calculando...</div>`;
     try {
         const d = await safeFetch('/admin/rendimiento-productos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({desde,hasta}) });
