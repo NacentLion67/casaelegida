@@ -1369,6 +1369,31 @@ app.post('/admin/sincronizar-ventas-web', adminMiddleware(), async (req, res) =>
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/admin/rendimiento-productos', adminMiddleware(), async (req, res) => {
+    try {
+        const { desde, hasta } = req.body;
+        let query = 'SELECT * FROM ventas WHERE 1=1';
+        let params = [];
+        if (desde) { query += ` AND "fechaTimestamp" >= $${params.length+1}`; params.push(new Date(desde + 'T00:00:00').getTime()); }
+        if (hasta) { query += ` AND "fechaTimestamp" <= $${params.length+1}`; params.push(new Date(hasta + 'T23:59:59').getTime()); }
+        const ventas = (await pool.query(query, params)).rows;
+        const ventasPorProducto = {};
+        ventas.forEach(v => {
+            const items = JSON.parse(v.items || '[]');
+            items.forEach(it => {
+                if (!it.pId) return;
+                if (!ventasPorProducto[it.pId]) ventasPorProducto[it.pId] = { productoId: it.pId, nombre: it.pNom || '', unidades: 0, ingresos: 0, ventasAdmin: 0, ventasWeb: 0 };
+                ventasPorProducto[it.pId].unidades += it.cant || 0;
+                ventasPorProducto[it.pId].ingresos += (it.precio || 0) * (it.cant || 0);
+                if (v.origen === 'admin') ventasPorProducto[it.pId].ventasAdmin += it.cant || 0;
+                if (v.origen === 'tienda') ventasPorProducto[it.pId].ventasWeb += it.cant || 0;
+            });
+        });
+        const totalIngresos = ventas.reduce((s, v) => s + (v.total || 0), 0);
+        res.json({ rendimiento: Object.values(ventasPorProducto).sort((a,b) => b.ingresos - a.ingresos), totalVentas: ventas.length, totalIngresos });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/admin/verificar-password', adminMiddleware(), async (req, res) => {
     try {
         const { password } = req.body;
