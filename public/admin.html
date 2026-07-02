@@ -1112,10 +1112,6 @@ function tab(t) {
             if (permiso && permiso !== 'admin' && !adminActual.permisos.includes(permiso)) {
                 mostrarToast('🔒 Sin autorización para acceder a esta sección', true);
                 return;
-                case 'historial-caja':
-    container.innerHTML = renderPaginaHistorialCaja();
-    setTimeout(cargarHistorialCaja, 200);
-    break;
             }
         }
     }
@@ -1781,7 +1777,7 @@ function calcularMixto(origen) {
     
 async function checkout(){
     if(!carrito.length){mostrarToast('Carrito vacío',true);return;}
-    try { const caja = await safeFetch('/admin/estado-caja-profesional', {method:'POST'}); if (!caja.abierta) { mostrarToast('🔒 Debes abrir la caja antes de realizar ventas', true); return; } } catch(e) {}
+    try { const caja = await safeFetch('/admin/estado-caja', {method:'POST'}); if (!caja.abierta) { mostrarToast('🔒 Debes abrir la caja antes de realizar ventas', true); return; } } catch(e) {}
     let cd={nombre:'Mostrador'}; if(logistica==='envio'){ let n=document.getElementById('env-nombre').value.trim(), dni=document.getElementById('env-dni').value.trim(), c=document.getElementById('env-celular').value.trim(); if(!n||!dni||!c){mostrarToast('Completá datos',true);return;} cd={nombre:n,dni:dni,celular:c}; }
     let pagoData = { total: totalVenta, metodo: metodoPago };
     if (metodoPago === 'mixto') {
@@ -2887,8 +2883,291 @@ function abrirModalCambiarPassword(){}
 async function cambiarPassword(){}
 function abrirBuscadorClientes(){}
 async function exportarVentasCSV(){ const r=await fetch('/admin/exportar-ventas',{method:'POST',headers:{'Authorization':`Bearer ${adminToken}`}}); }
-async function verEstadoCaja(){ try { const d=await safeFetch('/admin/estado-caja-profesional',{method:'POST'}); const c=document.getElementById('estado-caja'); if(c) c.innerHTML=d.abierta?'Caja abierta':'Caja Cerrada'; } catch(e){} }
 
+async function verEstadoCaja() {
+    try {
+        const d = await safeFetch('/admin/estado-caja', { method:'POST' });
+        cajaActual = d.turno;
+        const indicador = document.getElementById('caja-indicador');
+        if (!indicador) return;
+        if (d.abierta) {
+            indicador.innerHTML = `<button onclick="abrirCajaProfesional()" style="background:#E4EDE1;border:2px solid #4E7A62;color:#4E7A62;padding:7px 16px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="fas fa-cash-register"></i> CAJA ABIERTA <span style="opacity:0.7">• ${escapeHtml(d.turno.perfilnombre||'')}</span></button>`;
+        } else {
+            indicador.innerHTML = `<button onclick="abrirCajaProfesional()" style="background:#FFF0F0;border:2px solid #D96B6B;color:#D96B6B;padding:7px 16px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px"><i class="fas fa-cash-register"></i> CAJA CERRADA</button>`;
+        }
+    } catch(e) {}
+}
+
+function abrirCajaProfesional() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    if (cajaActual) {
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:480px">
+                <div class="modal-header">
+                    <h3 style="font-family:'Playfair Display',serif"><i class="fas fa-cash-register" style="color:#C5A880"></i> Caja Abierta</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+                    <div style="background:#E4EDE1;border-radius:16px;padding:20px">
+                        <div style="font-size:10px;font-weight:700;color:#4E7A62;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px"><i class="fas fa-lock-open"></i> Turno activo</div>
+                        <div style="font-size:14px;font-weight:700;color:#3D312A;margin-bottom:4px">${escapeHtml(cajaActual.perfilnombre||cajaActual.perfilNombre||'')}</div>
+                        <div style="font-size:12px;color:#8C7E74">Apertura: ${escapeHtml(cajaActual.fechaapertura||cajaActual.fechaApertura||'')}</div>
+                        <div style="font-size:16px;font-weight:800;color:#3D312A;margin-top:8px">Ef. inicial: ${fmt.format(cajaActual.efectivoinicial||cajaActual.efectivoInicial||0)}</div>
+                    </div>
+                    <button onclick="this.closest('.modal').remove();cerrarCajaProfesional()" style="width:100%;background:linear-gradient(135deg,#D96B6B,#B85454);color:white;border:none;padding:14px;border-radius:50px;font-weight:700;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+                        <i class="fas fa-lock"></i> Cerrar Caja
+                    </button>
+                    <button onclick="this.closest('.modal').remove()" style="width:100%;background:#F6F3EA;color:#3D312A;border:none;padding:12px;border-radius:50px;font-weight:600;cursor:pointer;font-size:13px">Cancelar</button>
+                </div>
+            </div>`;
+    } else {
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:460px">
+                <div class="modal-header">
+                    <h3 style="font-family:'Playfair Display',serif"><i class="fas fa-cash-register" style="color:#C5A880"></i> Abrir Caja</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+                    <div style="background:#F6F3EA;border-radius:16px;padding:24px;text-align:center">
+                        <i class="fas fa-coins" style="font-size:40px;color:#C5A880;margin-bottom:14px;display:block"></i>
+                        <label style="font-size:13px;font-weight:700;color:#3D312A;display:block;margin-bottom:12px">¿Con cuánto efectivo iniciás la caja?</label>
+                        <input type="number" id="efectivo-inicial-input" placeholder="0" style="width:100%;padding:16px;border:2px solid #C5A880;border-radius:50px;font-size:24px;font-weight:800;text-align:center;font-family:'Playfair Display',serif;color:#3D312A;outline:none" min="0">
+                    </div>
+                    <button onclick="confirmarAperturaCaja()" style="width:100%;background:linear-gradient(135deg,#4E7A62,#3D5E4A);color:white;border:none;padding:16px;border-radius:50px;font-weight:700;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(78,122,98,0.3)">
+                        <i class="fas fa-lock-open"></i> Abrir Caja
+                    </button>
+                </div>
+            </div>`;
+        setTimeout(() => document.getElementById('efectivo-inicial-input')?.focus(), 100);
+    }
+    document.body.appendChild(modal);
+}
+
+async function confirmarAperturaCaja() {
+    const efectivoInicial = parseFloat(document.getElementById('efectivo-inicial-input')?.value) || 0;
+    try {
+        await safeFetch('/admin/abrir-caja', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ efectivoInicial }) });
+        document.querySelectorAll('.modal').forEach(m => m.remove());
+        mostrarToast(`✅ Caja abierta con ${fmt.format(efectivoInicial)} de efectivo inicial`);
+        verEstadoCaja();
+    } catch(e) { mostrarToast('❌ ' + (e.message||'Error al abrir caja'), true); }
+}
+
+async function cerrarCajaProfesional() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:500px">
+            <div class="modal-header">
+                <h3 style="font-family:'Playfair Display',serif"><i class="fas fa-lock" style="color:#D96B6B"></i> Cerrar Caja</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+                <div style="background:#FFF0F0;border:2px solid #D96B6B;border-radius:16px;padding:14px;text-align:center">
+                    <i class="fas fa-exclamation-triangle" style="color:#D96B6B;font-size:20px;margin-bottom:6px;display:block"></i>
+                    <p style="color:#D96B6B;font-weight:700;font-size:13px;margin:0">Al confirmar se generará el ticket de cierre del turno</p>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div style="background:#F6F3EA;border-radius:16px;padding:16px;text-align:center">
+                        <label style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px"><i class="fas fa-money-bill-wave" style="color:#C5A880"></i> Entregó Efectivo</label>
+                        <input type="number" id="cierre-efectivo" placeholder="0" style="width:100%;padding:12px;border:1.5px solid #E6E1DA;border-radius:50px;font-size:18px;font-weight:800;text-align:center;outline:none" min="0">
+                    </div>
+                    <div style="background:#F6F3EA;border-radius:16px;padding:16px;text-align:center">
+                        <label style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:10px"><i class="fas fa-exchange-alt" style="color:#C5A880"></i> Entregó Transfer.</label>
+                        <input type="number" id="cierre-transferencia" placeholder="0" style="width:100%;padding:12px;border:1.5px solid #E6E1DA;border-radius:50px;font-size:18px;font-weight:800;text-align:center;outline:none" min="0">
+                    </div>
+                </div>
+                <button onclick="confirmarCierreCaja()" style="width:100%;background:linear-gradient(135deg,#D96B6B,#B85454);color:white;border:none;padding:16px;border-radius:50px;font-weight:700;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px">
+                    <i class="fas fa-lock"></i> Confirmar Cierre de Caja
+                </button>
+                <button onclick="this.closest('.modal').remove()" style="width:100%;background:#F6F3EA;color:#3D312A;border:none;padding:12px;border-radius:50px;font-weight:600;cursor:pointer;font-size:13px">Cancelar</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+async function confirmarCierreCaja() {
+    const entregaEfectivo = parseFloat(document.getElementById('cierre-efectivo')?.value) || 0;
+    const entregaTransferencia = parseFloat(document.getElementById('cierre-transferencia')?.value) || 0;
+    try {
+        const d = await safeFetch('/admin/cerrar-caja', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ entregaEfectivo, entregaTransferencia }) });
+        document.querySelectorAll('.modal').forEach(m => m.remove());
+        cajaActual = null;
+        verEstadoCaja();
+        mostrarToast('✅ Caja cerrada correctamente');
+        mostrarTicketCierre(d.ticket);
+    } catch(e) { mostrarToast('❌ ' + (e.message||'Error al cerrar caja'), true); }
+}
+
+function mostrarTicketCierre(ticket) {
+    _ticketActual = ticket;
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:640px;max-height:92vh;overflow-y:auto">
+            <div class="modal-header">
+                <h3 style="font-family:'Playfair Display',serif"><i class="fas fa-receipt" style="color:#C5A880"></i> Ticket de Cierre</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px">${generarHTMLTicket(ticket)}</div>
+            <div style="padding:0 20px 20px;display:flex;gap:12px">
+                <button onclick="imprimirTicketTermico()" style="flex:1;background:#3D312A;color:#C5A880;border:none;padding:14px;border-radius:50px;font-weight:700;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px">
+                    <i class="fas fa-print"></i> Ticket Térmico (80mm)
+                </button>
+                <button onclick="imprimirTicketA4()" style="flex:1;background:#F6F3EA;color:#3D312A;border:none;padding:14px;border-radius:50px;font-weight:700;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px">
+                    <i class="fas fa-file-alt"></i> Imprimir A4
+                </button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+function generarHTMLTicket(ticket) {
+    const fmtV = (n) => fmt.format(n||0);
+    const balEfOk = Math.abs(ticket.balanceEfectivo||0) < 1;
+    const balTrOk = Math.abs(ticket.balanceTransferencia||0) < 1;
+    return `
+        <div style="background:#fff;border:1px solid #E6E1DA;border-radius:16px;overflow:hidden">
+            <div style="background:linear-gradient(135deg,#3D312A,#52433A);padding:20px;text-align:center">
+                <div style="font-family:'Playfair Display',serif;font-size:22px;color:#C5A880;font-weight:700;letter-spacing:2px">CASA ELEGIDA</div>
+                <div style="font-size:11px;color:#E6E1DA;margin-top:4px">Cierre de Caja — ${escapeHtml(ticket.id||'')}</div>
+            </div>
+            <div style="padding:16px 20px;border-bottom:1px dashed #E6E1DA;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+                <div><span style="color:#8C7E74">Abrió:</span> <strong>${escapeHtml(ticket.perfilAbre||'')}</strong></div>
+                <div><span style="color:#8C7E74">Cerró:</span> <strong>${escapeHtml(ticket.perfilCierra||'')}</strong></div>
+                <div><span style="color:#8C7E74">Apertura:</span> <strong>${escapeHtml(ticket.fechaApertura||'')}</strong></div>
+                <div><span style="color:#8C7E74">Cierre:</span> <strong>${escapeHtml(ticket.fechaCierre||'')}</strong></div>
+            </div>
+            <div style="padding:14px 20px;border-bottom:1px dashed #E6E1DA">
+                <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Movimientos</div>
+                ${[['Efectivo Inicial',fmtV(ticket.efectivoInicial),''],['Ventas Efectivo',fmtV(ticket.ventasEfectivo),'#4E7A62'],['Ventas Transferencia',fmtV(ticket.ventasTransferencia),'#4E7A62'],['Transferencia Web',fmtV(ticket.ventasTransferenciaWeb),'#4E7A62']].map(([l,v,c])=>`<div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px"><span>${l}</span><strong style="color:${c||'#3D312A'}">${v}</strong></div>`).join('')}
+            </div>
+            <div style="padding:14px 20px;border-bottom:1px dashed #E6E1DA">
+                <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Gastos (${ticket.gastos?.length||0})</div>
+                ${(ticket.gastos||[]).length?(ticket.gastos||[]).map(g=>`<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px"><span style="color:#52433A">${escapeHtml(g.descripcion||'')}</span><strong style="color:#D96B6B">-${fmtV(g.monto)}</strong></div>`).join(''):'<div style="font-size:11px;color:#8C7E74">Sin gastos registrados</div>'}
+                <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #E6E1DA;font-size:12px"><span><strong>Total Gastos</strong></span><strong style="color:#D96B6B">-${fmtV(ticket.totalGastos)}</strong></div>
+            </div>
+            <div style="padding:14px 20px;border-bottom:1px dashed #E6E1DA">
+                <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Entregó</div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px"><span>Efectivo</span><strong>${fmtV(ticket.entregaEfectivo)}</strong></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px"><span>Transferencia</span><strong>${fmtV(ticket.entregaTransferencia)}</strong></div>
+            </div>
+            <div style="padding:16px 20px">
+                <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Balance Final</div>
+                <div style="background:${balEfOk?'#E4EDE1':'#FFF0F0'};border:${balEfOk?'none':'2px solid #D96B6B'};border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                    <div><div style="font-weight:700;font-size:13px">Efectivo</div><div style="font-size:10px;color:#8C7E74">Ventas ef. − Gastos − Entrega ef.</div></div>
+                    <div style="text-align:right"><div style="font-size:20px;font-weight:800;color:${balEfOk?'#4E7A62':'#D96B6B'}">${balEfOk?'$0':fmtV(ticket.balanceEfectivo)}</div><div style="font-size:10px;font-weight:700;color:${balEfOk?'#4E7A62':'#D96B6B'}">${balEfOk?'✅ COINCIDE':'🔴 IRREGULARIDAD'}</div></div>
+                </div>
+                <div style="background:${balTrOk?'#E4EDE1':'#FFF0F0'};border:${balTrOk?'none':'2px solid #D96B6B'};border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+                    <div><div style="font-weight:700;font-size:13px">Transferencia</div><div style="font-size:10px;color:#8C7E74">Ventas tr. + Web − Entrega tr.</div></div>
+                    <div style="text-align:right"><div style="font-size:20px;font-weight:800;color:${balTrOk?'#4E7A62':'#D96B6B'}">${balTrOk?'$0':fmtV(ticket.balanceTransferencia)}</div><div style="font-size:10px;font-weight:700;color:${balTrOk?'#4E7A62':'#D96B6B'}">${balTrOk?'✅ COINCIDE':'🔴 IRREGULARIDAD'}</div></div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function imprimirTicketTermico() {
+    if (!_ticketActual) return;
+    const t = _ticketActual;
+    const fmtT = n => new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:0}).format(n||0);
+    const balEfOk = Math.abs(t.balanceEfectivo||0) < 1;
+    const balTrOk = Math.abs(t.balanceTransferencia||0) < 1;
+    const win = window.open('','ticket_termico','width=320,height=900');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:12px;width:80mm;padding:4px}.center{text-align:center}.bold{font-weight:bold}.line{border-top:1px dashed #000;margin:6px 0}.row{display:flex;justify-content:space-between;margin:2px 0;font-size:11px}.title{font-size:16px;font-weight:bold;text-align:center;margin:6px 0}@media print{@page{size:80mm auto;margin:2mm}}</style></head><body>
+    <div class="title">CASA ELEGIDA</div>
+    <div class="center" style="font-size:10px;margin-bottom:4px">Cierre de Caja</div>
+    <div class="center" style="font-size:10px;margin-bottom:4px">${t.id}</div>
+    <div class="line"></div>
+    <div class="row"><span>Abrió:</span><span>${t.perfilAbre||''}</span></div>
+    <div class="row"><span>Cerró:</span><span>${t.perfilCierra||''}</span></div>
+    <div class="row"><span>Apertura:</span><span>${t.fechaApertura||''}</span></div>
+    <div class="row"><span>Cierre:</span><span>${t.fechaCierre||''}</span></div>
+    <div class="line"></div>
+    <div class="bold" style="font-size:11px;margin-bottom:3px">MOVIMIENTOS</div>
+    <div class="row"><span>Ef. Inicial:</span><span>${fmtT(t.efectivoInicial)}</span></div>
+    <div class="row"><span>Ventas Efectivo:</span><span>${fmtT(t.ventasEfectivo)}</span></div>
+    <div class="row"><span>Ventas Transfer.:</span><span>${fmtT(t.ventasTransferencia)}</span></div>
+    <div class="row"><span>Transfer. Web:</span><span>${fmtT(t.ventasTransferenciaWeb)}</span></div>
+    <div class="line"></div>
+    <div class="bold" style="font-size:11px;margin-bottom:3px">GASTOS (${t.gastos?.length||0})</div>
+    ${(t.gastos||[]).map(g=>`<div class="row"><span>${g.descripcion||''}</span><span>-${fmtT(g.monto)}</span></div>`).join('')}
+    <div class="row bold"><span>TOTAL GASTOS:</span><span>-${fmtT(t.totalGastos)}</span></div>
+    <div class="line"></div>
+    <div class="bold" style="font-size:11px;margin-bottom:3px">ENTREGÓ</div>
+    <div class="row"><span>Efectivo:</span><span>${fmtT(t.entregaEfectivo)}</span></div>
+    <div class="row"><span>Transferencia:</span><span>${fmtT(t.entregaTransferencia)}</span></div>
+    <div class="line"></div>
+    <div class="bold" style="font-size:11px;margin-bottom:3px">BALANCE</div>
+    <div class="row bold"><span>Efectivo:</span><span>${balEfOk?'$0 ✓ COINCIDE':fmtT(t.balanceEfectivo)+' ✗ IRREGULARIDAD'}</span></div>
+    <div class="row bold"><span>Transferencia:</span><span>${balTrOk?'$0 ✓ COINCIDE':fmtT(t.balanceTransferencia)+' ✗ IRREGULARIDAD'}</span></div>
+    <div class="line"></div>
+    <div class="center" style="font-size:10px;margin-top:6px">Sistema POS — Casa Elegida</div>
+    <script>window.onload=function(){window.print()}<\/script></body></html>`);
+    win.document.close();
+}
+
+function imprimirTicketA4() {
+    if (!_ticketActual) return;
+    const t = _ticketActual;
+    const fmtT = n => new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:0}).format(n||0);
+    const balEfOk = Math.abs(t.balanceEfectivo||0) < 1;
+    const balTrOk = Math.abs(t.balanceTransferencia||0) < 1;
+    const win = window.open('','ticket_a4','width=850,height=1000');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cierre A4</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;color:#3D312A;padding:40px;max-width:794px;margin:0 auto}
+    .header{text-align:center;margin-bottom:32px;padding-bottom:24px;border-bottom:3px solid #3D312A}
+    .logo{font-size:32px;font-weight:700;letter-spacing:4px;color:#3D312A}
+    .section{margin-bottom:24px}
+    .section-title{font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #E6E1DA}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .info-card{background:#F6F3EA;border-radius:12px;padding:12px 16px}
+    .info-label{font-size:10px;color:#8C7E74;text-transform:uppercase;margin-bottom:4px}
+    .info-value{font-size:13px;font-weight:700}
+    .money-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F6F3EA;font-size:12px}
+    .green{color:#4E7A62}.red{color:#D96B6B}
+    .balance-card{border-radius:14px;padding:16px 20px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+    .b-ok{background:#E4EDE1}.b-err{background:#FFF0F0;border:2px solid #D96B6B}
+    footer{margin-top:40px;text-align:center;font-size:11px;color:#8C7E74;border-top:1px solid #E6E1DA;padding-top:14px}
+    @media print{body{padding:20px}@page{size:A4;margin:20mm}}</style></head><body>
+    <div class="header"><div class="logo">CASA ELEGIDA</div><div style="color:#8C7E74;margin-top:6px">Cierre de Turno de Caja</div><div style="background:#F6F3EA;display:inline-block;padding:5px 18px;border-radius:50px;font-size:12px;margin-top:10px">${t.id}</div></div>
+    <div class="section"><div class="section-title">Datos del Turno</div>
+    <div class="info-grid">
+        <div class="info-card"><div class="info-label">Abrió la Caja</div><div class="info-value">${t.perfilAbre||''}</div></div>
+        <div class="info-card"><div class="info-label">Cerró la Caja</div><div class="info-value">${t.perfilCierra||''}</div></div>
+        <div class="info-card"><div class="info-label">Apertura</div><div class="info-value">${t.fechaApertura||''}</div></div>
+        <div class="info-card"><div class="info-label">Cierre</div><div class="info-value">${t.fechaCierre||''}</div></div>
+    </div></div>
+    <div class="section"><div class="section-title">Movimientos</div>
+        <div class="money-row"><span>Efectivo Inicial</span><span>${fmtT(t.efectivoInicial)}</span></div>
+        <div class="money-row"><span>Ventas en Efectivo</span><span class="green">${fmtT(t.ventasEfectivo)}</span></div>
+        <div class="money-row"><span>Ventas en Transferencia</span><span class="green">${fmtT(t.ventasTransferencia)}</span></div>
+        <div class="money-row"><span>Transferencia Web</span><span class="green">${fmtT(t.ventasTransferenciaWeb)}</span></div>
+    </div>
+    <div class="section"><div class="section-title">Gastos (${t.gastos?.length||0})</div>
+        ${(t.gastos||[]).length?(t.gastos||[]).map(g=>`<div class="money-row"><span>${g.descripcion||''}</span><span class="red">-${fmtT(g.monto)}</span></div>`).join(''):'<p style="color:#8C7E74;font-size:12px">Sin gastos</p>'}
+        <div class="money-row" style="border-top:2px solid #E6E1DA;margin-top:8px"><span><strong>Total Gastos</strong></span><span class="red"><strong>-${fmtT(t.totalGastos)}</strong></span></div>
+    </div>
+    <div class="section"><div class="section-title">Entregó</div>
+        <div class="money-row"><span>Efectivo</span><span>${fmtT(t.entregaEfectivo)}</span></div>
+        <div class="money-row"><span>Transferencia</span><span>${fmtT(t.entregaTransferencia)}</span></div>
+    </div>
+    <div class="section"><div class="section-title">Balance Final</div>
+        <div class="balance-card ${balEfOk?'b-ok':'b-err'}">
+            <div><div style="font-weight:700;font-size:14px">Efectivo</div><div style="font-size:11px;color:#8C7E74">Ventas ef. − Gastos − Entrega ef.</div></div>
+            <div style="text-align:right"><div style="font-size:24px;font-weight:800;color:${balEfOk?'#4E7A62':'#D96B6B'}">${balEfOk?'$0':fmtT(t.balanceEfectivo)}</div><div style="font-size:11px;font-weight:700;color:${balEfOk?'#4E7A62':'#D96B6B'}">${balEfOk?'✅ COINCIDE':'🔴 IRREGULARIDAD'}</div></div>
+        </div>
+        <div class="balance-card ${balTrOk?'b-ok':'b-err'}">
+            <div><div style="font-weight:700;font-size:14px">Transferencia</div><div style="font-size:11px;color:#8C7E74">Ventas tr. + Web − Entrega tr.</div></div>
+            <div style="text-align:right"><div style="font-size:24px;font-weight:800;color:${balTrOk?'#4E7A62':'#D96B6B'}">${balTrOk?'$0':fmtT(t.balanceTransferencia)}</div><div style="font-size:11px;font-weight:700;color:${balTrOk?'#4E7A62':'#D96B6B'}">${balTrOk?'✅ COINCIDE':'🔴 IRREGULARIDAD'}</div></div>
+        </div>
+    </div>
+    <footer>Casa Elegida — Sistema POS | ${new Date().toLocaleString('es-AR')}</footer>
+    <script>window.onload=function(){window.print()}<\/script></body></html>`);
+    win.document.close();
+}
+    
     function abrirModalGasto() {
     const modal = document.createElement('div');
     modal.className = 'modal active';
