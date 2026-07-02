@@ -1038,11 +1038,11 @@ app.post('/admin/exportar-ventas', adminMiddleware(), async (req, res) => {
 app.post('/admin/apertura-caja-profesional', adminMiddleware('ventas'), async (req, res) => {
     try {
         const { montoEfectivo, montoTransferencia } = req.body;
-        const hoy = new Date().toLocaleDateString('es-AR');
+        const hoy = new Date().toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
         const existe = await pool.query('SELECT * FROM caja_profesional WHERE fecha = $1', [hoy]);
         if (existe.rows.length > 0) return res.status(400).json({ error: 'La caja ya fue abierta hoy' });
         await pool.query(`INSERT INTO caja_profesional (fecha, "aperturaTimestamp", "abiertaPor", "montoInicialEfectivo", "montoInicialTransferencia", estado) VALUES ($1,$2,$3,$4,$5,'abierta')`,
-            [hoy, Date.now(), req.admin.nombre, montoEfectivo||0, montoTransferencia||0]);
+            [hoy, Date.now(), req.admin.nombre, parseFloat(montoEfectivo)||0, parseFloat(montoTransferencia)||0]);
         await logActividad(req.admin.nombre, 'APERTURA_CAJA', `Ef: ${fmt.format(montoEfectivo||0)} | Transf: ${fmt.format(montoTransferencia||0)}`, req);
         res.json({ success: true });
     } catch(e) { res.status(500).json({ error: e.message }); }
@@ -1051,49 +1051,72 @@ app.post('/admin/apertura-caja-profesional', adminMiddleware('ventas'), async (r
 app.post('/admin/cierre-caja-profesional', adminMiddleware('ventas'), async (req, res) => {
     try {
         const { efectivoEntregado, transferenciaEntregada } = req.body;
-        const hoy = new Date().toLocaleDateString('es-AR');
-        const caja = (await pool.query("SELECT * FROM caja_profesional WHERE fecha = $1 AND estado = 'abierta'", [hoy])).rows[0];
+        const hoy = new Date().toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+        const caja = (await pool.query('SELECT * FROM caja_profesional WHERE fecha = $1 AND estado = \'abierta\'', [hoy])).rows[0];
         if (!caja) return res.status(400).json({ error: 'No hay caja abierta hoy' });
-        const ventasAdmin = (await pool.query("SELECT * FROM ventas WHERE fecha LIKE $1", [`%${hoy}%`])).rows;
+        
+        const ventasAdmin = (await pool.query('SELECT * FROM ventas WHERE fecha LIKE $1', [`%${hoy.split(' ')[0]}%`])).rows;
         let ventasEfectivo = 0, ventasTransferencia = 0, ventasWebTransferencia = 0;
         ventasAdmin.forEach(v => {
             if (v.origen === 'admin') {
-                if (v["metodoPago"] === 'efectivo') ventasEfectivo += v.total;
-                if (v["metodoPago"] === 'transferencia') ventasTransferencia += v.total;
+                if (v.metodoPago === 'efectivo') ventasEfectivo += v.total;
+                if (v.metodoPago === 'transferencia') ventasTransferencia += v.total;
             }
             if (v.origen === 'tienda') ventasWebTransferencia += v.total;
         });
-        const totalEsperadoEfectivo = caja.montoinicialefectivo + ventasEfectivo;
-        const diferenciaEfectivo = (efectivoEntregado||0) - totalEsperadoEfectivo;
-        const totalEsperadoTransferencia = caja.montoinicialtransferencia + ventasTransferencia + ventasWebTransferencia;
-        const diferenciaTransferencia = (transferenciaEntregada||0) - totalEsperadoTransferencia;
+        
+        const inicialEf = parseFloat(caja.montoInicialEfectivo) || 0;
+        const inicialTr = parseFloat(caja.montoInicialTransferencia) || 0;
+        
+        const totalEsperadoEfectivo = inicialEf + ventasEfectivo;
+        const diferenciaEfectivo = (parseFloat(efectivoEntregado)||0) - totalEsperadoEfectivo;
+        const totalEsperadoTransferencia = inicialTr + ventasTransferencia + ventasWebTransferencia;
+        const diferenciaTransferencia = (parseFloat(transferenciaEntregada)||0) - totalEsperadoTransferencia;
+        
         await pool.query(`UPDATE caja_profesional SET estado='cerrada', "cerradaPor"=$1, "cierreTimestamp"=$2,
             "efectivoEntregado"=$3, "transferenciaEntregada"=$4, "ventasEfectivo"=$5, "ventasTransferencia"=$6,
             "ventasWebTransferencia"=$7, "totalEsperadoEfectivo"=$8, "totalEsperadoTransferencia"=$9,
             "diferenciaEfectivo"=$10, "diferenciaTransferencia"=$11, "cantidadVentas"=$12 WHERE fecha=$13 AND estado='abierta'`,
-            [req.admin.nombre, Date.now(), efectivoEntregado||0, transferenciaEntregada||0, ventasEfectivo, ventasTransferencia,
+            [req.admin.nombre, Date.now(), parseFloat(efectivoEntregado)||0, parseFloat(transferenciaEntregada)||0, ventasEfectivo, ventasTransferencia,
              ventasWebTransferencia, totalEsperadoEfectivo, totalEsperadoTransferencia, diferenciaEfectivo, diferenciaTransferencia,
              ventasAdmin.length, hoy]);
+             
         await logActividad(req.admin.nombre, 'CIERRE_CAJA', `Dif Ef: ${fmt.format(diferenciaEfectivo)} | Dif Transf: ${fmt.format(diferenciaTransferencia)}`, req);
-        res.json({ success: true, resumen: { ventasEfectivo, ventasTransferencia, ventasWebTransferencia, totalEsperadoEfectivo, totalEsperadoTransferencia, diferenciaEfectivo, diferenciaTransferencia, cantidadVentas: ventasAdmin.length, montoInicialEfectivo: caja.montoinicialefectivo, montoInicialTransferencia: caja.montoinicialtransferencia } });
+        res.json({ success: true, resumen: { ventasEfectivo, ventasTransferencia, ventasWebTransferencia, totalEsperadoEfectivo, totalEsperadoTransferencia, diferenciaEfectivo, diferenciaTransferencia, cantidadVentas: ventasAdmin.length, montoInicialEfectivo: inicialEf, montoInicialTransferencia: inicialTr } });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/admin/estado-caja-profesional', adminMiddleware('ventas'), async (req, res) => {
     try {
-        const hoy = new Date().toLocaleDateString('es-AR');
-        const caja = (await pool.query("SELECT * FROM caja_profesional WHERE fecha = $1 AND estado = 'abierta'", [hoy])).rows[0];
+        const hoy = new Date().toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+        const caja = (await pool.query('SELECT * FROM caja_profesional WHERE fecha = $1 AND estado = \'abierta\'', [hoy])).rows[0];
         if (!caja) return res.json({ abierta: false });
-        const ventasAdmin = (await pool.query("SELECT * FROM ventas WHERE fecha LIKE $1", [`%${hoy}%`])).rows;
+        
+        const ventasAdmin = (await pool.query('SELECT * FROM ventas WHERE fecha LIKE $1', [`%${hoy.split(' ')[0]}%`])).rows;
         let ventasEfectivo = 0, ventasTransferencia = 0, ventasWeb = 0;
         ventasAdmin.forEach(v => {
             if (v.origen === 'admin') {
-                if (v["metodoPago"] === 'efectivo') ventasEfectivo += v.total;
-                if (v["metodoPago"] === 'transferencia') ventasTransferencia += v.total;
+                if (v.metodoPago === 'efectivo') ventasEfectivo += v.total;
+                if (v.metodoPago === 'transferencia') ventasTransferencia += v.total;
             }
             if (v.origen === 'tienda') ventasWeb += v.total;
         });
-        res.json({ abierta: true, abiertaPor: caja.abiertapor, montoInicialEfectivo: caja.montoinicialefectivo, montoInicialTransferencia: caja.montoinicialtransferencia, ventasEfectivo, ventasTransferencia, ventasWeb, totalEsperadoEfectivo: caja.montoinicialefectivo + ventasEfectivo, totalEsperadoTransferencia: caja.montoinicialtransferencia + ventasTransferencia + ventasWeb, cantidadVentas: ventasAdmin.length });
+        
+        const inicialEf = parseFloat(caja.montoInicialEfectivo) || 0;
+        const inicialTr = parseFloat(caja.montoInicialTransferencia) || 0;
+        
+        res.json({ 
+            abierta: true, 
+            abiertaPor: caja.abiertaPor, 
+            montoInicialEfectivo: inicialEf, 
+            montoInicialTransferencia: inicialTr, 
+            ventasEfectivo, 
+            ventasTransferencia, 
+            ventasWeb, 
+            totalEsperadoEfectivo: inicialEf + ventasEfectivo, 
+            totalEsperadoTransferencia: inicialTr + ventasTransferencia + ventasWeb, 
+            amountVentas: ventasAdmin.length 
+        });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
