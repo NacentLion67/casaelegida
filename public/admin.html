@@ -870,7 +870,10 @@ function renderPaginaRendimiento() {
                 <h2 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:26px;display:flex;align-items:center;gap:12px"><i class="fas fa-chart-line" style="color:#C5A880"></i> Rendimiento de Artículos</h2>
                 <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Costos, precios, ganancias y stock de cada artículo</p>
             </div>
-            <span id="rend-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-box"></i> Cargando...</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <span id="rend-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-box"></i> Cargando...</span>
+                <button onclick="sincronizarVentasWeb()" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer"><i class="fas fa-sync-alt"></i> Sincronizar ventas web</button>
+            </div>
         </div>
         <div class="panel" style="padding:20px">
             <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
@@ -932,6 +935,15 @@ function renderPaginaRendimiento() {
             </div>
         </div>
     </div>`;
+}
+
+async function sincronizarVentasWeb() {
+    try {
+        mostrarToast('⏳ Sincronizando ventas web...');
+        const d = await safeFetch('/admin/sincronizar-ventas-web', { method: 'POST' });
+        mostrarToast(`✅ ${d.creados} ventas web sincronizadas`);
+        cargarHistorialGanancias();
+    } catch(e) { mostrarToast('❌ Error al sincronizar', true); }
 }
 
     async function loginAdmin() { 
