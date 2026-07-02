@@ -277,7 +277,7 @@
             }
             container.innerHTML = pedidosUsuario.map(p => {
                 const estadoTexto = p.estado.charAt(0).toUpperCase() + p.estado.slice(1);
-                const tienePIN = p.pin && (p.estado === 'confirmado' || p.estado === 'abonado');
+                const tienePIN = p.pin && (p.estado === 'confirmado' || p.estado === 'abonado' || p.estado === 'armado');
                 return `<div class="pedido-card" onclick="verDetallePedido('${p.id}')">
                     <div class="pedido-header">
                         <span class="pedido-id">${p.id}</span>
