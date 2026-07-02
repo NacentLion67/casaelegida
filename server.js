@@ -1314,8 +1314,16 @@ app.post('/admin/ganancias/historial', adminMiddleware(), async (req, res) => {
         const { desde, hasta } = req.body;
         let query = 'SELECT * FROM ventas WHERE 1=1';
         let params = [];
-        if (desde) { query += ` AND "fechaTimestamp" >= $${params.length+1}`; params.push(new Date(desde).getTime()); }
-        if (hasta) { query += ` AND "fechaTimestamp" <= $${params.length+1}`; params.push(new Date(hasta + 'T23:59:59').getTime()); }
+        if (desde) { 
+            const desdeDate = desde.split('-').reverse().join('/');
+            query += ` AND fecha >= $${params.length+1}`; 
+            params.push(desdeDate); 
+        }
+        if (hasta) { 
+            const hastaDate = hasta.split('-').reverse().join('/');
+            query += ` AND fecha <= $${params.length+1} || '%'`; 
+            params.push(hastaDate); 
+        }
         query += ' ORDER BY "fechaTimestamp" DESC LIMIT 300';
         const ventas = (await pool.query(query, params)).rows;
         const resultados = [];
