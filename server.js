@@ -874,24 +874,18 @@ app.post('/tienda/marcar-abonado', async (req, res) => {
         if (!p) return res.status(404).json({ error: 'Pedido no encontrado' });
         const esRetiroLocal = p.tipoEntrega === 'local';
         const pin = esRetiroLocal ? generarPIN() : null;
-        await pool.query("UPDATE pedidos SET estado='abonado', pin=$1 WHERE id=$2", [pin, req.body.pedidoId]);
+
+        const ventaExistente = (await pool.query('SELECT id FROM ventas WHERE "pedidoId"=$1', [p.id])).rows[0];
+        let vid = ventaExistente?.id;
+        if (!ventaExistente) {
+            vid = 'FAC-' + Date.now();
+            await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\") VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7)",
+                [vid, Date.now(), p.items, p.total, p.tipoEntrega==='envio'?'envio':'local', p.cliente, p.id]);
+        }
+
+        await pool.query("UPDATE pedidos SET estado='abonado', pin=$1, \"ventaId\"=$2 WHERE id=$3", [pin, vid, req.body.pedidoId]);
         await logActividad('Admin', 'PEDIDO_ABONADO', `Pedido ${req.body.pedidoId} abonado`, req);
         res.json({ success: true, pin });
-        if (pin) {
-            try {
-                const cliente = JSON.parse(p.cliente || '{}');
-                if (cliente.email) {
-                    enviarEmail(cliente.email, `PIN de Retiro - Pedido ${p.id}`,
-                        `<h1>Casa Elegida</h1><h2>Tu pedido fue abonado ✅</h2><p>Tu PIN de retiro es:</p><h1 style="letter-spacing:8px;color:#3D312A">${pin}</h1><p>Presentá este código al retirar tu pedido en el local.</p>`
-                    ).catch(e => console.error('Email error:', e));
-                }
-            } catch(emailErr) { console.error('Error email:', emailErr); }
-        }
-    } catch(e) {
-        console.error('Error marcar-abonado:', e);
-        res.status(500).json({ error: e.message });
-    }
-});
 
 app.post('/tienda/marcar-enviado', async (req, res) => {
     await pool.query("UPDATE pedidos SET estado='enviado' WHERE id=$1", [req.body.pedidoId]);
