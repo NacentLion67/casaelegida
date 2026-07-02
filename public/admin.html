@@ -570,16 +570,16 @@ body.dark-mode .config-section h3 { color: #C5A880; }
 <div id="v-cart" class="panel hidden" style="position:fixed;right:24px;top:120px;width:480px;max-height:calc(100vh - 140px);overflow-y:auto;z-index:50">
     <h3>
         <span><i class="fas fa-shopping-cart"></i> Pedido Actual</span>
-        <button type="button" onclick="toggleCartMobile()" class="tab-btn" style="padding:8px 14px; border-radius:50px; font-size:12px; display:none; align-items:center; gap:6px; background:#ef4444; color:white; border:none;" id="btn-minimize-cart"><i class="fas fa-compress-alt"></i> Minimizar</button>
+        <button type="button" onclick="toggleCartMobile()" class="tab-btn" style="padding:8px 14px;border-radius:50px;font-size:12px;display:none;align-items:center;gap:6px;background:#ef4444;color:white;border:none;" id="btn-minimize-cart"><i class="fas fa-compress-alt"></i> Minimizar</button>
     </h3>
     <div id="cart-items" style="max-height:320px;overflow-y:auto;margin-bottom:20px"></div>
-    
+
     <label style="font-weight:600;margin-bottom:8px;display:block"><i class="fas fa-truck"></i> Entrega</label>
     <div class="entrega-tabs">
         <button type="button" id="l-local" class="entrega-btn active" onclick="setLog('local')"><i class="fas fa-store"></i> Retiro</button>
         <button type="button" id="l-envio" class="entrega-btn" onclick="setLog('envio')"><i class="fas fa-shipping-fast"></i> Envío</button>
     </div>
-    
+
     <div id="form-envio" class="hidden">
         <div class="form-envio-completo">
             <div class="form-row">
@@ -610,37 +610,33 @@ body.dark-mode .config-section h3 { color: #C5A880; }
         </div>
     </div>
 
-    <div class="total-container">
-    <button type="button" id="p-ef" class="pago-btn active" onclick="setMetodo('efectivo')"><i class="fas fa-money-bill-wave"></i> Efectivo</button>
+    <label style="font-weight:600;margin:16px 0 8px;display:block"><i class="fas fa-credit-card"></i> Pago</label>
+    <div class="pago-tabs">
+        <button type="button" id="p-ef" class="pago-btn active" onclick="setMetodo('efectivo')"><i class="fas fa-money-bill-wave"></i> Efectivo</button>
         <button type="button" id="p-tr" class="pago-btn" onclick="setMetodo('transferencia')"><i class="fas fa-exchange-alt"></i> Transferencia</button>
         <button type="button" id="p-mx" class="pago-btn" onclick="setMetodo('mixto')"><i class="fas fa-hand-holding-usd"></i> Mixto</button>
     </div>
     <div id="form-mixto" style="display:none;margin-top:12px;background:#F6F3EA;border-radius:16px;padding:14px">
-            <div style="font-size:11px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Dividir pago</div>
-            <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
-                <div style="flex:1">
-                    <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:4px"><i class="fas fa-money-bill-wave" style="color:#C5A880"></i> Efectivo</label>
-                    <input type="number" id="mixto-efectivo" placeholder="0" oninput="calcularMixto('efectivo')" style="width:100%;padding:10px 14px;border-radius:50px;border:1.5px solid #E6E1DA;font-size:14px;font-weight:600">
-                </div>
-                <div style="flex:1">
-                    <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:4px"><i class="fas fa-exchange-alt" style="color:#C5A880"></i> Transferencia</label>
-                    <input type="number" id="mixto-transferencia" placeholder="0" oninput="calcularMixto('transferencia')" style="width:100%;padding:10px 14px;border-radius:50px;border:1.5px solid #E6E1DA;font-size:14px;font-weight:600">
-                </div>
+        <div style="font-size:11px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Dividir pago</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+            <div style="flex:1">
+                <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:4px"><i class="fas fa-money-bill-wave" style="color:#C5A880"></i> Efectivo</label>
+                <input type="number" id="mixto-efectivo" placeholder="0" oninput="calcularMixto('efectivo')" style="width:100%;padding:10px 14px;border-radius:50px;border:1.5px solid #E6E1DA;font-size:14px;font-weight:600">
             </div>
-            <div id="mixto-resumen" style="background:#3D312A;border-radius:12px;padding:10px 14px;font-size:12px;color:#C5A880;font-weight:600;text-align:center"></div>
+            <div style="flex:1">
+                <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:4px"><i class="fas fa-exchange-alt" style="color:#C5A880"></i> Transferencia</label>
+                <input type="number" id="mixto-transferencia" placeholder="0" oninput="calcularMixto('transferencia')" style="width:100%;padding:10px 14px;border-radius:50px;border:1.5px solid #E6E1DA;font-size:14px;font-weight:600">
+            </div>
         </div>
-    
-    <label style="font-weight:600;margin:16px 0 8px;display:block"><i class="fas fa-credit-card"></i> Pago</label>
+        <div id="mixto-resumen" style="background:#3D312A;border-radius:12px;padding:10px 14px;font-size:12px;color:#C5A880;font-weight:600;text-align:center"></div>
     </div>
-    
+
     <div class="total-container">
         <div>Total a pagar</div>
         <div id="total-txt" class="total-amount">$0</div>
-        
-        <button type="button" onclick="abrirModalGasto()" style="width:100%; margin-bottom:10px; background:#E0A899; color:white; border:none; padding:10px; border-radius:50px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <button type="button" onclick="abrirModalGasto()" style="width:100%;margin-bottom:10px;background:#E0A899;color:white;border:none;padding:10px;border-radius:50px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
             <i class="fas fa-hand-holding-usd"></i> Anotar Gasto Caja
         </button>
-        
         <button type="button" class="btn-confirm" onclick="checkout()"><i class="fas fa-check-circle"></i> CONFIRMAR VENTA</button>
     </div>
 </div>
