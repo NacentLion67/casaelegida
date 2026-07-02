@@ -612,9 +612,23 @@ body.dark-mode .config-section h3 { color: #C5A880; }
     
     <label style="font-weight:600;margin:16px 0 8px;display:block"><i class="fas fa-credit-card"></i> Pago</label>
     <div class="pago-tabs">
-        <button type="button" id="p-ef" class="pago-btn active" onclick="setMetodo('efectivo')"><i class="fas fa-money-bill-wave"></i> Casino/Efectivo</button>
-        <button type="button" id="p-tr" class="pago-btn" onclick="setMetodo('transferencia')"><i class="fas fa-exchange-alt"></i> Transf.</button>
+    <button type="button" id="p-ef" class="pago-btn active" onclick="setMetodo('efectivo')"><i class="fas fa-money-bill-wave"></i> Efectivo</button>
+        <button type="button" id="p-tr" class="pago-btn" onclick="setMetodo('transferencia')"><i class="fas fa-exchange-alt"></i> Transferencia</button>
         <button type="button" id="p-mx" class="pago-btn" onclick="setMetodo('mixto')"><i class="fas fa-hand-holding-usd"></i> Mixto</button>
+        <div id="form-mixto" style="display:none;margin-top:12px;background:#F6F3EA;border-radius:16px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Dividir pago</div>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+                <div style="flex:1">
+                    <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:4px"><i class="fas fa-money-bill-wave" style="color:#C5A880"></i> Efectivo</label>
+                    <input type="number" id="mixto-efectivo" placeholder="0" oninput="calcularMixto('efectivo')" style="width:100%;padding:10px 14px;border-radius:50px;border:1.5px solid #E6E1DA;font-size:14px;font-weight:600">
+                </div>
+                <div style="flex:1">
+                    <label style="font-size:11px;font-weight:600;color:#3D312A;display:block;margin-bottom:4px"><i class="fas fa-exchange-alt" style="color:#C5A880"></i> Transferencia</label>
+                    <input type="number" id="mixto-transferencia" placeholder="0" oninput="calcularMixto('transferencia')" style="width:100%;padding:10px 14px;border-radius:50px;border:1.5px solid #E6E1DA;font-size:14px;font-weight:600">
+                </div>
+            </div>
+            <div id="mixto-resumen" style="background:#3D312A;border-radius:12px;padding:10px 14px;font-size:12px;color:#C5A880;font-weight:600;text-align:center"></div>
+        </div>
     </div>
     
     <div class="total-container">
@@ -1728,13 +1742,61 @@ function renderCart(){
 function modificarCantidadCarrito(i,d){ if(!carrito[i])return; let nc=carrito[i].cant+d; if(nc<1){eliminarDelCarrito(i);return;} carrito[i].cant=nc; calcularPreciosMayoristaEnVivo(); renderCart(); localStorage.setItem('pos_carrito',JSON.stringify(carrito)); }
 function eliminarDelCarrito(i){ carrito.splice(i,1); calcularPreciosMayoristaEnVivo(); renderCart(); localStorage.setItem('pos_carrito',JSON.stringify(carrito)); }
 function setLog(t){ logistica=t; document.getElementById('form-envio').classList.toggle('hidden',t!=='envio'); document.querySelectorAll('.entrega-btn').forEach(b=>b.classList.remove('active')); document.getElementById(`l-${t}`).classList.add('active'); }
-function setMetodo(m){ metodoPago=m; document.querySelectorAll('.pago-btn').forEach(b=>b.classList.remove('active')); document.getElementById(m==='efectivo'?'p-ef':m==='transferencia'?'p-tr':'p-mx').classList.add('active'); }
 
+function setMetodo(m) {
+    metodoPago = m;
+    document.querySelectorAll('.pago-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(m==='efectivo'?'p-ef':m==='transferencia'?'p-tr':'p-mx').classList.add('active');
+    const formMixto = document.getElementById('form-mixto');
+    if (formMixto) {
+        formMixto.style.display = m === 'mixto' ? 'block' : 'none';
+        if (m === 'mixto') {
+            document.getElementById('mixto-efectivo').value = '';
+            document.getElementById('mixto-transferencia').value = '';
+            calcularMixto('efectivo');
+        }
+    }
+}
+
+function calcularMixto(origen) {
+    const total = totalVenta;
+    const efInp = document.getElementById('mixto-efectivo');
+    const trInp = document.getElementById('mixto-transferencia');
+    const resumen = document.getElementById('mixto-resumen');
+    if (!efInp || !trInp) return;
+    if (origen === 'efectivo') {
+        const ef = parseFloat(efInp.value) || 0;
+        const tr = Math.max(0, total - ef);
+        trInp.value = tr > 0 ? tr : '';
+    } else {
+        const tr = parseFloat(trInp.value) || 0;
+        const ef = Math.max(0, total - tr);
+        efInp.value = ef > 0 ? ef : '';
+    }
+    const ef = parseFloat(efInp.value) || 0;
+    const tr = parseFloat(trInp.value) || 0;
+    const suma = ef + tr;
+    const diff = suma - total;
+    if (resumen) {
+        if (diff === 0) resumen.innerHTML = `<i class="fas fa-check-circle" style="color:#4E7A62"></i> Cuadra perfecto — ${fmt.format(total)}`;
+        else if (diff > 0) resumen.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#D96B6B"></i> Excede por ${fmt.format(diff)}`;
+        else resumen.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#DE9B72"></i> Falta ${fmt.format(Math.abs(diff))}`;
+    }
+}
+    
 async function checkout(){
     if(!carrito.length){mostrarToast('Carrito vacío',true);return;}
     try { const caja = await safeFetch('/admin/estado-caja-profesional', {method:'POST'}); if (!caja.abierta) { mostrarToast('🔒 Debes abrir la caja antes de realizar ventas', true); return; } } catch(e) {}
     let cd={nombre:'Mostrador'}; if(logistica==='envio'){ let n=document.getElementById('env-nombre').value.trim(), dni=document.getElementById('env-dni').value.trim(), c=document.getElementById('env-celular').value.trim(); if(!n||!dni||!c){mostrarToast('Completá datos',true);return;} cd={nombre:n,dni:dni,celular:c}; }
-    let data=await safeFetch('/confirmar-venta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({carrito,pago:{total:totalVenta,metodo:metodoPago},logistica,cliente:cd,mayoristaConfig:{habilitado:mayoristaHabilitado}})});
+    let pagoData = { total: totalVenta, metodo: metodoPago };
+    if (metodoPago === 'mixto') {
+        const ef = parseFloat(document.getElementById('mixto-efectivo')?.value) || 0;
+        const tr = parseFloat(document.getElementById('mixto-transferencia')?.value) || 0;
+        if (ef + tr !== totalVenta) { mostrarToast('❌ El mixto no cuadra con el total', true); return; }
+        pagoData.efectivo = ef;
+        pagoData.transferencia = tr;
+    }
+    let data=await safeFetch('/confirmar-venta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({carrito,pago:pagoData,logistica,cliente:cd,mayoristaConfig:{habilitado:mayoristaHabilitado}})});
     if(data.success){mostrarToast(`✅ Venta ${data.ventaId}`);carrito=[];renderCart();localStorage.removeItem('pos_carrito');cargar();cargarVentas();}
 }
 function buscarProductos(){ let b=document.getElementById('buscador').value.toLowerCase(); document.querySelectorAll('#grid-prods .card').forEach(c=>c.style.display=c.getAttribute('data-nombre').includes(b)?'':'none'); }
