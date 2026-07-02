@@ -615,7 +615,8 @@ body.dark-mode .config-section h3 { color: #C5A880; }
     <button type="button" id="p-ef" class="pago-btn active" onclick="setMetodo('efectivo')"><i class="fas fa-money-bill-wave"></i> Efectivo</button>
         <button type="button" id="p-tr" class="pago-btn" onclick="setMetodo('transferencia')"><i class="fas fa-exchange-alt"></i> Transferencia</button>
         <button type="button" id="p-mx" class="pago-btn" onclick="setMetodo('mixto')"><i class="fas fa-hand-holding-usd"></i> Mixto</button>
-        <div id="form-mixto" style="display:none;margin-top:12px;background:#F6F3EA;border-radius:16px;padding:14px">
+    </div>
+    <div id="form-mixto" style="display:none;margin-top:12px;background:#F6F3EA;border-radius:16px;padding:14px">
             <div style="font-size:11px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Dividir pago</div>
             <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
                 <div style="flex:1">
@@ -629,6 +630,8 @@ body.dark-mode .config-section h3 { color: #C5A880; }
             </div>
             <div id="mixto-resumen" style="background:#3D312A;border-radius:12px;padding:10px 14px;font-size:12px;color:#C5A880;font-weight:600;text-align:center"></div>
         </div>
+    
+    <label style="font-weight:600;margin:16px 0 8px;display:block"><i class="fas fa-credit-card"></i> Pago</label>
     </div>
     
     <div class="total-container">
