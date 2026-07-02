@@ -1135,7 +1135,8 @@ function tab(t) {
         container.className='layout'; 
         container.innerHTML=renderPaginaRendimiento(); 
         cartPanel.classList.add('hidden'); 
-        cargarProductosRendimiento(); 
+        cargarProductosRendimiento();
+        setTimeout(cargarHistorialGanancias, 300); 
     }
     else if (t==='web') { 
         container.className='layout'; 
