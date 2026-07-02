@@ -901,19 +901,6 @@ function renderPaginaRendimiento() {
                 <i class="fas fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;color:#C5A880;display:block"></i>Cargando artículos...
             </div>
         </div>
-
-        <div class="panel" style="padding:0;overflow:hidden;border-radius:24px">
-            <div style="background:linear-gradient(135deg,#3D312A,#52433A);padding:24px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-                <h3 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:20px;display:flex;align-items:center;gap:10px">
-                    <i class="fas fa-chart-bar" style="color:#C5A880"></i> Ventas por Producto
-                </h3>
-                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                    <input type="date" id="rend-desde" style="padding:8px 14px;border-radius:50px;border:1px solid rgba(197,168,128,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:12px">
-                    <span style="color:#C5A880;font-size:12px">hasta</span>
-                    <input type="date" id="rend-hasta" style="padding:8px 14px;border-radius:50px;border:1px solid rgba(197,168,128,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:12px">
-                    <button onclick="cargarRendimientoProductos()" style="background:#C5A880;color:#3D312A;border:none;padding:8px 20px;border-radius:50px;font-weight:700;font-size:12px;cursor:pointer"><i class="fas fa-search"></i> Filtrar</button>
-                    <button onclick="document.getElementById('rend-desde').value='';document.getElementById('rend-hasta').value='';cargarRendimientoProductos()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:8px 14px;border-radius:50px;font-size:12px;cursor:pointer"><i class="fas fa-times"></i></button>
-                </div>
             </div>
             <div style="padding:20px">
                 <div id="rend-prod-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px"></div>
@@ -2128,11 +2115,76 @@ function renderizarRendimiento(lista) {
                 <button onclick="tab('a')" style="width:100%;padding:10px;font-size:11px;border-radius:50px;background:#F6F3EA;color:#3D312A;border:none;cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">
                     <i class="fas fa-edit"></i> Editar en Stock
                 </button>
+                <button onclick="verRendimientoProducto('${p.id}','${escapeHtml(p.nombre)}')" style="width:100%;padding:10px;font-size:11px;border-radius:50px;background:linear-gradient(135deg,#3D312A,#52433A);color:#C5A880;border:none;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px">
+                    <i class="fas fa-chart-bar"></i> Ver Rendimiento
+                </button>
             </div>
         </div>`;
     }).join('');
 }
 
+    async function verRendimientoProducto(pid, nombre) {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:700px">
+            <div class="modal-header">
+                <h3 style="font-family:'Playfair Display',serif;display:flex;align-items:center;gap:10px">
+                    <i class="fas fa-chart-bar" style="color:#C5A880"></i> ${escapeHtml(nombre)}
+                </h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px">
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;background:#F6F3EA;padding:16px;border-radius:16px">
+                    <input type="date" id="rp-desde-${pid}" style="padding:10px 14px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px">
+                    <span style="color:#8C7E74;font-size:12px">hasta</span>
+                    <input type="date" id="rp-hasta-${pid}" style="padding:10px 14px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px">
+                    <button onclick="cargarDatosRendProd('${pid}')" style="background:#3D312A;color:#C5A880;border:none;padding:10px 20px;border-radius:50px;font-weight:700;font-size:12px;cursor:pointer"><i class="fas fa-search"></i> Filtrar</button>
+                    <button onclick="document.getElementById('rp-desde-${pid}').value='';document.getElementById('rp-hasta-${pid}').value='';cargarDatosRendProd('${pid}')" style="background:#E6E1DA;color:#3D312A;border:none;padding:10px 14px;border-radius:50px;font-size:12px;cursor:pointer"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="rp-stats-${pid}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px"></div>
+                <div id="rp-tabla-${pid}"><div style="text-align:center;padding:32px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="color:#C5A880;margin-right:8px"></i>Cargando...</div></div>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    await cargarDatosRendProd(pid);
+}
+
+async function cargarDatosRendProd(pid) {
+    const desde = document.getElementById(`rp-desde-${pid}`)?.value || '';
+    const hasta = document.getElementById(`rp-hasta-${pid}`)?.value || '';
+    const statsDiv = document.getElementById(`rp-stats-${pid}`);
+    const tablaDiv = document.getElementById(`rp-tabla-${pid}`);
+    if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:24px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="color:#C5A880;margin-right:8px"></i>Calculando...</div>`;
+    try {
+        const d = await safeFetch('/admin/rendimiento-productos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({desde,hasta}) });
+        const prod = (d.rendimiento||[]).find(r => r.productoId == pid);
+        if (!prod) {
+            if (statsDiv) statsDiv.innerHTML = '';
+            if (tablaDiv) tablaDiv.innerHTML = `<div style="text-align:center;padding:32px;color:#8C7E74"><i class="fas fa-inbox" style="font-size:32px;display:block;margin-bottom:12px;opacity:0.3"></i>Sin ventas en el período seleccionado</div>`;
+            return;
+        }
+        if (statsDiv) statsDiv.innerHTML = `
+            <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-boxes" style="color:#C5A880;font-size:22px;margin-bottom:6px"></i><h3>${prod.unidades}</h3><p style="color:#8C7E74;font-size:12px">Unidades vendidas</p></div>
+            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-dollar-sign" style="color:#4E7A62;font-size:22px;margin-bottom:6px"></i><h3>${fmt.format(prod.ingresos)}</h3><p style="color:#8C7E74;font-size:12px">Ingresos totales</p></div>
+            <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-store" style="color:#3D312A;font-size:22px;margin-bottom:6px"></i><h3>${prod.ventasAdmin}</h3><p style="color:#8C7E74;font-size:12px">Vendidas en local</p></div>
+            <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-globe" style="color:#DE9B72;font-size:22px;margin-bottom:6px"></i><h3>${prod.ventasWeb}</h3><p style="color:#8C7E74;font-size:12px">Vendidas en web</p></div>`;
+        if (tablaDiv) tablaDiv.innerHTML = `
+            <div style="background:#F6F3EA;border-radius:16px;padding:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <span style="font-size:13px;color:#8C7E74">Origen Admin</span>
+                    <div style="background:#3D312A;border-radius:50px;height:8px;flex:1;margin:0 12px;overflow:hidden"><div style="height:100%;background:#C5A880;width:${prod.unidades>0?Math.round((prod.ventasAdmin/prod.unidades)*100):0}%"></div></div>
+                    <strong style="font-size:13px;color:#3D312A;min-width:30px;text-align:right">${prod.unidades>0?Math.round((prod.ventasAdmin/prod.unidades)*100):0}%</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:13px;color:#8C7E74">Origen Web</span>
+                    <div style="background:#3D312A;border-radius:50px;height:8px;flex:1;margin:0 12px;overflow:hidden"><div style="height:100%;background:#4E7A62;width:${prod.unidades>0?Math.round((prod.ventasWeb/prod.unidades)*100):0}%"></div></div>
+                    <strong style="font-size:13px;color:#3D312A;min-width:30px;text-align:right">${prod.unidades>0?Math.round((prod.ventasWeb/prod.unidades)*100):0}%</strong>
+                </div>
+            </div>`;
+    } catch(e) { if(tablaDiv) tablaDiv.innerHTML=`<div style="text-align:center;padding:24px;color:#D96B6B"><i class="fas fa-exclamation-circle"></i> Error al cargar</div>`; }
+}
+    
 function filtrarRendimiento() {
     const busq = (document.getElementById('rendimiento-buscador')?.value||'').toLowerCase();
     const filtroStock = document.getElementById('rendimiento-filtro-stock')?.value||'todos';
