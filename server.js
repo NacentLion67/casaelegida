@@ -293,7 +293,7 @@ async function logActividad(admin, accion, detalles, req) {
         const id = 'LOG-' + Date.now();
         const ip = req?.ip || 'localhost';
         const fecha = new Date().toISOString();
-        const fechaLocal = new Date().toLocaleString('es-AR');
+        const fechaLocal = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
         await pool.query('INSERT INTO logs_admin (id, admin, accion, detalles, ip, fecha, "fechaLocal") VALUES ($1,$2,$3,$4,$5,$6,$7)',
             [id, admin || 'Sistema', accion, String(detalles).substring(0, 200), ip, fecha, fechaLocal]);
     } catch(e) {}
@@ -786,7 +786,7 @@ app.post('/confirmar-venta', adminMiddleware('ventas'), async (req, res) => {
         const montoTransferencia = pago.metodo === 'transferencia' ? totalFinal : (pago.metodo === 'mixto' ? (pago.transferencia||0) : 0);
         const esMayorista = carrito.some(it => it.precioOriginal && it.precio < it.precioOriginal) ? 1 : 0;
         const vendedor = req.admin?.nombre || 'Admin';
-        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"montoEfectivo\",\"montoTransferencia\",\"esMayorista\",vendedor) VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'completada','admin',$8,$9,$10,$11)",
+        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"montoEfectivo\",\"montoTransferencia\",\"esMayorista\",vendedor) VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'completada','admin',$8,$9,$10,$11)",
             [id, Date.now(), JSON.stringify(carrito), totalFinal, pago.metodo, logistica, JSON.stringify(cliente||{nombre:'Mostrador'}), montoEfectivo, montoTransferencia, esMayorista, vendedor]);
         await crearNotificacion('venta', '💰 Venta', `${id}`);
         await logActividad(vendedor, 'VENTA', `Venta ${id}`, req);
@@ -842,7 +842,7 @@ app.post('/tienda/crear-pedido', authMiddleware, async (req, res) => {
         }
         for (let it of carrito) { if(it.esManual) continue; await pool.query('UPDATE variantes SET stock=stock-$1 WHERE "productoId"=$2 AND nombre=$3', [it.cant, it.pId, it.vNom]); }
         const id = 'PED-' + Date.now();
-        await pool.query("INSERT INTO pedidos (id,fecha,\"fechaTimestamp\",items,total,cliente,\"tipoEntrega\",\"metodoEnvio\",estado,origen,\"usuarioId\") VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'pendiente','tienda',$8)",
+        await pool.query("INSERT INTO pedidos (id,fecha,\"fechaTimestamp\",items,total,cliente,\"tipoEntrega\",\"metodoEnvio\",estado,origen,\"usuarioId\") VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'pendiente','tienda',$8)",
             [id, Date.now(), JSON.stringify(carrito), total, JSON.stringify(cliente), tipoEntrega, metodoEnvio, u.id]);
         await crearNotificacion('pedido', '🛍️ Nuevo pedido', `#${id}`);
         await logActividad(cliente.nombre, 'PEDIDO_WEB', `Pedido #${id}`, req);
@@ -864,7 +864,7 @@ app.post('/tienda/confirmar-pedido', async (req, res) => {
         const esRetiroLocal = p["tipoEntrega"] === 'local';
         const pin = esRetiroLocal ? generarPIN() : null;
         const vid = 'FAC-' + Date.now();
-        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\") VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7)",
+        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\") VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7)",
             [vid, Date.now(), p.items, p.total, p["tipoEntrega"]==='envio'?'envio':'local', p.cliente, p.id]);
         await pool.query('UPDATE pedidos SET estado=$1,pin=$2,"ventaId"=$3 WHERE id=$4', ['confirmado', pin || null, vid, p.id]);
         await logActividad('Admin', 'CONFIRMAR_PEDIDO', `Pedido ${p.id} confirmado`, req);
@@ -902,7 +902,7 @@ app.post('/tienda/marcar-abonado', async (req, res) => {
         let vid = ventaExistente?.id;
         if (!ventaExistente) {
             vid = 'FAC-' + Date.now();
-            await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\") VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7)",
+            await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\") VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7)",
                 [vid, Date.now(), p.items, p.total, p.tipoEntrega==='envio'?'envio':'local', p.cliente, p.id]);
         }
 
