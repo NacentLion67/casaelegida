@@ -1935,8 +1935,19 @@ async function cargarYRenderAdmin(){ try{ const d=await safeFetch('/listar',{met
 
 async function cargarCategorias(){ try{ const d=await safeFetch('/listar-categorias',{method:'POST'}); categorias=d.lista||[]; }catch(e){ categorias=[]; } }
 
-async function cargar(){ try{ const d=await safeFetch('/listar',{method:'POST'}); productos=d.lista||[]; renderProductosVenta(); }catch(e){} }
-
+async function cargar(){ 
+    try{ 
+        const [d, c] = await Promise.all([
+            safeFetch('/listar', {method:'POST'}),
+            safeFetch('/get-config', {method:'POST'})
+        ]);
+        productos = d.lista || []; 
+        configuracion = c || {};
+        renderProductosVenta(); 
+        calcularPreciosMayoristaEnVivo();
+    } catch(e){} 
+}
+    
 async function cargarMetodosEnvio(){ 
     try{ 
         const d=await safeFetch('/listar-metodos-envio',{method:'POST'}); 
