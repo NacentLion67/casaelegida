@@ -2180,7 +2180,8 @@ async function imprimirVentaTermico(id) {
     <div class="line"></div>
     <div class="row bold" style="font-size:13px"><span>TOTAL:</span><span>${fmt.format(v.total||0)}</span></div>
     <div class="line"></div>
-    <div class="center" style="font-size:9px;margin-top:6px">⚠ Ningún artículo tiene cambio</div>
+    <div class="center" style="font-size:9px;margin-top:6px">⚠ Sin validez fiscal - uso interno</div>
+    <div class="center" style="font-size:9px;margin-top:2px">Ningún artículo tiene cambio</div>
     <div class="line"></div>
     <div class="center" style="font-size:9px">Horarios: L-V ${escapeHtml(conf.horarios.lunesViernes||'')} | Sáb ${escapeHtml(conf.horarios.sabados||'')}</div>
     <div class="center" style="font-size:9px;margin-top:4px">${conf.redes.whatsapp?('WhatsApp: '+escapeHtml(conf.redes.whatsapp)):''}</div>
@@ -2258,7 +2259,7 @@ async function imprimirVentaA4(id) {
         </table>
     </div>
     <div class="total-box"><span>TOTAL DE LA COMPRA</span><strong>${fmt.format(v.total||0)}</strong></div>
-    <div class="aviso"><i>⚠ Este comprobante certifica la compra realizada. Ningún artículo tiene cambio ni devolución.</i></div>
+    <div class="aviso"><i>⚠ Este comprobante no posee validez fiscal — es un documento de uso interno. Ningún artículo tiene cambio ni devolución.</i></div>
     <footer>${escapeHtml(conf.empresa.nombre||'Casa Elegida')} — Horarios: Lun a Vie ${escapeHtml(conf.horarios.lunesViernes||'')} | Sáb ${escapeHtml(conf.horarios.sabados||'')} | ${new Date().toLocaleString('es-AR')}</footer>
     <script>window.onload=function(){window.print()}<\/script></body></html>`);
     win.document.close();
