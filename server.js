@@ -1487,7 +1487,7 @@ app.post('/admin/cerrar-caja', adminMiddleware(), async (req, res) => {
     try {
         const turno = (await pool.query("SELECT * FROM turnos_caja WHERE estado='abierto' LIMIT 1")).rows[0];
         if (!turno) return res.status(400).json({ error: 'No hay caja abierta' });
-        const ts = turno.timestampapertura;
+        const ts = turno.timestampApertura;
         const tsNow = Date.now();
         const [efRes, trRes, mixEfRes, mixTrRes, webRes, gastosRes] = await Promise.all([
             pool.query("SELECT COALESCE(SUM(total),0) as t FROM ventas WHERE \"metodoPago\"='efectivo' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsNow]),
@@ -1513,9 +1513,9 @@ app.post('/admin/cerrar-caja', adminMiddleware(), async (req, res) => {
         );
         await logActividad(req.admin.nombre, 'CERRAR_CAJA', `Caja ${turno.id} cerrada`, req);
         res.json({ success: true, ticket: {
-            id: turno.id, perfilAbre: turno.perfilnombre, perfilCierra: req.admin.nombre,
-            fechaApertura: turno.fechaapertura, fechaCierre,
-            efectivoInicial: turno.efectivoinicial||0,
+            id: turno.id, perfilAbre: turno.perfilNombre, perfilCierra: req.admin.nombre,
+            fechaApertura: turno.fechaApertura, fechaCierre,
+            efectivoInicial: turno.efectivoInicial||0,
             ventasEfectivo: ventasEf, ventasTransferencia: ventasTr, ventasTransferenciaWeb: ventasWeb,
             gastos, totalGastos, entregaEfectivo: entregaEf, entregaTransferencia: entregaTr,
             balanceEfectivo: balanceEf, balanceTransferencia: balanceTr
@@ -1534,7 +1534,7 @@ app.post('/admin/historial-caja', adminMiddleware(), async (req, res) => {
         const turnos = (await pool.query(q, params)).rows;
         const historial = [];
         for (const t of turnos) {
-            const ts = t.timestampapertura; const tsCierre = t.timestampcierre;
+            const ts = t.timestampApertura; const tsCierre = t.timestampCierre;
             const [efRes, trRes, mixEfRes, mixTrRes, webRes, gastosRes] = await Promise.all([
                 pool.query("SELECT COALESCE(SUM(total),0) as t FROM ventas WHERE \"metodoPago\"='efectivo' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsCierre]),
                 pool.query("SELECT COALESCE(SUM(total),0) as t FROM ventas WHERE \"metodoPago\"='transferencia' AND \"fechaTimestamp\">=$1 AND \"fechaTimestamp\"<=$2 AND origen='admin'", [ts, tsCierre]),
@@ -1548,16 +1548,16 @@ app.post('/admin/historial-caja', adminMiddleware(), async (req, res) => {
             const ventasWeb = parseFloat(webRes.rows[0].t);
             const gastos = gastosRes.rows;
             const totalGastos = gastos.reduce((s,g) => s+(g.monto||0), 0);
-            const balanceEf = ventasEf - totalGastos - (t.entregaefectivo||0);
-            const balanceTr = (ventasTr + ventasWeb) - (t.entregatransferencia||0);
-            historial.push({ id: t.id, perfilAbre: t.perfilnombre, perfilCierra: t.perfilcierrenombre,
-                fechaApertura: t.fechaapertura, fechaCierre: t.fechacierre,
-                ticket: { id: t.id, perfilAbre: t.perfilnombre, perfilCierra: t.perfilcierrenombre,
-                    fechaApertura: t.fechaapertura, fechaCierre: t.fechacierre,
-                    efectivoInicial: t.efectivoinicial||0, ventasEfectivo: ventasEf,
+            const balanceEf = ventasEf - totalGastos - (t.entregaEfectivo||0);
+            const balanceTr = (ventasTr + ventasWeb) - (t.entregaTransferencia||0);
+            historial.push({ id: t.id, perfilAbre: t.perfilNombre, perfilCierra: t.perfilCierreNombre,
+                fechaApertura: t.fechaApertura, fechaCierre: t.fechaCierre,
+                ticket: { id: t.id, perfilAbre: t.perfilNombre, perfilCierra: t.perfilCierreNombre,
+                    fechaApertura: t.fechaApertura, fechaCierre: t.fechaCierre,
+                    efectivoInicial: t.efectivoInicial||0, ventasEfectivo: ventasEf,
                     ventasTransferencia: ventasTr, ventasTransferenciaWeb: ventasWeb,
-                    gastos, totalGastos, entregaEfectivo: t.entregaefectivo||0,
-                    entregaTransferencia: t.entregatransferencia||0,
+                    gastos, totalGastos, entregaEfectivo: t.entregaEfectivo||0,
+                    entregaTransferencia: t.entregaTransferencia||0,
                     balanceEfectivo: balanceEf, balanceTransferencia: balanceTr }
             });
         }
