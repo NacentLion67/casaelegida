@@ -651,26 +651,39 @@ app.post('/listar', async (req, res) => {
 });
 
 app.post('/guardar-producto', async (req, res) => {
+    const client = await pool.connect();
     try {
         const p = req.body;
-        if (!p.nombre?.trim() || p.precio <= 0) return res.status(400).json({ error: 'Datos inválidos' });
-        const existe = (await pool.query('SELECT id FROM productos WHERE id=$1', [p.id])).rows[0];
+        if (!p.nombre?.trim() || p.precio <= 0) { client.release(); return res.status(400).json({ error: 'Datos inválidos' }); }
+        await client.query('BEGIN');
+        const existe = (await client.query('SELECT id FROM productos WHERE id=$1', [p.id])).rows[0];
         if (existe) {
-            await pool.query('UPDATE productos SET nombre=$1,precio=$2,"precioMayor"=$3,descripcion=$4,"categoriaId"=$5,subcategoria=$6,destacado=$7 WHERE id=$8',
+            await client.query('UPDATE productos SET nombre=$1,precio=$2,"precioMayor"=$3,descripcion=$4,"categoriaId"=$5,subcategoria=$6,destacado=$7 WHERE id=$8',
                 [p.nombre, p.precio, p.precioMayor||0, p.descripcion||'', p.categoriaId ? parseInt(p.categoriaId) : null, p.subcategoria||'', p.destacado||0, p.id]);
-            await pool.query('DELETE FROM variantes WHERE "productoId"=$1', [p.id]);
+            await client.query('DELETE FROM variantes WHERE "productoId"=$1', [p.id]);
         } else {
-            await pool.query('INSERT INTO productos (id,nombre,precio,"precioMayor",descripcion,"categoriaId",subcategoria,destacado) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+            await client.query('INSERT INTO productos (id,nombre,precio,"precioMayor",descripcion,"categoriaId",subcategoria,destacado) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
                 [p.id, p.nombre, p.precio, p.precioMayor||0, p.descripcion||'', p.categoriaId ? parseInt(p.categoriaId) : null, p.subcategoria||'', p.destacado||0]);
         }
         if (p.variantes?.length) {
+            const nombresUnicos = new Map();
             for (const v of p.variantes) {
-                await pool.query('INSERT INTO variantes ("productoId", nombre, stock, foto) VALUES ($1,$2,$3,$4)', [p.id, v.nombre, v.stock||0, v.foto||'']);
+                if (!v.nombre?.trim()) continue;
+                nombresUnicos.set(v.nombre.trim().toLowerCase(), v);
+            }
+            for (const v of nombresUnicos.values()) {
+                await client.query('INSERT INTO variantes ("productoId", nombre, stock, foto) VALUES ($1,$2,$3,$4)', [p.id, v.nombre.trim(), v.stock||0, v.foto||'']);
             }
         }
+        await client.query('COMMIT');
         await logActividad('Admin', 'GUARDAR_PRODUCTO', `Producto: ${p.nombre}`, req);
         res.json({ success: true });
-    } catch(e) { res.status(500).json({ error: e.message }); }
+    } catch(e) {
+        await client.query('ROLLBACK').catch(()=>{});
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
 });
 
 app.post('/eliminar-producto', async (req, res) => {
