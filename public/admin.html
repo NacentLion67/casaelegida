@@ -558,12 +558,12 @@ body.dark-mode .config-section h3 { color: #C5A880; }
         <button id="t-web" class="tab-btn" data-permiso="web" onclick="tab('web')"><i class="fas fa-paint-brush"></i> Edición Web</button>
         <button id="t-backup" class="tab-btn btn-warning" data-permiso="config" onclick="tab('backup')"><i class="fas fa-database"></i> Backup</button>
         <button id="t-historial-caja" class="tab-btn" data-permiso="ventas" onclick="tab('historial-caja')"><i class="fas fa-cash-register"></i> Historial Caja</button>
-        <div style="margin-left:auto;position:relative">
+        <div style="margin-left:auto;position:relative;display:flex;gap:8px;align-items:center;">
+            <div id="navbar-caja-status"></div>
             <button class="tab-btn" onclick="toggleNotificaciones()" style="position:relative"><i class="fas fa-bell"></i><span id="notif-count" class="notif-badge" style="display:none">0</span></button>
             <div id="notif-panel" class="notif-panel" style="display:none"><div class="notif-header"><h4>Notificaciones</h4><button onclick="marcarTodasLeidas()" style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:12px">Todas leídas</button></div><div id="notif-list" class="notif-list"></div></div>
         </div>
         <button class="tab-btn" onclick="abrirModalCambiarPassword()"><i class="fas fa-key"></i></button>
-        <div id="caja-indicador" style="display:flex;align-items:center"></div>
         <button class="tab-btn btn-danger" onclick="cerrarSesionAdmin()"><i class="fas fa-sign-out-alt"></i> Salir</button>
     </div>
     <div id="main-container" class="layout"></div>
@@ -2887,38 +2887,68 @@ async function exportarVentasCSV(){ const r=await fetch('/admin/exportar-ventas'
 async function verEstadoCaja(){ 
     try { 
         const d = await safeFetch('/admin/estado-caja-profesional', {method:'POST'}); 
-        const c = document.getElementById('estado-caja'); 
-        if (!c) return;
+        const container = document.getElementById('navbar-caja-status'); 
+        if (!container) return;
         
         if (d.abierta) {
-            c.innerHTML = `
-                <div style="background:#E4EDE1; border:1px solid #4E7A62; border-radius:16px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
-                    <div style="color:#3C763D; font-size:14px; font-weight:600;">
-                        <i class="fas fa-lock-open"></i> Caja Abierta por: <strong>${escapeHtml(d.abiertaPor)}</strong>
-                        <span style="font-size:12px; display:block; color:#4E7A62; font-weight:500; margin-top:2px;">
-                            Esperado en Efectivo: ${fmt.format(d.totalEsperadoEfectivo)} | Transferencias: ${fmt.format(d.totalEsperadoTransferencia)}
-                        </span>
-                    </div>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="number" id="cierre-efectivo-entregado" placeholder="Efectivo real en caja" style="max-width:160px; padding:8px 12px; border-radius:50px;">
-                        <input type="number" id="cierre-transferencia-entregada" placeholder="Transf. real en cuenta" style="max-width:160px; padding:8px 12px; border-radius:50px;">
-                        <button onclick="ejecutarCierreCaja()" class="tab-btn btn-danger" style="padding:10px 20px; border-radius:50px;"><i class="fas fa-lock"></i> Cerrar Caja</button>
-                    </div>
-                </div>`;
+            container.innerHTML = `<button onclick="abrirModalGestionCaja(true, ${JSON.stringify(d).replace(/"/g, '&quot;')})" class="tab-btn" style="padding:10px 18px; border-radius:50px; background:#4E7A62; color:white; font-weight:700; border:none;"><i class="fas fa-lock-open"></i> Caja Abierta</button>`;
         } else {
-            c.innerHTML = `
-                <div style="background:#FFF8F0; border:1px solid #DE9B72; border-radius:16px; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
-                    <div style="color:#A94442; font-size:14px; font-weight:600;">
-                        <i class="fas fa-lock"></i> La caja del día de hoy se encuentra cerrada.
-                    </div>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="number" id="apertura-monto-efectivo" placeholder="Monto inicial Ef." style="max-width:150px; padding:8px 12px; border-radius:50px;">
-                        <input type="number" id="apertura-monto-transferencia" placeholder="Monto inicial Tr." style="max-width:150px; padding:8px 12px; border-radius:50px;">
-                        <button onclick="ejecutarAperturaCaja()" class="tab-btn btn-success" style="padding:10px 20px; border-radius:50px;"><i class="fas fa-key"></i> Abrir Turno Caja</button>
-                    </div>
-                </div>`;
+            container.innerHTML = `<button onclick="abrirModalGestionCaja(false)" class="tab-btn" style="padding:10px 18px; border-radius:50px; background:#D96B6B; color:white; font-weight:700; border:none;"><i class="fas fa-lock"></i> Caja Cerrada</button>`;
         }
     } catch(e){} 
+}
+
+function abrirModalGestionCaja(abierta, datos = null) {
+    document.getElementById('modal-gestion-caja-dinamico')?.remove();
+    const modal = document.createElement('div');
+    modal.id = 'modal-gestion-caja-dinamico';
+    modal.className = 'modal active';
+    
+    if (abierta && datos) {
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:450px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-lock-open" style="color:#4E7A62;"></i> Arqueo y Cierre de Caja</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div style="padding:20px; display:flex; flex-direction:column; gap:14px;">
+                    <p style="font-size:13px; color:#8C7E74; margin:0;">Abierta por: <strong>${escapeHtml(datos.abiertaPor)}</strong></p>
+                    <div style="background:#F6F3EA; padding:12px; border-radius:14px; font-size:12px; display:flex; flex-direction:column; gap:6px;">
+                        <div style="display:flex; justify-content:space-between; color:#3D312A;"><span>Ef. Inicial + Ventas:</span><strong>${fmt.format(datos.totalEsperadoEfectivo)}</strong></div>
+                        <div style="display:flex; justify-content:space-between; color:#3D312A;"><span>Tr. Inicial + Ventas (Inc. Web):</span><strong>${fmt.format(datos.totalEsperadoTransferencia)}</strong></div>
+                    </div>
+                    <div>
+                        <label class="form-label required">Efectivo Real en Caja</label>
+                        <input type="number" id="cierre-efectivo-entregado" placeholder="Monto total efectivo" style="border-radius:50px;">
+                    </div>
+                    <div>
+                        <label class="form-label required">Transferencia Real en Cuenta</label>
+                        <input type="number" id="cierre-transferencia-entregada" placeholder="Monto total transferencias" style="border-radius:50px;">
+                    </div>
+                    <button onclick="ejecutarCierreCaja()" class="btn-confirm" style="background:#D96B6B; margin-top:10px;"><i class="fas fa-lock"></i> Confirmar Cierre Total</button>
+                </div>
+            </div>`;
+    } else {
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width:420px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-key" style="color:#4E7A62;"></i> Apertura de Caja Profesional</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div style="padding:20px; display:flex; flex-direction:column; gap:14px;">
+                    <div>
+                        <label class="form-label">Monto Inicial Efectivo ($)</label>
+                        <input type="number" id="apertura-monto-efectivo" placeholder="0" value="0" style="border-radius:50px; font-size:16px; font-weight:600; text-align:center;">
+                    </div>
+                    <div>
+                        <label class="form-label">Monto Inicial Transferencia ($)</label>
+                        <input type="number" id="apertura-monto-transferencia" placeholder="0" value="0" style="border-radius:50px; font-size:16px; font-weight:600; text-align:center;">
+                    </div>
+                    <button onclick="ejecutarAperturaCaja()" class="btn-confirm" style="background:#4E7A62; margin-top:10px;"><i class="fas fa-key"></i> Abrir Caja del Día</button>
+                </div>
+            </div>`;
+    }
+    document.body.appendChild(modal);
 }
 
 async function ejecutarAperturaCaja() {
@@ -2931,6 +2961,7 @@ async function ejecutarAperturaCaja() {
             body: JSON.stringify({ montoEfectivo, montoTransferencia })
         });
         mostrarToast('✅ Caja abierta exitosamente');
+        document.getElementById('modal-gestion-caja-dinamico')?.remove();
         verEstadoCaja();
     } catch(e){}
 }
@@ -2950,6 +2981,7 @@ async function ejecutarCierreCaja() {
             body: JSON.stringify({ efectivoEntregado, transferenciaEntregada })
         });
         mostrarToast('🔒 Caja cerrada y turno guardado');
+        document.getElementById('modal-gestion-caja-dinamico')?.remove();
         verEstadoCaja();
     } catch(e){}
 }
