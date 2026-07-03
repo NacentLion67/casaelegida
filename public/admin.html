@@ -2897,18 +2897,19 @@ async function exportarVentasCSV(){ const r=await fetch('/admin/exportar-ventas'
 
 async function verEstadoCaja(){ 
     try { 
-        const d = await safeFetch('/admin/estado-caja-profesional', {method:'POST'}); 
+        const d = await safeFetch('/admin/estado-caja', {method:'POST'}); 
+        cajaActual = d.abierta ? d.turno : null;
         const container = document.getElementById('navbar-caja-status'); 
         if (!container) return;
         
         if (d.abierta) {
-            container.innerHTML = `<button onclick="abrirModalGestionCaja(true, ${JSON.stringify(d).replace(/"/g, '&quot;')})" class="tab-btn" style="padding:10px 18px; border-radius:50px; background:#4E7A62; color:white; font-weight:700; border:none;"><i class="fas fa-lock-open"></i> Caja Abierta</button>`;
+            container.innerHTML = `<button onclick="abrirCajaProfesional()" class="tab-btn" style="padding:10px 18px; border-radius:50px; background:#4E7A62; color:white; font-weight:700; border:none;"><i class="fas fa-lock-open"></i> Caja Abierta</button>`;
         } else {
-            container.innerHTML = `<button onclick="abrirModalGestionCaja(false)" class="tab-btn" style="padding:10px 18px; border-radius:50px; background:#D96B6B; color:white; font-weight:700; border:none;"><i class="fas fa-lock"></i> Caja Cerrada</button>`;
+            container.innerHTML = `<button onclick="abrirCajaProfesional()" class="tab-btn" style="padding:10px 18px; border-radius:50px; background:#D96B6B; color:white; font-weight:700; border:none;"><i class="fas fa-lock"></i> Caja Cerrada</button>`;
         }
     } catch(e){} 
 }
-
+    
 function abrirModalGestionCaja(abierta, datos = null) {
     document.getElementById('modal-gestion-caja-dinamico')?.remove();
     const modal = document.createElement('div');
