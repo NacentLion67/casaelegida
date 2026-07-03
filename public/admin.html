@@ -2260,7 +2260,7 @@ async function imprimirVentaA4(id) {
     </div>
     <div class="total-box"><span>TOTAL DE LA COMPRA</span><strong>${fmt.format(v.total||0)}</strong></div>
     <div class="aviso"><i>⚠ Este comprobante no posee validez fiscal — es un documento de uso interno. Ningún artículo tiene cambio ni devolución.</i></div>
-    <footer>${escapeHtml(conf.empresa.nombre||'Casa Elegida')} — Horarios: Lun a Vie ${escapeHtml(conf.horarios.lunesViernes||'')} | Sáb ${escapeHtml(conf.horarios.sabados||'')} | ${new Date().toLocaleString('es-AR')}</footer>
+    <footer>${escapeHtml(conf.empresa.nombre||'Casa Elegida')} — Horarios: Lun a Vie ${escapeHtml(conf.horarios.lunesViernes||'')} | Sáb ${escapeHtml(conf.horarios.sabados||'')} | ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</footer>
     <script>window.onload=function(){window.print()}<\/script></body></html>`);
     win.document.close();
 }
@@ -3567,7 +3567,7 @@ function imprimirTicketA4() {
             <div style="text-align:right"><div style="font-size:24px;font-weight:800;color:${balTrOk?'#4E7A62':'#D96B6B'}">${balTrOk?'$0':fmtT(t.balanceTransferencia)}</div><div style="font-size:11px;font-weight:700;color:${balTrOk?'#4E7A62':'#D96B6B'}">${balTrOk?'✅ COINCIDE':'🔴 IRREGULARIDAD'}</div></div>
         </div>
     </div>
-    <footer>Casa Elegida — Sistema POS | ${new Date().toLocaleString('es-AR')}</footer>
+    <footer>Casa Elegida — Sistema POS | ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</footer>
     <script>window.onload=function(){window.print()}<\/script></body></html>`);
     win.document.close();
 }
