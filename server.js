@@ -770,7 +770,7 @@ app.post('/save-home-config', adminMiddleware('config'), async (req, res) => { i
 app.post('/save-plantilla', adminMiddleware('web'), async (req, res) => { await setConfig('plantilla', req.body.plantilla); res.json({ success: true }); });
 app.post('/save-icono', adminMiddleware('web'), async (req, res) => { await setConfig('icono', req.body.icono); res.json({ success: true }); });
 
-app.post('/confirmar-venta', async (req, res) => {
+app.post('/confirmar-venta', adminMiddleware('ventas'), async (req, res) => {
     try {
         const { carrito, pago, logistica, cliente } = req.body;
         if (!carrito?.length) return res.status(400).json({ error: 'Carrito vacío' });
@@ -784,10 +784,12 @@ app.post('/confirmar-venta', async (req, res) => {
         const totalFinal = pago.total || 0;
         const montoEfectivo = pago.metodo === 'efectivo' ? totalFinal : (pago.metodo === 'mixto' ? (pago.efectivo||0) : 0);
         const montoTransferencia = pago.metodo === 'transferencia' ? totalFinal : (pago.metodo === 'mixto' ? (pago.transferencia||0) : 0);
-        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"montoEfectivo\",\"montoTransferencia\") VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'completada','admin',$8,$9)",
-            [id, Date.now(), JSON.stringify(carrito), totalFinal, pago.metodo, logistica, JSON.stringify(cliente||{nombre:'Mostrador'}), montoEfectivo, montoTransferencia]);
+        const esMayorista = carrito.some(it => it.precioOriginal && it.precio < it.precioOriginal) ? 1 : 0;
+        const vendedor = req.admin?.nombre || 'Admin';
+        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"montoEfectivo\",\"montoTransferencia\",\"esMayorista\",vendedor) VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'completada','admin',$8,$9,$10,$11)",
+            [id, Date.now(), JSON.stringify(carrito), totalFinal, pago.metodo, logistica, JSON.stringify(cliente||{nombre:'Mostrador'}), montoEfectivo, montoTransferencia, esMayorista, vendedor]);
         await crearNotificacion('venta', '💰 Venta', `${id}`);
-        await logActividad(req.admin?.nombre || 'Admin', 'VENTA', `Venta ${id}`, req);
+        await logActividad(vendedor, 'VENTA', `Venta ${id}`, req);
         res.json({ success: true, ventaId: id });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
@@ -1586,6 +1588,7 @@ async function start() {
             await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS "timestampAbono" BIGINT');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoEfectivo" REAL DEFAULT 0');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoTransferencia" REAL DEFAULT 0');
+            await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS vendedor TEXT DEFAULT \'\'');
         } catch(e) {}
         
         // Agrega la columna si no existe
