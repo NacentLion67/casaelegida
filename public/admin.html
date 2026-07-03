@@ -1123,7 +1123,7 @@ function tab(t) {
         container.className='layout-con-carrito'; 
         container.innerHTML=renderPaginaVentas(); 
         cartPanel.classList.remove('hidden'); 
-        setTimeout(()=>{cargar();cargarMetodosEnvio();cargarNotificaciones();},100); 
+        setTimeout(()=>{cargar();cargarMetodosEnvio();cargarNotificaciones();verEstadoCaja();},100); 
     }
     else if (t==='r') { 
         container.className='layout'; 
@@ -3458,6 +3458,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-screen').style.display = 'block';
         tab('v');
+        setTimeout(verEstadoCaja, 200);
     }
 });
 </script>
