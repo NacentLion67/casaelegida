@@ -1897,7 +1897,16 @@ function renderAdmin(){
             </div>`;
         a.appendChild(card);
     });
-    if(window.Sortable) { new Sortable(a, { handle: '.drag-handle', animation: 200, onEnd: async () => { const o = []; document.querySelectorAll('#admin-lista .producto-card').forEach(c => { const id = c.getAttribute('data-id'); const prod = productos.find(x => x.id == id); if (prod) o.push(prod); }); if (o.length) { await safeFetch('/reordenar-productos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lista: o }) }); } } }); }
+    if(window.Sortable) { new Sortable(a, { handle: '.drag-handle', animation: 200, onEnd: async () => { 
+        const ids = [];
+        document.querySelectorAll('#admin-lista .producto-card').forEach(c => ids.push(c.getAttribute('data-id')));
+        const lista = ids.map((id, idx) => ({ id, orden: idx }));
+        lista.forEach(item => { const prod = productos.find(x => x.id == item.id); if (prod) prod.orden = item.orden; });
+        try {
+            await safeFetch('/reordenar-productos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lista }) });
+            mostrarToast('✅ Orden guardado');
+        } catch(e) {}
+    } }); }
 }
 
 function agregarVarianteFilaNueva(pid) {
