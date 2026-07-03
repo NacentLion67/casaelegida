@@ -660,6 +660,8 @@ let archivoRestoreSeleccionado = null;
 let cajaActual = null;
 let _ticketActual = null;
 let _historialCaja = [];
+let variantRowCounter = {};
+let guardandoProductos = new Set();
 const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
 
 function mostrarToast(msg, error=false) { const t = document.createElement('div'); t.className = `toast-notification ${error?'error':''}`; t.innerHTML = `<i class="fas ${error?'fa-exclamation-circle':'fa-check-circle'}"></i> ${msg}`; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
@@ -1820,6 +1822,7 @@ function renderAdmin(){
     if (!productos || productos.length === 0) { a.innerHTML = `<div style="text-align:center; padding:40px; color:#8C7E74; opacity:0.7;"><i class="fas fa-box-open" style="font-size:48px; margin-bottom:16px;"></i><p>No hay productos cargados en el sistema.</p></div>`; return; }
     productos.forEach(p => {
         if(!p.variantes || p.variantes.length === 0) { p.variantes = [{nombre: "Única", stock: 0, foto: ""}]; }
+        variantRowCounter[p.id] = p.variantes.length;
         const card = document.createElement('div'); card.className = 'producto-card'; card.setAttribute('data-id', p.id); const fotoPreview = p.variantes[0]?.foto || '';
         card.innerHTML = `
             <div class="producto-header">
@@ -1910,7 +1913,9 @@ function renderAdmin(){
 }
 
 function agregarVarianteFilaNueva(pid) {
-    const container = document.getElementById(`contenedor-filas-variantes-${pid}`); if(!container) return; const i = container.children.length;
+    const container = document.getElementById(`contenedor-filas-variantes-${pid}`); if(!container) return;
+    if (variantRowCounter[pid] === undefined) variantRowCounter[pid] = container.children.length;
+    const i = variantRowCounter[pid]++;
     const div = document.createElement('div'); div.className = 'variante-item row-variante-accion'; div.style.cssText = 'display:grid; grid-template-columns: 2.5fr 1fr auto auto; gap:12px; align-items:center;';
     div.innerHTML = `
         <input type="text" class="v-input-nombre" placeholder="Ej: Blanco / King" style="border-radius:50px; padding:10px 14px;">
@@ -1949,14 +1954,20 @@ function aplicarStockGlobal(pid){ const s=parseInt(document.getElementById('stoc
 function actualizarSubcategorias(pid){ const catId=document.getElementById(`cat-${pid}`).value; const cat=categorias.find(c=>c.id==parseInt(catId)); const sel=document.getElementById(`subcat-${pid}`); if(!sel)return; let h='<option value="">Sin subcategoría</option>'; if(cat?.subcategorias?.length)h+=cat.subcategorias.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join(''); sel.innerHTML=h; }
 
 async function saveEdit(id){
-    const nombre = document.getElementById(`en-${id}`)?.value?.trim(); const precio = parseFloat(document.getElementById(`ep-${id}`)?.value); const precioMayor = parseFloat(document.getElementById(`epm-${id}`)?.value) || 0; const categoriaId = parseInt(document.getElementById(`cat-${id}`)?.value) || null; const subcategoria = document.getElementById(`subcat-${id}`)?.value || null; const descripcion = document.getElementById(`desc-${id}`)?.value?.trim() || '';
-    if(!nombre){ mostrarToast('Nombre requerido', true); return; } if(!precio || precio <= 0){ mostrarToast('Precio > 0', true); return; }
-    const variantes = []; const filas = document.querySelectorAll(`#contenedor-filas-variantes-${id} .row-variante-accion`);
-    filas.forEach(row => { const nom = row.querySelector('.v-input-nombre')?.value?.trim(); const stk = parseInt(row.querySelector('.v-input-stock')?.value) || 0; const fot = row.querySelector('.v-input-foto')?.value?.trim() || ''; if(nom) { variantes.push({ nombre: nom, stock: stk, foto: fot }); } });
-    if(!variantes.length){ mostrarToast('Al menos 1 variante', true); return; } const p = productos.find(x => x.id == id); if(!p) return;
-    p.nombre = nombre; p.precio = precio; p.precioMayor = precioMayor; p.categoriaId = categoriaId; p.subcategoria = subcategoria; p.descripcion = descripcion; p.variantes = variantes;
-    await safeFetch('/guardar-producto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) });
-    mostrarToast('✅ Guardado con variantes con éxito'); cargarYRenderAdmin();
+    if (guardandoProductos.has(id)) { mostrarToast('⏳ Ya se está guardando este producto...', true); return; }
+    guardandoProductos.add(id);
+    try {
+        const nombre = document.getElementById(`en-${id}`)?.value?.trim(); const precio = parseFloat(document.getElementById(`ep-${id}`)?.value); const precioMayor = parseFloat(document.getElementById(`epm-${id}`)?.value) || 0; const categoriaId = parseInt(document.getElementById(`cat-${id}`)?.value) || null; const subcategoria = document.getElementById(`subcat-${id}`)?.value || null; const descripcion = document.getElementById(`desc-${id}`)?.value?.trim() || '';
+        if(!nombre){ mostrarToast('Nombre requerido', true); return; } if(!precio || precio <= 0){ mostrarToast('Precio > 0', true); return; }
+        const variantes = []; const nombresVistos = new Set(); const filas = document.querySelectorAll(`#contenedor-filas-variantes-${id} .row-variante-accion`);
+        filas.forEach(row => { const nom = row.querySelector('.v-input-nombre')?.value?.trim(); const stk = parseInt(row.querySelector('.v-input-stock')?.value) || 0; const fot = row.querySelector('.v-input-foto')?.value?.trim() || ''; if(nom && !nombresVistos.has(nom.toLowerCase())) { nombresVistos.add(nom.toLowerCase()); variantes.push({ nombre: nom, stock: stk, foto: fot }); } });
+        if(!variantes.length){ mostrarToast('Al menos 1 variante', true); return; } const p = productos.find(x => x.id == id); if(!p) return;
+        p.nombre = nombre; p.precio = precio; p.precioMayor = precioMayor; p.categoriaId = categoriaId; p.subcategoria = subcategoria; p.descripcion = descripcion; p.variantes = variantes;
+        await safeFetch('/guardar-producto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) });
+        mostrarToast('✅ Guardado con variantes con éxito'); cargarYRenderAdmin();
+    } finally {
+        guardandoProductos.delete(id);
+    }
 }
 
 async function eliminarProducto(id){ if(!confirm('¿Eliminar?'))return; await safeFetch('/eliminar-producto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}); mostrarToast('✅ Eliminado'); cargarYRenderAdmin(); }
