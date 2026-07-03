@@ -781,10 +781,11 @@ app.post('/confirmar-venta', async (req, res) => {
         }
         for (let it of carrito) { if(it.esManual) continue; await pool.query('UPDATE variantes SET stock=stock-$1 WHERE "productoId"=$2 AND nombre=$3', [it.cant, it.pId, it.vNom]); }
         const id = 'FAC-' + Date.now();
+        const totalFinal = pago.total || 0;
         const montoEfectivo = pago.metodo === 'efectivo' ? totalFinal : (pago.metodo === 'mixto' ? (pago.efectivo||0) : 0);
         const montoTransferencia = pago.metodo === 'transferencia' ? totalFinal : (pago.metodo === 'mixto' ? (pago.transferencia||0) : 0);
-        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen) VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'completada','admin')",
-            [id, Date.now(), JSON.stringify(carrito), pago.total, pago.metodo, logistica, JSON.stringify(cliente||{nombre:'Mostrador'})]);
+        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"montoEfectivo\",\"montoTransferencia\") VALUES ($1,TO_CHAR(NOW(),'DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'completada','admin',$8,$9)",
+            [id, Date.now(), JSON.stringify(carrito), totalFinal, pago.metodo, logistica, JSON.stringify(cliente||{nombre:'Mostrador'}), montoEfectivo, montoTransferencia]);
         await crearNotificacion('venta', '💰 Venta', `${id}`);
         await logActividad(req.admin?.nombre || 'Admin', 'VENTA', `Venta ${id}`, req);
         res.json({ success: true, ventaId: id });
