@@ -1453,6 +1453,59 @@ app.post('/admin/rendimiento-productos', adminMiddleware(), async (req, res) => 
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/admin/rendimiento-total', adminMiddleware(), async (req, res) => {
+    try {
+        const { desde, hasta } = req.body;
+        let query = 'SELECT * FROM ventas WHERE 1=1';
+        let params = [];
+        if (desde) { query += ` AND "fechaTimestamp" >= $${params.length+1}`; params.push(new Date(desde + 'T00:00:00').getTime()); }
+        if (hasta) { query += ` AND "fechaTimestamp" <= $${params.length+1}`; params.push(new Date(hasta + 'T23:59:59').getTime()); }
+        const ventas = (await pool.query(query, params)).rows;
+
+        let gananciaMenor = 0, gananciaMayor = 0;
+        let ingresosMenor = 0, ingresosMayor = 0;
+        let unidadesMenor = 0, unidadesMayor = 0;
+        let ventasConMenor = 0, ventasConMayor = 0;
+
+        for (const v of ventas) {
+            const items = JSON.parse(v.items || '[]');
+            let esMayorVenta = false, esMenorVenta = false;
+            for (const item of items) {
+                if (!item.pId) continue;
+                const costoResult = await pool.query(
+                    'SELECT * FROM costos_productos WHERE "productoId"=$1 AND "fechaTimestamp" <= $2 ORDER BY "fechaTimestamp" DESC LIMIT 1',
+                    [item.pId, v.fechaTimestamp]
+                );
+                const costo = costoResult.rows[0];
+                const costoTotal = costo ? parseFloat(costo.costoTotal) : 0;
+                const esMayoristaItem = !!(item.precioOriginal && item.precio < item.precioOriginal);
+                const gananciaItem = ((parseFloat(item.precio)||0) - costoTotal) * (item.cant||1);
+                const ingresoItem = (parseFloat(item.precio)||0) * (item.cant||1);
+                if (esMayoristaItem) {
+                    gananciaMayor += gananciaItem;
+                    ingresosMayor += ingresoItem;
+                    unidadesMayor += item.cant||0;
+                    esMayorVenta = true;
+                } else {
+                    gananciaMenor += gananciaItem;
+                    ingresosMenor += ingresoItem;
+                    unidadesMenor += item.cant||0;
+                    esMenorVenta = true;
+                }
+            }
+            if (esMayorVenta) ventasConMayor++;
+            if (esMenorVenta) ventasConMenor++;
+        }
+
+        res.json({
+            gananciaMenor, gananciaMayor, gananciaTotal: gananciaMenor + gananciaMayor,
+            ingresosMenor, ingresosMayor, ingresosTotal: ingresosMenor + ingresosMayor,
+            unidadesMenor, unidadesMayor, unidadesTotal: unidadesMenor + unidadesMayor,
+            ventasConMenor, ventasConMayor, totalVentas: ventas.length
+        });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/admin/verificar-password', adminMiddleware(), async (req, res) => {
     try {
         const { password } = req.body;
