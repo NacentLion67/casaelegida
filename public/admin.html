@@ -888,7 +888,10 @@ function renderPaginaRendimiento() {
                 <h2 style="margin:0;color:#fff;font-family:'Playfair Display',serif;font-size:26px;display:flex;align-items:center;gap:12px"><i class="fas fa-chart-line" style="color:#C5A880"></i> Rendimiento de Artículos</h2>
                 <p style="margin:6px 0 0;font-size:13px;color:#E6E1DA;opacity:0.8">Ventas por producto — admin y tienda web</p>
             </div>
-            <span id="rend-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-box"></i> Cargando...</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <button onclick="abrirModalRendimientoTotal()" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px"><i class="fas fa-calculator"></i> Rendimiento Total</button>
+                <span id="rend-total-badge" style="background:rgba(197,168,128,0.2);border:1px solid #C5A880;color:#C5A880;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:600"><i class="fas fa-box"></i> Cargando...</span>
+            </div>
         </div>
 
         <div class="panel" style="padding:20px">
@@ -2674,6 +2677,84 @@ function filtrarRendimiento() {
     else if (orden==='stock_desc') lista.sort((a,b)=>b.variantes?.reduce((s,v)=>s+v.stock,0)-a.variantes?.reduce((s,v)=>s+v.stock,0));
     else if (orden==='stock_asc') lista.sort((a,b)=>a.variantes?.reduce((s,v)=>s+v.stock,0)-b.variantes?.reduce((s,v)=>s+v.stock,0));
     renderizarRendimiento(lista);
+}
+
+function abrirModalRendimientoTotal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:650px">
+            <div class="modal-header">
+                <h3 style="font-family:'Playfair Display',serif;display:flex;align-items:center;gap:10px">
+                    <i class="fas fa-calculator" style="color:#C5A880"></i> Rendimiento Total
+                </h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:24px">
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;background:#F6F3EA;padding:16px;border-radius:16px">
+                    <input type="date" id="rt-desde" style="padding:10px 14px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px">
+                    <span style="color:#8C7E74;font-size:12px">hasta</span>
+                    <input type="date" id="rt-hasta" style="padding:10px 14px;border-radius:50px;border:1px solid #E6E1DA;font-size:13px">
+                    <button onclick="cargarRendimientoTotalData()" style="background:#3D312A;color:#C5A880;border:none;padding:10px 20px;border-radius:50px;font-weight:700;font-size:12px;cursor:pointer"><i class="fas fa-search"></i> Calcular</button>
+                    <button onclick="document.getElementById('rt-desde').value='';document.getElementById('rt-hasta').value='';cargarRendimientoTotalData()" style="background:#E6E1DA;color:#3D312A;border:none;padding:10px 14px;border-radius:50px;font-size:12px;cursor:pointer"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="rt-resultado">
+                    <div style="text-align:center;padding:40px;color:#8C7E74">
+                        <i class="fas fa-calendar-alt" style="font-size:36px;display:block;margin-bottom:12px;opacity:0.4;color:#C5A880"></i>
+                        <strong>Seleccioná un período</strong><br><span style="font-size:12px">o dejalo vacío y presioná Calcular para ver todo el historial</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+async function cargarRendimientoTotalData() {
+    const desde = document.getElementById('rt-desde')?.value || '';
+    const hasta = document.getElementById('rt-hasta')?.value || '';
+    const cont = document.getElementById('rt-resultado');
+    if (!cont) return;
+    cont.innerHTML = `<div style="text-align:center;padding:32px;color:#8C7E74"><i class="fas fa-spinner fa-spin" style="color:#C5A880;margin-right:8px"></i>Calculando ganancias totales...</div>`;
+    try {
+        const d = await safeFetch('/admin/rendimiento-total', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({desde,hasta}) });
+        cont.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+                <div style="background:#F6F3EA;border-radius:16px;padding:18px;text-align:center">
+                    <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px"><i class="fas fa-tag" style="color:#C5A880"></i> Ganancia por Menor</div>
+                    <div style="font-size:22px;font-weight:800;color:${d.gananciaMenor>=0?'#4E7A62':'#D96B6B'}">${fmt.format(d.gananciaMenor)}</div>
+                    <div style="font-size:11px;color:#8C7E74;margin-top:4px">${d.unidadesMenor} u. — ${d.ventasConMenor} ventas</div>
+                </div>
+                <div style="background:#E4EDE1;border-radius:16px;padding:18px;text-align:center">
+                    <div style="font-size:10px;font-weight:700;color:#4E7A62;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px"><i class="fas fa-gem" style="color:#4E7A62"></i> Ganancia por Mayor</div>
+                    <div style="font-size:22px;font-weight:800;color:${d.gananciaMayor>=0?'#4E7A62':'#D96B6B'}">${fmt.format(d.gananciaMayor)}</div>
+                    <div style="font-size:11px;color:#8C7E74;margin-top:4px">${d.unidadesMayor} u. — ${d.ventasConMayor} ventas</div>
+                </div>
+            </div>
+            <div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:16px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                <div>
+                    <div style="font-size:11px;font-weight:700;color:#C5A880;text-transform:uppercase;letter-spacing:1px">Ganancia Total (Menor + Mayor)</div>
+                    <div style="font-size:11px;color:#E6E1DA;opacity:0.7;margin-top:2px">${d.totalVentas} ventas en el período</div>
+                </div>
+                <div style="font-size:28px;font-weight:800;color:${d.gananciaTotal>=0?'#C5A880':'#D96B6B'}">${fmt.format(d.gananciaTotal)}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+                <div style="background:#F6F3EA;border-radius:12px;padding:12px;text-align:center">
+                    <div style="font-size:9px;font-weight:700;color:#8C7E74;text-transform:uppercase">Ingresos Menor</div>
+                    <div style="font-size:14px;font-weight:700;color:#3D312A;margin-top:4px">${fmt.format(d.ingresosMenor)}</div>
+                </div>
+                <div style="background:#F6F3EA;border-radius:12px;padding:12px;text-align:center">
+                    <div style="font-size:9px;font-weight:700;color:#8C7E74;text-transform:uppercase">Ingresos Mayor</div>
+                    <div style="font-size:14px;font-weight:700;color:#3D312A;margin-top:4px">${fmt.format(d.ingresosMayor)}</div>
+                </div>
+                <div style="background:#3D312A;border-radius:12px;padding:12px;text-align:center">
+                    <div style="font-size:9px;font-weight:700;color:#C5A880;text-transform:uppercase">Ingresos Totales</div>
+                    <div style="font-size:14px;font-weight:700;color:#C5A880;margin-top:4px">${fmt.format(d.ingresosTotal)}</div>
+                </div>
+            </div>
+        `;
+    } catch(e) {
+        cont.innerHTML = `<div style="text-align:center;padding:24px;color:#D96B6B"><i class="fas fa-exclamation-circle"></i> Error al calcular</div>`;
+    }
 }
 
 function renderPaginaEdicionWeb() { return `<div class="panel"><h3><i class="fas fa-paint-brush"></i> Edición Web</h3><div class="config-section"><h4><i class="fas fa-swatchbook"></i> Plantillas de Tienda</h4><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px"><div class="plantilla-card" style="border:2px solid #3D312A;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('moderna')"><div style="background:linear-gradient(135deg,#1a1a1a,#333);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Moderna</strong></div><div class="plantilla-card" style="border:2px solid #e2e8f0;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('clasica')"><div style="background:linear-gradient(135deg,#3D312A,#52433A);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Clásica</strong></div><div class="plantilla-card" style="border:2px solid #e2e8f0;border-radius:16px;padding:16px;text-align:center;cursor:pointer" onclick="seleccionarPlantilla('minimalista')"><div style="background:linear-gradient(135deg,#fafafa,#e2e8f0);height:100px;border-radius:12px;margin-bottom:8px"></div><strong>Minimalista</strong></div></div></div></div>`; }
