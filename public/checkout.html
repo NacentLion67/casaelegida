@@ -250,11 +250,13 @@
     <div id="toast-container"></div>
 
     <script>
+
         let listadoCarrito = [];
         let metodoEntrega = 'local';
         let empresasEnvioDisponibles = [];
+        let configPagos = {};
         const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
-
+        
         function sanitizarUrlImagen(url) {
             if (!url) return 'https://via.placeholder.com/60x70/FAEDCD/4A3728?text=Curvy';
             if (url.startsWith('/uploads/') || url.startsWith('http')) return url;
@@ -297,6 +299,14 @@
                     const dataEnvio = await resEnvio.json();
                     empresasEnvioDisponibles = dataEnvio.lista || [];
                     popularSelectorEnvios();
+                }
+
+                const resConfig = await fetch('/get-config', { method: 'POST' });
+                if (resConfig.ok) {
+                    const confData = await resConfig.json();
+                    let pagos = confData.pagos;
+                    if (typeof pagos === 'string') { try { pagos = JSON.parse(pagos); } catch(e) { pagos = {}; } }
+                    configPagos = pagos || {};
                 }
 
                 // 3. Obtener el carrito persistente
@@ -455,8 +465,7 @@
                     const tokenKey = token ? 'carrito_' + token : 'carrito_anonimo';
                     localStorage.removeItem(tokenKey);
                     
-                    mostrarToast('✨ ¡Pedido confirmado con éxito!');
-                    setTimeout(() => window.location.href = '/tienda', 2500);
+                    mostrarPantallaPago(data.pedidoId, payload.total);
                 } else {
                     alert('❌ Ocurrió un inconveniente: ' + data.error);
                     btn.disabled = false;
@@ -466,6 +475,104 @@
                 alert('❌ Error de red: No se pudo conectar con el servidor.');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-check-circle"></i> Finalizar Compra';
+            }
+        }
+
+        let archivoComprobanteSeleccionado = null;
+
+        function mostrarPantallaPago(pedidoId, total) {
+            const alias = configPagos.alias || '—';
+            const cbu = configPagos.cbu || '—';
+            const banco = configPagos.banco || '—';
+            const titular = configPagos.titular || '—';
+            document.getElementById('main-checkout').innerHTML = `
+                <div class="step-card" style="text-align:center">
+                    <div style="width:64px;height:64px;background:linear-gradient(135deg,#4CAF50,#66BB6A);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:white;font-size:28px"><i class="fas fa-check"></i></div>
+                    <h2 style="margin-bottom:6px">¡Pedido ${escapeHtml(pedidoId)} creado!</h2>
+                    <p style="color:var(--text-light);font-size:13px;margin-bottom:20px">Ahora realizá la transferencia y subí el comprobante para que confirmemos tu pago.</p>
+                </div>
+
+                <div class="step-card">
+                    <h2><i class="fas fa-university"></i> Datos para transferir</h2>
+                    <div style="background:#FDF8F4;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;font-size:14px">
+                        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-light)">Banco</span><strong>${escapeHtml(banco)}</strong></div>
+                        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-light)">Alias</span><strong>${escapeHtml(alias)}</strong></div>
+                        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-light)">CBU/CVU</span><strong>${escapeHtml(cbu)}</strong></div>
+                        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-light)">Titular</span><strong>${escapeHtml(titular)}</strong></div>
+                        <div style="display:flex;justify-content:space-between;border-top:1px dashed #E8DCD2;padding-top:10px;margin-top:4px"><span style="color:var(--text-light)">Monto a transferir</span><strong style="color:var(--primary);font-size:16px">${fmt.format(total)}</strong></div>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <h2><i class="fas fa-camera"></i> Subir comprobante</h2>
+                    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px"><i class="fas fa-info-circle"></i> Subí una <strong>captura de pantalla (PNG)</strong> de la transferencia realizada. Esto nos permite verificar tu pago más rápido.</p>
+                    <input type="file" id="comprobante-file" accept="image/png, image/jpeg" style="display:none" onchange="previewComprobante(this)">
+                    <div id="comprobante-drop" onclick="document.getElementById('comprobante-file').click()" style="border:2px dashed #F0E6DC;border-radius:16px;padding:24px;text-align:center;cursor:pointer">
+                        <i class="fas fa-cloud-upload-alt" style="font-size:32px;color:var(--primary);margin-bottom:8px;display:block"></i>
+                        <span style="font-size:13px;color:var(--text-light)">Tocá para seleccionar la captura de la transferencia</span>
+                    </div>
+                    <img id="comprobante-preview" style="display:none;max-width:100%;border-radius:12px;margin-top:14px;border:1px solid #F0E6DC">
+                    <button class="btn-confirm" id="btn-confirmar-pago" onclick="confirmarPagoComprobante('${pedidoId}')" style="margin-top:16px" disabled>
+                        <i class="fas fa-check-circle"></i> Confirmar Pago
+                    </button>
+                </div>
+
+                <div class="step-card" style="text-align:center">
+                    <p style="font-size:13px;color:var(--text-light);margin-bottom:14px">¿No podés subirlo ahora? Podés hacerlo más tarde desde <strong>Mis Compras</strong>.</p>
+                    <button class="btn-confirm" style="background:#F0E6DC;color:var(--primary)" onclick="window.location.href='/tienda'"><i class="fas fa-store"></i> Volver a la tienda</button>
+                </div>
+            `;
+        }
+
+        function previewComprobante(input) {
+            if (!input.files?.[0]) return;
+            archivoComprobanteSeleccionado = input.files[0];
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = document.getElementById('comprobante-preview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+            };
+            reader.readAsDataURL(archivoComprobanteSeleccionado);
+            document.getElementById('btn-confirmar-pago').disabled = false;
+        }
+
+        async function confirmarPagoComprobante(pedidoId) {
+            if (!archivoComprobanteSeleccionado) { mostrarToast('❌ Seleccioná una imagen primero', true); return; }
+            const btn = document.getElementById('btn-confirmar-pago');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando comprobante...';
+            const f = new FormData();
+            f.append('comprobante', archivoComprobanteSeleccionado);
+            f.append('pedidoId', pedidoId);
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/tienda/subir-comprobante', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: f
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('main-checkout').innerHTML = `
+                        <div class="step-card" style="text-align:center;padding:48px 24px">
+                            <div style="width:72px;height:72px;background:linear-gradient(135deg,#4CAF50,#66BB6A);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:white;font-size:32px"><i class="fas fa-paper-plane"></i></div>
+                            <h2 style="margin-bottom:10px">¡Comprobante enviado!</h2>
+                            <p style="color:var(--text-light);font-size:14px;margin-bottom:24px">Ahora esperá la confirmación del local. Podés revisar el estado de tu pedido en cualquier momento desde Mis Compras.</p>
+                            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                                <button class="btn-confirm" style="width:auto;padding:14px 28px" onclick="window.location.href='/mis-pedidos'"><i class="fas fa-receipt"></i> Ir a Mis Compras</button>
+                                <button class="btn-confirm" style="width:auto;padding:14px 28px;background:#F0E6DC;color:var(--primary)" onclick="window.location.href='/tienda'"><i class="fas fa-store"></i> Volver a la tienda</button>
+                            </div>
+                        </div>`;
+                } else {
+                    mostrarToast('❌ ' + (data.error||'Error al subir comprobante'), true);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
+                }
+            } catch(e) {
+                mostrarToast('❌ Error de conexión', true);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pago';
             }
         }
 
