@@ -2813,6 +2813,7 @@ function renderPedidosWeb() {
     const stats = document.getElementById('pedidos-stats');
     if (stats) {
         const pendientes = pedidosTienda.filter(p=>p.estado==='pendiente').length;
+        const conComprobante = pedidosTienda.filter(p=>p.estado==='pendiente' && p.comprobante).length;
         const abonados = pedidosTienda.filter(p=>p.estado==='abonado').length;
         const armados = pedidosTienda.filter(p=>p.estado==='armado').length;
         const enviados = pedidosTienda.filter(p=>p.estado==='enviado'||p.estado==='entregado').length;
@@ -2820,6 +2821,7 @@ function renderPedidosWeb() {
         stats.innerHTML = `
             <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-shopping-cart" style="color:#C5A880;font-size:24px;margin-bottom:6px"></i><h3>${pedidosTienda.length}</h3><p style="color:#8C7E74;font-size:12px">Total</p></div>
             <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-clock" style="color:#DE9B72;font-size:24px;margin-bottom:6px"></i><h3>${pendientes}</h3><p style="color:#8C7E74;font-size:12px">Pendientes</p></div>
+            <div class="stat-card" style="border-left:4px solid #FDE68A"><i class="fas fa-paper-plane" style="color:#B8860B;font-size:24px;margin-bottom:6px"></i><h3>${conComprobante}</h3><p style="color:#8C7E74;font-size:12px">Con comprobante</p></div>
             <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-money-bill-wave" style="color:#4E7A62;font-size:24px;margin-bottom:6px"></i><h3>${abonados}</h3><p style="color:#8C7E74;font-size:12px">Abonados</p></div>
             <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-box-open" style="color:#C5A880;font-size:24px;margin-bottom:6px"></i><h3>${armados}</h3><p style="color:#8C7E74;font-size:12px">Armados</p></div>
             <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-truck" style="color:#3D312A;font-size:24px;margin-bottom:6px"></i><h3>${enviados}</h3><p style="color:#8C7E74;font-size:12px">Enviados</p></div>
@@ -2881,6 +2883,11 @@ function renderPedidosWeb() {
                     <strong style="font-size:15px;color:#3D312A">${fmt.format(p.total||0)}</strong>
                 </div>
             </div>
+            ${(p.estado==='pendiente' && p.comprobante) ? `
+            <div style="background:#FFF8E1;border-bottom:1px solid #FDE68A;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                <span style="font-size:12px;color:#92700C;font-weight:700"><i class="fas fa-paper-plane"></i> El cliente confirmó el pago y subió el comprobante</span>
+                <button onclick="verComprobante('${p.id}')" style="background:#3D312A;color:#C5A880;border:none;padding:6px 14px;border-radius:50px;cursor:pointer;font-size:11px;font-weight:700"><i class="fas fa-image"></i> Ver Comprobante</button>
+            </div>` : ''}
             <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
                 <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:#8C7E74">
                     <span><i class="fas fa-user" style="color:#C5A880;margin-right:5px"></i>${escapeHtml(cliente.nombre||'')} ${escapeHtml(cliente.apellido||'')}</span>
@@ -2891,6 +2898,29 @@ function renderPedidosWeb() {
             </div>
         </div>`;
     }).join('');
+}
+
+function verComprobante(id) {
+    const p = pedidosTienda.find(x => x.id === id);
+    if (!p || !p.comprobante) { mostrarToast('Sin comprobante disponible', true); return; }
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:520px">
+            <div class="modal-header">
+                <h3><i class="fas fa-receipt" style="color:#C5A880"></i> Comprobante — ${escapeHtml(p.id)}</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px;text-align:center">
+                <img src="${p.comprobante}" style="max-width:100%;border-radius:12px;border:1px solid #E6E1DA">
+                ${p.comprobanteFecha?`<p style="font-size:12px;color:#8C7E74;margin-top:10px">Subido: ${escapeHtml(p.comprobanteFecha)}</p>`:''}
+                <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap">
+                    <button onclick="abonarPedido('${p.id}');this.closest('.modal').remove()" style="background:#4E7A62;color:white;border:none;padding:10px 22px;border-radius:50px;cursor:pointer;font-weight:700;font-size:13px"><i class="fas fa-check-circle"></i> Confirmar y Marcar Abonado</button>
+                    <button onclick="this.closest('.modal').remove()" style="background:#F6F3EA;color:#3D312A;border:none;padding:10px 22px;border-radius:50px;cursor:pointer;font-weight:600;font-size:13px">Cerrar</button>
+                </div>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
 }
     
 let _armadoPedidoData = null;
@@ -3149,6 +3179,7 @@ function verDetallePedido(id) {
                     <span style="font-family:'Playfair Display',serif;font-size:24px;font-weight:800;color:#C5A880">${fmt.format(p.total||0)}</span>
                 </div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+                    ${p.comprobante?`<button onclick="verComprobante('${p.id}')" style="background:#FFF8E1;color:#92700C;border:2px solid #FDE68A;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-image"></i> Ver Comprobante</button>`:''}
                     ${p.estado==='pendiente'?`
                         <button onclick="abonarPedido('${p.id}');this.closest('.modal').remove()" style="background:#4E7A62;color:white;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-money-bill-wave"></i> Abonar</button>
                         <button onclick="cancelarPedidoAdmin('${p.id}',false);this.closest('.modal').remove()" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-times"></i> Cancelar</button>
