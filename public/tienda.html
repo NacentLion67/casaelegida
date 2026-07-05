@@ -1118,6 +1118,7 @@ body {
 </div>
 <div class="search-bar"><input type="text" id="search-input" placeholder="🔍 Buscar prendas..."><button onclick="buscarProductos()"><i class="fas fa-search"></i></button></div>
 <div class="header-actions">
+    <button class="cart-btn" style="background:var(--secondary);color:var(--primary)" onclick="irAMisCompras()"><i class="fas fa-receipt"></i> Mis Compras</button>
     <button class="cart-btn" onclick="toggleCarrito()"><i class="fas fa-shopping-bag"></i> Mi Pedido <span class="cart-count" id="cart-count">0</span></button>
     <div style="position:relative"><button class="user-btn" id="user-btn" onclick="toggleUserMenu()"><i class="fas fa-user"></i></button><div class="user-menu" id="user-menu"><a href="/perfil"><i class="fas fa-user-circle"></i> Mi Perfil</a><a href="#" onclick="verMisPedidos()"><i class="fas fa-shopping-bag"></i> Mis Pedidos</a><hr><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></div></div>
 </div>
@@ -1198,6 +1199,7 @@ function checkLogin(){const token=localStorage.getItem('token');const userBtn=do
 function toggleUserMenu(){const token=localStorage.getItem('token');if(!token){window.location.href='/login';return}const menu=document.getElementById('user-menu');menu.style.display=menu.style.display==='block'?'none':'block'}
 function logout(){localStorage.removeItem('token');localStorage.removeItem('usuario');localStorage.removeItem('tienda_carrito');usuarioActual=null;carrito=[];guardarCarritoLocal();renderizarCarrito();actualizarProgresoMayorista();checkLogin();mostrarToast('👋 Sesión cerrada');setTimeout(()=>location.reload(),1000)}
 function verMisPedidos(){window.location.href='/mis-pedidos'}
+function irAMisCompras(){ const token=localStorage.getItem('token'); if(!token){ window.location.href='/login?return=/mis-pedidos'; return; } window.location.href='/mis-pedidos'; }
 document.addEventListener('click',(e)=>{const menu=document.getElementById('user-menu');const btn=document.getElementById('user-btn');if(menu&&btn&&!btn.contains(e.target)&&!menu.contains(e.target))menu.style.display='none'})
 
 async function cargarDatos(){
