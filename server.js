@@ -864,6 +864,22 @@ app.post('/tienda/crear-pedido', authMiddleware, async (req, res) => {
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/tienda/subir-comprobante', authMiddleware, upload.single('comprobante'), async (req, res) => {
+    try {
+        const { pedidoId } = req.body;
+        if (!req.file) return res.status(400).json({ error: 'No se recibió ninguna imagen. Formatos permitidos: PNG o JPG.' });
+        const p = (await pool.query('SELECT * FROM pedidos WHERE id=$1 AND "usuarioId"=$2', [pedidoId, req.usuario.id])).rows[0];
+        if (!p) { fs.unlinkSync(req.file.path); return res.status(404).json({ error: 'Pedido no encontrado' }); }
+        const r = await cloudinary.uploader.upload(req.file.path, { folder: 'casa-elegida/comprobantes' });
+        fs.unlinkSync(req.file.path);
+        const fechaLocal = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+        await pool.query('UPDATE pedidos SET comprobante=$1, "comprobanteFecha"=$2 WHERE id=$3', [r.secure_url, fechaLocal, pedidoId]);
+        await crearNotificacion('pedido', '📎 Comprobante recibido', `Pedido ${pedidoId}`);
+        await logActividad(p.cliente ? (JSON.parse(p.cliente).nombre||'Cliente') : 'Cliente', 'COMPROBANTE_SUBIDO', `Pedido ${pedidoId}`, req);
+        res.json({ success: true, url: r.secure_url });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/tienda/listar-pedidos', async (req, res) => {
     const pedidos = (await pool.query('SELECT * FROM pedidos ORDER BY "fechaTimestamp" DESC')).rows;
     res.json({ lista: pedidos.map(p => ({ ...p, items: JSON.parse(p.items||'[]'), cliente: JSON.parse(p.cliente||'{}') })) });
@@ -1653,6 +1669,8 @@ async function start() {
         await initAdmin();
         try {
             await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS "timestampAbono" BIGINT');
+            await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comprobante TEXT DEFAULT \'\'');
+            await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS "comprobanteFecha" TEXT DEFAULT \'\'');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoEfectivo" REAL DEFAULT 0');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoTransferencia" REAL DEFAULT 0');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS vendedor TEXT DEFAULT \'\'');
