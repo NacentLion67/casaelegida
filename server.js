@@ -548,14 +548,15 @@ app.post('/admin/eliminar-perfil', adminMiddleware(), async (req, res) => {
         res.json({ success: true });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
+
 app.post('/auth/registro', async (req, res) => {
     try {
-        const { nombre, apellido, email, dni, telefono, password } = req.body;
-        if (!nombre || !apellido || !email || !dni || !password) return res.status(400).json({ error: 'Completá todos los campos' });
+        const { nombre, apellido, email, dni, telefono, provincia, localidad, cp, direccion, password } = req.body;
+        if (!nombre || !apellido || !email || !dni || !telefono || !provincia || !localidad || !cp || !direccion || !password) return res.status(400).json({ error: 'Completá todos los campos' });
         if ((await pool.query('SELECT id FROM usuarios WHERE email=$1', [email])).rows.length > 0) return res.status(400).json({ error: 'Email ya registrado' });
         const id = 'USR-' + Date.now();
-        await pool.query('INSERT INTO usuarios (id,nombre,apellido,email,dni,telefono,password,rol,"datosCompletos") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,1)',
-            [id, nombre, apellido, email, dni, telefono||'', await bcrypt.hash(password, 10), 'cliente']);
+        await pool.query('INSERT INTO usuarios (id,nombre,apellido,email,dni,telefono,direccion,provincia,localidad,cp,password,rol,"datosCompletos") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,1)',
+            [id, nombre, apellido, email, dni, telefono, direccion, provincia, localidad, cp, await bcrypt.hash(password, 10), 'cliente']);
         await logActividad('Sistema', 'REGISTRO_CLIENTE', `Nuevo cliente: ${email}`, req);
         res.json({ success: true, token: jwt.sign({ id, email, nombre, rol: 'cliente' }, JWT_SECRET, { expiresIn: '7d' }), usuario: { id, nombre, apellido, email } });
     } catch(e) { res.status(500).json({ error: e.message }); }
