@@ -161,6 +161,31 @@
         setTimeout(() => t.remove(), 3500);
     }
 
+    async function sincronizarCarritoTrasLogin(token) {
+        try {
+            const gRespaldo = localStorage.getItem('carrito_respaldo_login');
+            const gTienda = localStorage.getItem('tienda_carrito');
+            const gAnonimo = localStorage.getItem('carrito_anonimo');
+            const fuente = gRespaldo || gTienda || gAnonimo;
+            let carritoAnonimo = [];
+            if (fuente) {
+                try { carritoAnonimo = JSON.parse(fuente) || []; } catch(e) { carritoAnonimo = []; }
+            }
+            if (carritoAnonimo.length > 0) {
+                await fetch('/api/guardar-carrito', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ carrito: carritoAnonimo })
+                });
+                localStorage.setItem('carrito_' + token, JSON.stringify(carritoAnonimo));
+                localStorage.setItem('tienda_carrito', JSON.stringify(carritoAnonimo));
+            }
+            localStorage.removeItem('carrito_respaldo_login');
+        } catch(e) {
+            console.log('No se pudo sincronizar el carrito tras registro:', e);
+        }
+    }
+
     async function registrarUsuario() {
         const nombre = document.getElementById('r-nombre').value.trim();
         const apellido = document.getElementById('r-apellido').value.trim();
@@ -206,6 +231,7 @@
             if (data.success) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                await sincronizarCarritoTrasLogin(data.token);
                 toast('✅ ¡Cuenta creada con éxito! Redirigiendo...');
                 setTimeout(() => window.location.href = '/tienda', 1500);
             } else {
