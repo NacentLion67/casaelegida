@@ -115,6 +115,17 @@ function renderizar() {
         } else if (p.estado === 'cancelado') {
             aviso = `<div class="aviso-comprobante" style="background:#F2DEDE;border-color:#EBCCCC;color:#A94442"><i class="fas fa-times-circle"></i> Este pedido fue cancelado</div>`;
         }
+
+        let pinBox = '';
+        if (p.pin && p.tipoEntrega === 'local' && p.estado !== 'entregado' && p.estado !== 'cancelado') {
+            pinBox = `<div style="background:linear-gradient(135deg,#3D312A,#52433A);border-radius:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+                <span style="color:#C5A880;font-size:12px;font-weight:700"><i class="fas fa-key"></i> Tu PIN de retiro en el local</span>
+                <span style="color:white;font-size:20px;font-weight:800;letter-spacing:8px">${escapeHtml(p.pin)}</span>
+            </div>`;
+        } else if (p.pin && p.tipoEntrega === 'local' && p.estado === 'entregado') {
+            pinBox = `<div class="aviso-enviado"><i class="fas fa-check-circle"></i> Pedido ya retirado — PIN ${escapeHtml(p.pin)}</div>`;
+        }
+
         return `<div class="pedido-card">
             <div class="pedido-header">
                 <div>
@@ -126,6 +137,7 @@ function renderizar() {
             <div class="pedido-body">
                 <div style="font-size:12px;color:var(--text-light)">${(p.items||[]).length} artículo(s) — ${p.tipoEntrega==='envio'?'Envío a domicilio':'Retiro en local'}</div>
                 <div class="pedido-total">${fmt.format(p.total||0)}</div>
+                ${pinBox}
                 ${aviso}
             </div>
         </div>`;
