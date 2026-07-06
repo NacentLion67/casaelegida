@@ -894,8 +894,10 @@ app.post('/tienda/confirmar-pedido', async (req, res) => {
         const esRetiroLocal = p["tipoEntrega"] === 'local';
         const pin = esRetiroLocal ? generarPIN() : null;
         const vid = 'FAC-' + Date.now();
-        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\") VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7)",
-            [vid, Date.now(), p.items, p.total, p["tipoEntrega"]==='envio'?'envio':'local', p.cliente, p.id]);
+        const itemsArr = JSON.parse(p.items || '[]');
+        const esMayorista = itemsArr.some(it => it.precioOriginal && it.precio < it.precioOriginal) ? 1 : 0;
+        await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\",\"esMayorista\",vendedor) VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7,$8,'Tienda Web')",
+            [vid, Date.now(), p.items, p.total, p["tipoEntrega"]==='envio'?'envio':'local', p.cliente, p.id, esMayorista]);
         await pool.query('UPDATE pedidos SET estado=$1,pin=$2,"ventaId"=$3 WHERE id=$4', ['confirmado', pin || null, vid, p.id]);
         await logActividad('Admin', 'CONFIRMAR_PEDIDO', `Pedido ${p.id} confirmado`, req);
         const cliente = JSON.parse(p.cliente||'{}');
@@ -928,12 +930,15 @@ app.post('/tienda/marcar-abonado', async (req, res) => {
         const esRetiroLocal = p.tipoEntrega === 'local';
         const pin = esRetiroLocal ? generarPIN() : null;
 
+        const itemsArr = JSON.parse(p.items || '[]');
+        const esMayorista = itemsArr.some(it => it.precioOriginal && it.precio < it.precioOriginal) ? 1 : 0;
+
         const ventaExistente = (await pool.query('SELECT id FROM ventas WHERE "pedidoId"=$1', [p.id])).rows[0];
         let vid = ventaExistente?.id;
         if (!ventaExistente) {
             vid = 'FAC-' + Date.now();
-            await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\") VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7)",
-                [vid, Date.now(), p.items, p.total, p.tipoEntrega==='envio'?'envio':'local', p.cliente, p.id]);
+            await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\",\"esMayorista\",vendedor) VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7,$8,'Tienda Web')",
+                [vid, Date.now(), p.items, p.total, p.tipoEntrega==='envio'?'envio':'local', p.cliente, p.id, esMayorista]);
         }
 
         await pool.query("UPDATE pedidos SET estado='abonado', pin=$1, \"ventaId\"=$2, \"timestampAbono\"=$3 WHERE id=$4", [pin, vid, Date.now(), req.body.pedidoId]);
