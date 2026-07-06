@@ -112,6 +112,31 @@
             alert.className = `alert alert-${tipo}`;
             alert.innerHTML = `<i class="fas fa-${tipo === 'error' ? 'exclamation-circle' : 'check-circle'}"></i> ${msg}`;
         }
+
+        async function sincronizarCarritoTrasLogin(token) {
+            try {
+                const gRespaldo = localStorage.getItem('carrito_respaldo_login');
+                const gTienda = localStorage.getItem('tienda_carrito');
+                const gAnonimo = localStorage.getItem('carrito_anonimo');
+                const fuente = gRespaldo || gTienda || gAnonimo;
+                let carritoAnonimo = [];
+                if (fuente) {
+                    try { carritoAnonimo = JSON.parse(fuente) || []; } catch(e) { carritoAnonimo = []; }
+                }
+                if (carritoAnonimo.length > 0) {
+                    await fetch('/api/guardar-carrito', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ carrito: carritoAnonimo })
+                    });
+                    localStorage.setItem('carrito_' + token, JSON.stringify(carritoAnonimo));
+                    localStorage.setItem('tienda_carrito', JSON.stringify(carritoAnonimo));
+                }
+                localStorage.removeItem('carrito_respaldo_login');
+            } catch(e) {
+                console.log('No se pudo sincronizar el carrito tras login:', e);
+            }
+        }
         
         function ocultarAlerta() {
             document.getElementById('login-alert').style.display = 'none';
@@ -265,6 +290,8 @@
                     }
                     
                     console.log('✅ Login exitoso:', data.usuario?.email);
+                    
+                    await sincronizarCarritoTrasLogin(data.token);
                     
                     const finalUrl = localStorage.getItem('returnUrl') || returnUrl;
                     localStorage.removeItem('returnUrl');
