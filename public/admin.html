@@ -656,6 +656,9 @@ body.dark-mode .config-section h3 { color: #C5A880; }
     <div class="total-container">
         <div>Total a pagar</div>
         <div id="total-txt" class="total-amount">$0</div>
+        <button type="button" id="btn-forzar-mayorista" onclick="toggleForzarMayorista()" style="width:100%;margin-bottom:10px;background:#C5A880;color:white;border:none;padding:10px;border-radius:50px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <i class="fas fa-gem"></i> Forzar Venta por Mayor
+        </button>
         <button type="button" onclick="abrirModalGasto()" style="width:100%;margin-bottom:10px;background:#E0A899;color:white;border:none;padding:10px;border-radius:50px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
             <i class="fas fa-hand-holding-usd"></i> Anotar Gasto Caja
         </button>
@@ -675,6 +678,7 @@ let productos = [], carrito = [], metodoPago = 'efectivo', logistica = 'local', 
 let ventasHistorial = [], pedidosTienda = [], categorias = [], metodosEnvio = [];
 let todosClientes = [], productosRendimiento = [], costosProductos = {}; // ÚNICA DECLARACIÓN GLOBAL LIMPIA
 let varianteSeleccionada = {}, configuracion = {}, mayoristaHabilitado = false, mayoristaModo = 'cantidad';
+let forzarMayoristaActivo = false;
 let notificaciones = [], notificacionesNoLeidas = 0;
 let chartsInstances = {};
 let archivoRestoreSeleccionado = null;
@@ -1734,6 +1738,17 @@ function cambiarCantidad(id,d){ const i=document.getElementById('q-'+id); if(i){
 async function addAlCarrito(id){ let p=productos.find(x=>x.id==id); if(!p)return; let idx=varianteSeleccionada[id]||0; let v=p.variantes[idx]; if(!v)return; let c=parseInt(document.getElementById('q-'+id).value); try{const res=await fetch('/verificar-stock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({productoId:id,varianteNombre:v.nombre})});const data=await res.json();if(data.stock!==undefined){v.stock=data.stock;seleccionarVarianteVisual(id,idx);}}catch(e){} if(v.stock<c){mostrarToast('❌ Stock insuficiente. Disponible: '+v.stock,true);return;} let e=carrito.find(i=>i.pId===id&&i.vNom===v.nombre&&!i.esManual); if(e){if(v.stock<e.cant+c){mostrarToast('❌ Stock insuficiente',true);return;}e.cant+=c;}else{carrito.push({pId:id,pNom:p.nombre,vNom:v.nombre,vFoto:v.foto||'',precio:p.precio,precioMayor:p.precioMayor||0,cant:c,esManual:false});} calcularPreciosMayoristaEnVivo(); renderCart(); localStorage.setItem('pos_carrito',JSON.stringify(carrito)); mostrarToast('✅ Agregado'); }
 
 function calcularPreciosMayoristaEnVivo(){
+    if (forzarMayoristaActivo) {
+        carrito.forEach(i=>{
+            if(i.esManual) return;
+            const p=productos.find(x=>x.id==i.pId);
+            if(!p||!p.precioMayor) return;
+            if(!i.precioOriginal) i.precioOriginal=i.precio;
+            i.precio=p.precioMayor;
+        });
+        renderCart();
+        return;
+    }
     let confMayorista = configuracion.mayorista; 
     if (typeof confMayorista === 'string') { try { confMayorista = JSON.parse(confMayorista); } catch(e) { confMayorista = {}; } }
     if(!confMayorista || !confMayorista.habilitado){ 
@@ -1765,6 +1780,72 @@ function calcularPreciosMayoristaEnVivo(){
         } 
     }); 
     renderCart();
+}
+
+function toggleForzarMayorista() {
+    if (forzarMayoristaActivo) {
+        forzarMayoristaActivo = false;
+        actualizarBotonForzarMayorista();
+        calcularPreciosMayoristaEnVivo();
+        mostrarToast('Venta por mayor desactivada');
+        return;
+    }
+    abrirModalPasswordMayorista();
+}
+
+function abrirModalPasswordMayorista() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'modal-forzar-mayorista';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:380px">
+            <div class="modal-header">
+                <h3><i class="fas fa-gem" style="color:#C5A880"></i> Forzar Venta por Mayor</h3>
+                <button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px">
+                <p style="font-size:13px;color:#8C7E74;margin-bottom:14px">Ingresá tu contraseña de perfil para aplicar precio mayorista a este carrito, sin necesidad de cumplir el mínimo configurado.</p>
+                <input type="password" id="fm-password" placeholder="Contraseña" style="width:100%;padding:12px 16px;border:1.5px solid #E6E1DA;border-radius:50px;font-size:14px" onkeypress="if(event.key==='Enter')confirmarForzarMayorista()">
+                <button type="button" onclick="confirmarForzarMayorista()" class="btn-confirm" style="margin-top:16px"><i class="fas fa-check-circle"></i> Confirmar</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    setTimeout(()=>document.getElementById('fm-password')?.focus(),100);
+}
+
+async function confirmarForzarMayorista() {
+    const pwd = document.getElementById('fm-password')?.value;
+    if (!pwd) { mostrarToast('Ingresá la contraseña', true); return; }
+    try {
+        const res = await safeFetch('/admin/verificar-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd })
+        });
+        if (res?.valida) {
+            forzarMayoristaActivo = true;
+            document.getElementById('modal-forzar-mayorista')?.remove();
+            actualizarBotonForzarMayorista();
+            calcularPreciosMayoristaEnVivo();
+            mostrarToast('✅ Venta por mayor activada para este carrito');
+        } else {
+            mostrarToast('❌ Contraseña incorrecta', true);
+        }
+    } catch(e) {
+        mostrarToast('❌ Error al verificar contraseña', true);
+    }
+}
+
+function actualizarBotonForzarMayorista() {
+    const btn = document.getElementById('btn-forzar-mayorista');
+    if (!btn) return;
+    if (forzarMayoristaActivo) {
+        btn.style.background = '#4E7A62';
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Venta por Mayor Activa';
+    } else {
+        btn.style.background = '#C5A880';
+        btn.innerHTML = '<i class="fas fa-gem"></i> Forzar Venta por Mayor';
+    }
 }
 
 function renderCart(){
@@ -1837,7 +1918,7 @@ async function checkout(){
         pagoData.transferencia = tr;
     }
     let data=await safeFetch('/confirmar-venta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({carrito,pago:pagoData,logistica,cliente:cd,mayoristaConfig:{habilitado:mayoristaHabilitado}})});
-    if(data.success){mostrarToast(`✅ Venta ${data.ventaId}`);carrito=[];renderCart();localStorage.removeItem('pos_carrito');cargar();cargarVentas();}
+    if(data.success){mostrarToast(`✅ Venta ${data.ventaId}`);carrito=[];forzarMayoristaActivo=false;actualizarBotonForzarMayorista();renderCart();localStorage.removeItem('pos_carrito');cargar();cargarVentas();}
 }
 function buscarProductos(){ let b=document.getElementById('buscador').value.toLowerCase(); document.querySelectorAll('#grid-prods .card').forEach(c=>c.style.display=c.getAttribute('data-nombre').includes(b)?'':'none'); }
 
