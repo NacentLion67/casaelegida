@@ -570,7 +570,7 @@ body.dark-mode .config-section h3 { color: #C5A880; }
     <div id="main-container" class="layout"></div>
 </div>
 
-<div id="v-cart" class="panel hidden" style="position:fixed;right:24px;top:120px;width:480px;max-height:calc(100vh - 140px);overflow-y:auto;z-index:50">
+<div id="v-cart" class="panel hidden" style="display:none;position:fixed;right:24px;top:120px;width:480px;max-height:calc(100vh - 140px);overflow-y:auto;z-index:50">
     <h3>
         <span><i class="fas fa-shopping-cart"></i> Pedido Actual</span>
         <button type="button" onclick="toggleCartMobile()" class="tab-btn" style="padding:8px 14px;border-radius:50px;font-size:12px;display:none;align-items:center;gap:6px;background:#ef4444;color:white;border:none;" id="btn-minimize-cart"><i class="fas fa-compress-alt"></i> Minimizar</button>
@@ -1189,6 +1189,12 @@ function aplicarPermisosNavbar() {
         const tienePermiso = adminActual.rol === 'admin' || (adminActual.permisos||[]).includes(permiso);
         btn.style.display = tienePermiso ? '' : 'none';
     });
+    const tieneVentas = adminActual.rol === 'admin' || (adminActual.permisos||[]).includes('ventas');
+    if (!tieneVentas) {
+        document.getElementById('v-cart')?.classList.add('hidden');
+        document.getElementById('v-cart').style.display = 'none';
+        document.getElementById('btn-cart-float')?.classList.add('hidden');
+    }
 }
 
 function primeraTabDisponible() {
@@ -1216,6 +1222,7 @@ function tab(t) {
         container.className='layout-con-carrito'; 
         container.innerHTML=renderPaginaVentas(); 
         cartPanel.classList.remove('hidden'); 
+        cartPanel.style.display = '';
         setTimeout(()=>{cargar();cargarMetodosEnvio();cargarNotificaciones();verEstadoCaja();},100); 
     }
     else if (t==='r') { 
