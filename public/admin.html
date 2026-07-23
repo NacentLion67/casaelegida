@@ -630,6 +630,19 @@ body.dark-mode .config-section h3 { color: #C5A880; }
                 <div><label class="form-label required">Domicilio</label><input type="text" id="env-domicilio"></div>
             </div>
             <div><label>Notas</label><textarea id="env-notas"></textarea></div>
+            <div style="margin-top:12px">
+                <label class="form-label required">Medio de Envío</label>
+                <select id="env-metodo-envio">
+                    <option value="">Seleccionar transporte</option>
+                </select>
+            </div>
+            <div style="margin-top:14px">
+                <label class="form-label required">Vendido por</label>
+                <div class="entrega-tabs" style="margin:6px 0 0">
+                    <button type="button" id="canal-mostrador" class="entrega-btn active" onclick="setCanalVenta('mostrador')"><i class="fas fa-store"></i> Mostrador</button>
+                    <button type="button" id="canal-whatsapp" class="entrega-btn" onclick="setCanalVenta('whatsapp')"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -679,6 +692,7 @@ let ventasHistorial = [], pedidosTienda = [], categorias = [], metodosEnvio = []
 let todosClientes = [], productosRendimiento = [], costosProductos = {}; // ÚNICA DECLARACIÓN GLOBAL LIMPIA
 let varianteSeleccionada = {}, configuracion = {}, mayoristaHabilitado = false, mayoristaModo = 'cantidad';
 let forzarMayoristaActivo = false;
+let canalVentaAdmin = 'mostrador';
 let notificaciones = [], notificacionesNoLeidas = 0;
 let chartsInstances = {};
 let archivoRestoreSeleccionado = null;
@@ -1908,7 +1922,21 @@ function calcularMixto(origen) {
 async function checkout(){
     if(!carrito.length){mostrarToast('Carrito vacío',true);return;}
     try { const caja = await safeFetch('/admin/estado-caja', {method:'POST'}); if (!caja.abierta) { mostrarToast('🔒 Debes abrir la caja antes de realizar ventas', true); return; } } catch(e) {}
-    let cd={nombre:'Mostrador'}; if(logistica==='envio'){ let n=document.getElementById('env-nombre').value.trim(), dni=document.getElementById('env-dni').value.trim(), c=document.getElementById('env-celular').value.trim(); if(!n||!dni||!c){mostrarToast('Completá datos',true);return;} cd={nombre:n,dni:dni,celular:c}; }
+    let cd={nombre:'Mostrador'};
+    let metodoEnvioSeleccionado = '';
+    if(logistica==='envio'){
+        let n=document.getElementById('env-nombre').value.trim(), dni=document.getElementById('env-dni').value.trim(), c=document.getElementById('env-celular').value.trim();
+        let email=document.getElementById('env-email')?.value.trim()||'';
+        let cp=document.getElementById('env-cp')?.value.trim()||'';
+        let provincia=document.getElementById('env-provincia')?.value||'';
+        let localidad=document.getElementById('env-localidad')?.value.trim()||'';
+        let direccion=document.getElementById('env-domicilio')?.value.trim()||'';
+        let notas=document.getElementById('env-notas')?.value.trim()||'';
+        if(!n||!dni||!c||!provincia||!localidad||!cp||!direccion){mostrarToast('Completá todos los datos de envío',true);return;}
+        metodoEnvioSeleccionado = document.getElementById('env-metodo-envio')?.value||'';
+        if(!metodoEnvioSeleccionado){mostrarToast('Seleccioná un medio de envío',true);return;}
+        cd={nombre:n,dni:dni,celular:c,telefono:c,email:email,cp:cp,provincia:provincia,localidad:localidad,direccion:direccion,notas:notas};
+    }
     let pagoData = { total: totalVenta, metodo: metodoPago };
     if (metodoPago === 'mixto') {
         const ef = parseFloat(document.getElementById('mixto-efectivo')?.value) || 0;
@@ -1917,9 +1945,14 @@ async function checkout(){
         pagoData.efectivo = ef;
         pagoData.transferencia = tr;
     }
-    let data=await safeFetch('/confirmar-venta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({carrito,pago:pagoData,logistica,cliente:cd,mayoristaConfig:{habilitado:mayoristaHabilitado}})});
-    if(data.success){mostrarToast(`✅ Venta ${data.ventaId}`);carrito=[];forzarMayoristaActivo=false;actualizarBotonForzarMayorista();renderCart();localStorage.removeItem('pos_carrito');cargar();cargarVentas();}
+    let data=await safeFetch('/confirmar-venta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({carrito,pago:pagoData,logistica,cliente:cd,metodoEnvio:metodoEnvioSeleccionado,canalVenta:canalVentaAdmin,mayoristaConfig:{habilitado:mayoristaHabilitado}})});
+    if(data.success){
+        if (data.pedidoId) { mostrarToast(`✅ Venta ${data.ventaId} — Pedido ${data.pedidoId} creado en Pedidos`); }
+        else { mostrarToast(`✅ Venta ${data.ventaId}`); }
+        carrito=[];forzarMayoristaActivo=false;actualizarBotonForzarMayorista();renderCart();localStorage.removeItem('pos_carrito');cargar();cargarVentas();
+    }
 }
+    
 function buscarProductos(){ let b=document.getElementById('buscador').value.toLowerCase(); document.querySelectorAll('#grid-prods .card').forEach(c=>c.style.display=c.getAttribute('data-nombre').includes(b)?'':'none'); }
 
 function renderAdmin(){
@@ -2102,9 +2135,23 @@ async function cargarMetodosEnvio(){
         metodosEnvio=d.lista||[]; 
         const textarea=document.getElementById('metodos-envio-lista'); 
         if(textarea) textarea.value=metodosEnvio.join('\n'); 
+        populateSelectorEnvioVenta();
     }catch(e){ 
         metodosEnvio=[]; 
     } 
+}
+
+function setCanalVenta(c) {
+    canalVentaAdmin = c;
+    document.getElementById('canal-mostrador')?.classList.toggle('active', c==='mostrador');
+    document.getElementById('canal-whatsapp')?.classList.toggle('active', c==='whatsapp');
+}
+
+function populateSelectorEnvioVenta() {
+    const sel = document.getElementById('env-metodo-envio');
+    if (!sel) return;
+    if (!metodosEnvio || !metodosEnvio.length) { sel.innerHTML = '<option value="">-- Sin transportes cargados en Config --</option>'; return; }
+    sel.innerHTML = '<option value="">Seleccionar transporte</option>' + metodosEnvio.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
 }
     
 async function cargarVentas(){ 
@@ -2942,6 +2989,7 @@ function renderPedidosWeb() {
     grid.innerHTML = pedidosTienda.map(p => {
         const color = estados[p.estado] || '#8C7E74';
         const cliente = p.cliente || {};
+        const origenBadge = p.origen==='mostrador' ? `<span style="background:#C5A88020;color:#8C5E2A;font-size:10px;font-weight:700;padding:3px 10px;border-radius:50px;text-transform:uppercase"><i class="fas fa-store"></i> Mostrador</span>` : p.origen==='whatsapp' ? `<span style="background:#25D36620;color:#128C4A;font-size:10px;font-weight:700;padding:3px 10px;border-radius:50px;text-transform:uppercase"><i class="fab fa-whatsapp"></i> WhatsApp</span>` : '';
 
         let botones = '';
         if (p.estado === 'pendiente') {
@@ -2981,6 +3029,7 @@ function renderPedidosWeb() {
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    ${origenBadge}
                     <span style="background:${color}20;color:${color};font-size:11px;font-weight:700;padding:4px 12px;border-radius:50px;text-transform:uppercase">${escapeHtml(p.estado||'')}</span>
                     <strong style="font-size:15px;color:#3D312A">${fmt.format(p.total||0)}</strong>
                 </div>
@@ -3232,6 +3281,7 @@ function verDetallePedido(id) {
                             <div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">Fecha:</span><strong>${escapeHtml(p.fecha||'')}</strong></div>
                             <div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">Estado:</span><span style="background:${color}20;color:${color};padding:2px 10px;border-radius:50px;font-size:11px;font-weight:700;text-transform:uppercase">${escapeHtml(p.estado||'')}</span></div>
                             <div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">Entrega:</span><strong>${p.tipoEntrega==='envio'?'<i class="fas fa-truck"></i> Envío':'<i class="fas fa-store"></i> Retiro local'}</strong></div>
+                            ${p.origen&&p.origen!=='tienda'?`<div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">Vendido por:</span><strong>${p.origen==='mostrador'?'<i class="fas fa-store"></i> Mostrador':'<i class="fab fa-whatsapp"></i> WhatsApp'}</strong></div>`:''}
                             ${p.metodoEnvio?`<div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">Transporte:</span><strong>${escapeHtml(p.metodoEnvio)}</strong></div>`:''}
                             ${p.pin?`<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#8C7E74">PIN retiro:</span><strong style="font-size:18px;letter-spacing:4px;color:#4E7A62">${p.pin}</strong></div>`:''}
                         </div>
@@ -3247,13 +3297,14 @@ function verDetallePedido(id) {
                             ${cliente.localidad?`<div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">Localidad:</span><strong>${escapeHtml(cliente.localidad)}</strong></div>`:''}
                             ${cliente.direccion?`<div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">Dirección:</span><strong>${escapeHtml(cliente.direccion)}</strong></div>`:''}
                             ${cliente.cp?`<div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">CP:</span><strong>${escapeHtml(cliente.cp)}</strong></div>`:''}
+                            ${cliente.notas?`<div style="display:flex;justify-content:space-between"><span style="color:#8C7E74">Notas:</span><strong style="text-align:right;max-width:60%">${escapeHtml(cliente.notas)}</strong></div>`:''}
                         </div>
                     </div>
                 </div>
 
                 <div>
                     <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px"><i class="fas fa-box" style="color:#C5A880;margin-right:6px"></i>Artículos Pedidos (${p.items?.length||0})</div>
-                    <div style="display:flex;flex-direction:column;gap:10px">
+                               <div style="display:flex;flex-direction:column;gap:10px">
                         ${(p.items||[]).map(it => `
                             <div style="background:#F6F3EA;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:14px">
                                 <div style="width:64px;height:64px;border-radius:12px;overflow:hidden;background:#fff;border:1px solid #E6E1DA;flex-shrink:0">
