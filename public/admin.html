@@ -2165,16 +2165,19 @@ async function cargarVentas(){
 function renderizarVentas(lista) {
     const stats = document.getElementById('ventas-stats');
     if (stats) {
-        const totalVentas = lista.reduce((s,v)=>s+(v.total||0),0);
-        const efectivo = lista.filter(v=>v.metodoPago==='efectivo').length;
-        const transferencia = lista.filter(v=>v.metodoPago==='transferencia').length;
-        const mayoristas = lista.filter(v=>v.esMayorista==1).length;
+        const activas = lista.filter(v=>v.estado!=='cancelada');
+        const canceladas = lista.filter(v=>v.estado==='cancelada');
+        const totalVentas = activas.reduce((s,v)=>s+(v.total||0),0);
+        const efectivo = activas.filter(v=>v.metodoPago==='efectivo').length;
+        const transferencia = activas.filter(v=>v.metodoPago==='transferencia').length;
+        const mayoristas = activas.filter(v=>v.esMayorista==1).length;
         stats.innerHTML = `
             <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-receipt" style="color:#C5A880;font-size:26px;margin-bottom:8px"></i><h3>${lista.length}</h3><p style="color:#8C7E74;font-size:12px">Ventas totales</p></div>
-            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-dollar-sign" style="color:#4E7A62;font-size:26px;margin-bottom:8px"></i><h3>${fmt.format(totalVentas)}</h3><p style="color:#8C7E74;font-size:12px">Monto total</p></div>
+            <div class="stat-card" style="border-left:4px solid #4E7A62"><i class="fas fa-dollar-sign" style="color:#4E7A62;font-size:26px;margin-bottom:8px"></i><h3>${fmt.format(totalVentas)}</h3><p style="color:#8C7E74;font-size:12px">Monto total (activas)</p></div>
             <div class="stat-card" style="border-left:4px solid #3D312A"><i class="fas fa-money-bill-wave" style="color:#3D312A;font-size:26px;margin-bottom:8px"></i><h3>${efectivo}</h3><p style="color:#8C7E74;font-size:12px">En efectivo</p></div>
             <div class="stat-card" style="border-left:4px solid #DE9B72"><i class="fas fa-exchange-alt" style="color:#DE9B72;font-size:26px;margin-bottom:8px"></i><h3>${transferencia}</h3><p style="color:#8C7E74;font-size:12px">Por transferencia</p></div>
             <div class="stat-card" style="border-left:4px solid #C5A880"><i class="fas fa-gem" style="color:#C5A880;font-size:26px;margin-bottom:8px"></i><h3>${mayoristas}</h3><p style="color:#8C7E74;font-size:12px">Mayoristas</p></div>
+            <div class="stat-card" style="border-left:4px solid #D96B6B"><i class="fas fa-ban" style="color:#D96B6B;font-size:26px;margin-bottom:8px"></i><h3>${canceladas.length}</h3><p style="color:#8C7E74;font-size:12px">Canceladas</p></div>
         `;
     }
 
@@ -2186,25 +2189,28 @@ function renderizarVentas(lista) {
     }
 
     grid.innerHTML = lista.map(v => {
+        const cancelada = v.estado === 'cancelada';
         const esMay = v.esMayorista == 1;
         const metodoColor = v.metodoPago==='efectivo' ? '#4E7A62' : v.metodoPago==='transferencia' ? '#3D312A' : '#C5A880';
         const metodoIcon = v.metodoPago==='efectivo' ? 'fa-money-bill-wave' : v.metodoPago==='transferencia' ? 'fa-exchange-alt' : 'fa-hand-holding-usd';
         const metodoTexto = v.metodoPago==='efectivo' ? 'Efectivo' : v.metodoPago==='transferencia' ? 'Transferencia' : v.metodoPago==='mixto' ? 'Mixto' : escapeHtml(v.metodoPago||'');
-        return `<div style="background:#fff;border-radius:20px;border:1px solid #E6E1DA;overflow:hidden;transition:all 0.3s" onmouseover="this.style.boxShadow='0 4px 16px rgba(61,49,42,0.08)'" onmouseout="this.style.boxShadow=''">
+        return `<div style="background:${cancelada?'#FFF6F6':'#fff'};border-radius:20px;border:1px solid ${cancelada?'#F5D6D6':'#E6E1DA'};overflow:hidden;transition:all 0.3s;${cancelada?'opacity:0.85':''}" onmouseover="this.style.boxShadow='0 4px 16px rgba(61,49,42,0.08)'" onmouseout="this.style.boxShadow=''">
             <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid #F6F3EA">
                 <div style="display:flex;align-items:center;gap:14px">
-                    <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#3D312A,#52433A);display:flex;align-items:center;justify-content:center;color:#C5A880;font-size:16px;flex-shrink:0"><i class="fas fa-receipt"></i></div>
+                    <div style="width:44px;height:44px;border-radius:50%;background:${cancelada?'linear-gradient(135deg,#D96B6B,#B85454)':'linear-gradient(135deg,#3D312A,#52433A)'};display:flex;align-items:center;justify-content:center;color:${cancelada?'white':'#C5A880'};font-size:16px;flex-shrink:0"><i class="fas ${cancelada?'fa-ban':'fa-receipt'}"></i></div>
                     <div>
                         <div style="font-weight:700;font-size:14px;color:#3D312A">${escapeHtml(v.id)}</div>
                         <div style="font-size:12px;color:#8C7E74;margin-top:2px">${escapeHtml(v.fecha||'')} ${v.vendedor?'• Vendió: <strong>'+escapeHtml(v.vendedor)+'</strong>':''}</div>
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    ${cancelada?'<span style="background:#F2DEDE;color:#A94442;font-size:11px;font-weight:700;padding:4px 12px;border-radius:50px">CANCELADA</span>':''}
                     ${esMay?'<span style="background:#E4EDE1;color:#4E7A62;font-size:11px;font-weight:700;padding:4px 12px;border-radius:50px">MAYORISTA</span>':''}
                     <span style="background:${metodoColor}20;color:${metodoColor};font-size:11px;font-weight:700;padding:4px 12px;border-radius:50px"><i class="fas ${metodoIcon}"></i> ${metodoTexto}</span>
-                    <strong style="font-size:15px;color:#3D312A">${fmt.format(v.total||0)}</strong>
+                    <strong style="font-size:15px;color:#3D312A;${cancelada?'text-decoration:line-through;color:#A94442':''}">${fmt.format(v.total||0)}</strong>
                 </div>
             </div>
+            ${cancelada?`<div style="background:#FFF0F0;padding:8px 20px;font-size:11px;color:#A94442"><i class="fas fa-info-circle"></i> Cancelada por ${escapeHtml(v.canceladaPor||'—')} ${v.fechaCancelacion?('el '+escapeHtml(v.fechaCancelacion)):''}</div>`:''}
             <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
                 <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:#8C7E74">
                     <span><i class="fas fa-user" style="color:#C5A880;margin-right:5px"></i>${escapeHtml(v.cliente?.nombre||'Mostrador')}</span>
@@ -2215,6 +2221,7 @@ function renderizarVentas(lista) {
                     <button onclick="verDetalleVenta('${v.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-eye"></i> Ver</button>
                     <button onclick="imprimirVentaTermico('${v.id}')" style="background:#3D312A;color:#C5A880;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-print"></i> Térmico</button>
                     <button onclick="imprimirVentaA4('${v.id}')" style="background:#C5A880;color:#3D312A;border:none;padding:8px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="fas fa-file-alt"></i> A4</button>
+                    ${!cancelada?`<button onclick="cancelarVentaAdmin('${v.id}')" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:7px 14px;border-radius:50px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px"><i class="fas fa-ban"></i> Cancelar Venta</button>`:''}
                 </div>
             </div>
         </div>`;
@@ -2230,6 +2237,31 @@ function filtrarVentas() {
         (v.cliente?.apellido||'').toLowerCase().includes(busq)
     );
     renderizarVentas(filtradas);
+}
+
+async function cancelarVentaAdmin(id) {
+    if (!confirm(`¿Cancelar la venta ${id}? El stock de los productos se devolverá automáticamente.`)) return;
+    const pwd = prompt('Ingresá tu contraseña para confirmar la cancelación:');
+    if (!pwd) return;
+    try {
+        const res = await safeFetch('/admin/verificar-password', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ password: pwd })
+        });
+        if (!res?.valida) { mostrarToast('❌ Contraseña incorrecta', true); return; }
+    } catch(e) { mostrarToast('❌ Error al verificar contraseña', true); return; }
+
+    try {
+        await safeFetch('/admin/cancelar-venta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ventaId: id })
+        });
+        document.querySelectorAll('.modal').forEach(m => m.remove());
+        mostrarToast('✅ Venta cancelada y stock restaurado');
+        cargarVentas();
+    } catch(e) {}
 }
 
 async function obtenerVentaPorId(id) {
@@ -2260,6 +2292,7 @@ async function obtenerConfigParaTicket() {
 async function verDetalleVenta(id) {
     const v = await obtenerVentaPorId(id);
     if (!v) return;
+    const cancelada = v.estado === 'cancelada';
     const esMay = v.esMayorista == 1;
     const cliente = v.cliente || {};
     const metodoColor = v.metodoPago==='efectivo' ? '#4E7A62' : v.metodoPago==='transferencia' ? '#3D312A' : '#C5A880';
@@ -2276,6 +2309,7 @@ async function verDetalleVenta(id) {
                 <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
             </div>
             <div style="padding:24px;display:flex;flex-direction:column;gap:20px">
+                ${cancelada?`<div style="background:#F2DEDE;border:2px solid #D96B6B;border-radius:14px;padding:14px 18px;color:#A94442;font-weight:700;font-size:13px;display:flex;align-items:center;gap:10px"><i class="fas fa-ban" style="font-size:18px"></i> Esta venta fue cancelada por ${escapeHtml(v.canceladaPor||'—')} ${v.fechaCancelacion?('el '+escapeHtml(v.fechaCancelacion)):''}</div>`:''}
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
                     <div style="background:#F6F3EA;border-radius:16px;padding:16px">
                         <div style="font-size:10px;font-weight:700;color:#8C7E74;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px"><i class="fas fa-info-circle" style="color:#C5A880;margin-right:6px"></i>Info de la Venta</div>
@@ -2319,13 +2353,14 @@ async function verDetalleVenta(id) {
                 <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
                     <button onclick="imprimirVentaTermico('${v.id}')" style="background:#3D312A;color:#C5A880;border:none;padding:12px 22px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-print"></i> Ticket Térmico</button>
                     <button onclick="imprimirVentaA4('${v.id}')" style="background:#C5A880;color:#3D312A;border:none;padding:12px 22px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-file-alt"></i> Imprimir A4</button>
+                    ${!cancelada?`<button onclick="cancelarVentaAdmin('${v.id}')" style="background:#FFF0F0;color:#D96B6B;border:2px solid #D96B6B;padding:12px 22px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="fas fa-ban"></i> Cancelar Venta</button>`:''}
                     <button onclick="this.closest('.modal').remove()" style="background:#F6F3EA;color:#3D312A;border:none;padding:12px 24px;border-radius:50px;cursor:pointer;font-size:13px;font-weight:600">Cerrar</button>
                 </div>
             </div>
         </div>`;
     document.body.appendChild(modal);
 }
-
+    
 async function imprimirVentaTermico(id) {
     const v = await obtenerVentaPorId(id);
     if (!v) return;
@@ -2340,6 +2375,7 @@ async function imprimirVentaTermico(id) {
     <div class="center" style="font-size:10px;margin-bottom:4px">${escapeHtml(conf.empresa.direccion||'')}</div>
     <div class="center" style="font-size:10px;margin-bottom:4px">Comprobante de Venta</div>
     <div class="center bold" style="font-size:13px;margin-bottom:4px">${escapeHtml(v.id)}</div>
+    ${v.estado==='cancelada'?`<div class="center bold" style="font-size:13px;border:2px solid #c0392b;padding:5px;margin:4px 0">‼ VENTA CANCELADA ‼<br>NO VÁLIDO</div>`:''}
     <div class="line"></div>
     <div class="row"><span>Fecha:</span><span>${escapeHtml(v.fecha||'')}</span></div>
     <div class="row"><span>Vendedor:</span><span>${escapeHtml(v.vendedor||'—')}</span></div>
@@ -2362,8 +2398,7 @@ async function imprimirVentaTermico(id) {
     <script>window.onload=function(){window.print()}<\/script></body></html>`);
     win.document.close();
 }
-
-async function imprimirVentaA4(id) {
+    async function imprimirVentaA4(id) {
     const v = await obtenerVentaPorId(id);
     if (!v) return;
     const conf = await obtenerConfigParaTicket();
@@ -2403,6 +2438,7 @@ async function imprimirVentaA4(id) {
     </div>
     <div class="titulo-doc">Comprobante de Venta</div>
     <div class="subtitulo-doc">${escapeHtml(v.id)}</div>
+    ${v.estado==='cancelada'?`<div style="background:#F2DEDE;border:3px solid #A94442;color:#A94442;text-align:center;padding:14px;border-radius:12px;font-weight:800;font-size:16px;margin-bottom:20px">‼ VENTA CANCELADA ‼<br><span style="font-size:12px;font-weight:600">Este comprobante no es válido — la venta fue anulada</span></div>`:''}
     <div class="section">
         <div class="section-title">Datos de la Venta</div>
         <div class="info-grid">
@@ -2431,11 +2467,12 @@ async function imprimirVentaA4(id) {
         </table>
     </div>
     <div class="total-box"><span>TOTAL DE LA COMPRA</span><strong>${fmt.format(v.total||0)}</strong></div>
-    <div class="aviso"><i>⚠ Este comprobante no posee validez fiscal — es un documento de uso interno. Ningún artículo tiene cambio ni devolución.</i></div>
+    <div class="aviso"><i>⚠ Este comprobante no posee validez fiscal - uso interno. Ningún artículo tiene cambio ni devolución.</i></div>
     <footer>${escapeHtml(conf.empresa.nombre||'Casa Elegida')} — Horarios: Lun a Vie ${escapeHtml(conf.horarios.lunesViernes||'')} | Sáb ${escapeHtml(conf.horarios.sabados||'')} | ${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</footer>
     <script>window.onload=function(){window.print()}<\/script></body></html>`);
     win.document.close();
 }
+    
     
 async function cargarProductosRendimiento() {
     try {
