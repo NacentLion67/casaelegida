@@ -786,25 +786,41 @@ app.post('/save-icono', adminMiddleware('web'), async (req, res) => { await setC
 
 app.post('/confirmar-venta', adminMiddleware('ventas'), async (req, res) => {
     try {
-        const { carrito, pago, logistica, cliente } = req.body;
+        const { carrito, pago, logistica, cliente, metodoEnvio, canalVenta } = req.body;
         if (!carrito?.length) return res.status(400).json({ error: 'Carrito vacío' });
+        if (logistica === 'envio' && !metodoEnvio) return res.status(400).json({ error: 'Seleccioná un medio de envío' });
         for (let it of carrito) {
             if (it.esManual) continue;
             const stockActual = (await pool.query('SELECT stock FROM variantes WHERE "productoId"=$1 AND nombre=$2', [it.pId, it.vNom])).rows[0];
             if (!stockActual || stockActual.stock < it.cant) return res.status(400).json({ error: `Stock insuficiente: ${it.pNom} - ${it.vNom}. Disponible: ${stockActual?.stock || 0}` });
         }
         for (let it of carrito) { if(it.esManual) continue; await pool.query('UPDATE variantes SET stock=stock-$1 WHERE "productoId"=$2 AND nombre=$3', [it.cant, it.pId, it.vNom]); }
-        const id = 'FAC-' + Date.now();
+
         const totalFinal = pago.total || 0;
-        const montoEfectivo = pago.metodo === 'efectivo' ? totalFinal : (pago.metodo === 'mixto' ? (pago.efectivo||0) : 0);
-        const montoTransferencia = pago.metodo === 'transferencia' ? totalFinal : (pago.metodo === 'mixto' ? (pago.transferencia||0) : 0);
         const esMayorista = carrito.some(it => it.precioOriginal && it.precio < it.precioOriginal) ? 1 : 0;
         const vendedor = req.admin?.nombre || 'Admin';
+
+        if (logistica === 'envio') {
+            const pedidoId = 'PED-' + Date.now();
+            const canalFinal = canalVenta === 'whatsapp' ? 'whatsapp' : 'mostrador';
+            await pool.query(
+                `INSERT INTO pedidos (id, fecha, "fechaTimestamp", items, total, cliente, "tipoEntrega", "metodoEnvio", "esMayorista", estado, origen, "stockDescontado")
+                 VALUES ($1, TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'), $2, $3, $4, $5, 'envio', $6, $7, 'pendiente', $8, 1)`,
+                [pedidoId, Date.now(), JSON.stringify(carrito), totalFinal, JSON.stringify(cliente||{}), metodoEnvio, esMayorista, canalFinal]
+            );
+            await crearNotificacion('pedido', '📦 Pedido para armar', `${pedidoId} (${canalFinal})`);
+            await logActividad(vendedor, 'PEDIDO_MOSTRADOR', `Pedido ${pedidoId} — stock reservado, sin abonar aún`, req);
+            return res.json({ success: true, pedidoId, ventaId: null });
+        }
+
+        const id = 'FAC-' + Date.now();
+        const montoEfectivo = pago.metodo === 'efectivo' ? totalFinal : (pago.metodo === 'mixto' ? (pago.efectivo||0) : 0);
+        const montoTransferencia = pago.metodo === 'transferencia' ? totalFinal : (pago.metodo === 'mixto' ? (pago.transferencia||0) : 0);
         await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"montoEfectivo\",\"montoTransferencia\",\"esMayorista\",vendedor) VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,$5,$6,$7,'completada','admin',$8,$9,$10,$11)",
             [id, Date.now(), JSON.stringify(carrito), totalFinal, pago.metodo, logistica, JSON.stringify(cliente||{nombre:'Mostrador'}), montoEfectivo, montoTransferencia, esMayorista, vendedor]);
         await crearNotificacion('venta', '💰 Venta', `${id}`);
         await logActividad(vendedor, 'VENTA', `Venta ${id}`, req);
-        res.json({ success: true, ventaId: id });
+        res.json({ success: true, ventaId: id, pedidoId: null });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -921,7 +937,7 @@ app.post('/tienda/cancelar-pedido', authMiddleware, async (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/tienda/marcar-abonado', async (req, res) => {
+app.post('/tienda/marcar-abonado', adminMiddleware('pedidos'), async (req, res) => {
     try {
         const cajaabierta = (await pool.query("SELECT id FROM turnos_caja WHERE estado='abierto' LIMIT 1")).rows[0];
         if (!cajaabierta) return res.status(400).json({ error: 'Debe abrir caja antes de abonar un pedido web' });
@@ -933,16 +949,20 @@ app.post('/tienda/marcar-abonado', async (req, res) => {
         const itemsArr = JSON.parse(p.items || '[]');
         const esMayorista = itemsArr.some(it => it.precioOriginal && it.precio < it.precioOriginal) ? 1 : 0;
 
+        let vendedorLabel = 'Tienda Web';
+        if (p.origen === 'mostrador') vendedorLabel = req.admin?.nombre || 'Mostrador';
+        else if (p.origen === 'whatsapp') vendedorLabel = (req.admin?.nombre || 'Admin') + ' (WhatsApp)';
+
         const ventaExistente = (await pool.query('SELECT id FROM ventas WHERE "pedidoId"=$1', [p.id])).rows[0];
         let vid = ventaExistente?.id;
         if (!ventaExistente) {
             vid = 'FAC-' + Date.now();
-            await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\",\"esMayorista\",vendedor) VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7,$8,'Tienda Web')",
-                [vid, Date.now(), p.items, p.total, p.tipoEntrega==='envio'?'envio':'local', p.cliente, p.id, esMayorista]);
+            await pool.query("INSERT INTO ventas (id,fecha,\"fechaTimestamp\",items,total,\"metodoPago\",logistica,cliente,estado,origen,\"pedidoId\",\"esMayorista\",vendedor) VALUES ($1,TO_CHAR(NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires','DD/MM/YYYY HH24:MI:SS'),$2,$3,$4,'pedido_online',$5,$6,'completada','tienda',$7,$8,$9)",
+                [vid, Date.now(), p.items, p.total, p.tipoEntrega==='envio'?'envio':'local', p.cliente, p.id, esMayorista, vendedorLabel]);
         }
 
         await pool.query("UPDATE pedidos SET estado='abonado', pin=$1, \"ventaId\"=$2, \"timestampAbono\"=$3 WHERE id=$4", [pin, vid, Date.now(), req.body.pedidoId]);
-        await logActividad('Admin', 'PEDIDO_ABONADO', `Pedido ${req.body.pedidoId} abonado`, req);
+        await logActividad(vendedorLabel, 'PEDIDO_ABONADO', `Pedido ${req.body.pedidoId} abonado`, req);
         res.json({ success: true, pin });
         if (pin) {
             try {
