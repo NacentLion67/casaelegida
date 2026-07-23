@@ -545,20 +545,20 @@ body.dark-mode .config-section h3 { color: #C5A880; }
 <div id="main-screen" style="display:none">
     <div class="nav-tabs" id="nav-tabs">
         <button id="t-v" class="tab-btn active" data-permiso="ventas" onclick="tab('v')"><i class="fas fa-cash-register"></i> Ventas</button>
-        <button id="t-r" class="tab-btn" data-permiso="ventas" onclick="tab('r')"><i class="fas fa-list"></i> Listado</button>
+        <button id="t-r" class="tab-btn" data-permiso="listado" onclick="tab('r')"><i class="fas fa-list"></i> Listado</button>
         <button id="t-a" class="tab-btn" data-permiso="stock" onclick="tab('a')"><i class="fas fa-boxes"></i> Stock</button>
         <button id="t-dash" class="tab-btn" data-permiso="dashboard" onclick="tab('dash')"><i class="fas fa-chart-pie"></i> Estadísticas</button>
         <button id="t-c" class="tab-btn" data-permiso="config" onclick="tab('c')"><i class="fas fa-sliders-h"></i> Config</button>
-        <button id="t-retiro" class="tab-btn btn-warning" data-permiso="ventas" onclick="tab('retiro')"><i class="fas fa-qrcode"></i> Retirar</button>
+        <button id="t-retiro" class="tab-btn btn-warning" data-permiso="retiro" onclick="tab('retiro')"><i class="fas fa-qrcode"></i> Retirar</button>
         <button id="t-p" class="tab-btn" data-permiso="pedidos" onclick="tab('p')"><i class="fas fa-shopping-cart"></i> Pedidos</button>
-        <button id="t-perfiles" class="tab-btn btn-info" data-permiso="admin" onclick="tab('perfiles')"><i class="fas fa-users-cog"></i> Perfiles</button>
+        <button id="t-perfiles" class="tab-btn btn-info" data-permiso="perfiles" onclick="tab('perfiles')"><i class="fas fa-users-cog"></i> Perfiles</button>
         <button id="t-logs" class="tab-btn btn-info" data-permiso="logs" onclick="tab('logs')"><i class="fas fa-history"></i> Logs</button>
         <button id="t-clientes" class="tab-btn btn-info" data-permiso="clientes" onclick="tab('clientes')"><i class="fas fa-users"></i> Clientes</button>
-        <button id="t-rendimiento" class="tab-btn btn-success" data-permiso="ventas" onclick="tab('rendimiento')"><i class="fas fa-chart-line"></i> Rendimiento</button>
+        <button id="t-rendimiento" class="tab-btn btn-success" data-permiso="rendimiento" onclick="tab('rendimiento')"><i class="fas fa-chart-line"></i> Rendimiento</button>
         <button id="t-web" class="tab-btn" data-permiso="web" onclick="tab('web')"><i class="fas fa-paint-brush"></i> Edición Web</button>
-        <button id="t-backup" class="tab-btn btn-warning" data-permiso="config" onclick="tab('backup')"><i class="fas fa-database"></i> Backup</button>
-        <button id="t-historial-caja" class="tab-btn" data-permiso="ventas" onclick="tab('historial-caja')"><i class="fas fa-cash-register"></i> Historial Caja</button>
-        <div style="margin-left:auto;position:relative;display:flex;gap:8px;align-items:center;">
+        <button id="t-backup" class="tab-btn btn-warning" data-permiso="backup" onclick="tab('backup')"><i class="fas fa-database"></i> Backup</button>
+        <button id="t-historial-caja" class="tab-btn" data-permiso="historial-caja" onclick="tab('historial-caja')"><i class="fas fa-cash-register"></i> Historial Caja</button>
+            <div style="margin-left:auto;position:relative;display:flex;gap:8px;align-items:center;">
             <div id="navbar-caja-status"></div>
             <button class="tab-btn" onclick="toggleNotificaciones()" style="position:relative"><i class="fas fa-bell"></i><span id="notif-count" class="notif-badge" style="display:none">0</span></button>
             <div id="notif-panel" class="notif-panel" style="display:none"><div class="notif-header"><h4>Notificaciones</h4><button onclick="marcarTodasLeidas()" style="background:none;border:none;color:#6366f1;cursor:pointer;font-size:12px">Todas leídas</button></div><div id="notif-list" class="notif-list"></div></div>
@@ -701,8 +701,38 @@ let _ticketActual = null;
 let _historialCaja = [];
 let variantRowCounter = {};
 let guardandoProductos = new Set();
+const SECCIONES_PERMISOS = [
+    { key:'ventas', label:'Ventas', icon:'fa-cash-register' },
+    { key:'listado', label:'Listado', icon:'fa-list' },
+    { key:'stock', label:'Stock', icon:'fa-boxes' },
+    { key:'dashboard', label:'Estadísticas', icon:'fa-chart-pie' },
+    { key:'pedidos', label:'Pedidos', icon:'fa-shopping-cart' },
+    { key:'retiro', label:'Retirar', icon:'fa-qrcode' },
+    { key:'rendimiento', label:'Rendimiento', icon:'fa-chart-line' },
+    { key:'clientes', label:'Clientes', icon:'fa-users' },
+    { key:'historial-caja', label:'Historial Caja', icon:'fa-cash-register' },
+    { key:'config', label:'Config', icon:'fa-sliders-h' },
+    { key:'web', label:'Edición Web', icon:'fa-paint-brush' },
+    { key:'backup', label:'Backup', icon:'fa-database' },
+    { key:'logs', label:'Logs', icon:'fa-history' }
+];
+const ORDEN_TABS_PERMISOS = [
+    {permiso:'ventas', tabKey:'v'},
+    {permiso:'listado', tabKey:'r'},
+    {permiso:'stock', tabKey:'a'},
+    {permiso:'dashboard', tabKey:'dash'},
+    {permiso:'pedidos', tabKey:'p'},
+    {permiso:'retiro', tabKey:'retiro'},
+    {permiso:'rendimiento', tabKey:'rendimiento'},
+    {permiso:'clientes', tabKey:'clientes'},
+    {permiso:'historial-caja', tabKey:'historial-caja'},
+    {permiso:'config', tabKey:'c'},
+    {permiso:'web', tabKey:'web'},
+    {permiso:'backup', tabKey:'backup'},
+    {permiso:'logs', tabKey:'logs'}
+];
 const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
-
+    
 function mostrarToast(msg, error=false) { const t = document.createElement('div'); t.className = `toast-notification ${error?'error':''}`; t.innerHTML = `<i class="fas ${error?'fa-exclamation-circle':'fa-check-circle'}"></i> ${msg}`; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); }
 function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 function formatearNumero(n) { if(!n) return '0'; return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
@@ -1049,11 +1079,14 @@ async function sincronizarVentasWeb() {
         const data = await res.json(); 
         if (data.success) { 
             localStorage.setItem('adminToken', data.token); 
+            localStorage.setItem('adminPerfil', JSON.stringify(data.perfil));
             adminToken = data.token; 
             adminActual = data.perfil; 
             document.getElementById('login-screen').style.display = 'none'; 
             document.getElementById('main-screen').style.display = 'block'; 
-            tab('v');
+            aplicarPermisosNavbar();
+            const primeraTab = primeraTabDisponible();
+            if (primeraTab) { tab(primeraTab); } else { mostrarToast('🔒 Tu perfil no tiene acceso a ninguna sección. Contactá al administrador.', true); }
             setTimeout(verEstadoCaja, 500); 
         } else { 
             document.getElementById('login-error').textContent = data.error || 'Error'; 
@@ -1061,8 +1094,8 @@ async function sincronizarVentasWeb() {
     } catch(e) { document.getElementById('login-error').textContent = 'Error de conexión'; } 
 }
 
-function cerrarSesionAdmin() { localStorage.removeItem('adminToken'); localStorage.removeItem('pos_carrito'); adminToken = null; adminActual = null; location.reload(); }
-
+function cerrarSesionAdmin() { localStorage.removeItem('adminToken'); localStorage.removeItem('adminPerfil'); localStorage.removeItem('pos_carrito'); adminToken = null; adminActual = null; location.reload(); }
+    
 async function cargarConfiguracion() {
     try {
         const d = await safeFetch('/get-config', { method: 'POST' });
@@ -1148,12 +1181,27 @@ async function cargarConfiguracion() {
     }
 }
 
+function aplicarPermisosNavbar() {
+    if (!adminActual) return;
+    document.querySelectorAll('.nav-tabs .tab-btn[data-permiso]').forEach(btn => {
+        const permiso = btn.getAttribute('data-permiso');
+        const tienePermiso = adminActual.rol === 'admin' || (adminActual.permisos||[]).includes(permiso);
+        btn.style.display = tienePermiso ? '' : 'none';
+    });
+}
+
+function primeraTabDisponible() {
+    if (!adminActual || adminActual.rol === 'admin') return 'v';
+    const encontrada = ORDEN_TABS_PERMISOS.find(x => (adminActual.permisos||[]).includes(x.permiso));
+    return encontrada ? encontrada.tabKey : null;
+}
+
 function tab(t) {
     if (adminActual && adminActual.rol !== 'admin') {
         const btn = document.querySelector(`[onclick="tab('${t}')"]`);
         if (btn) {
             const permiso = btn.getAttribute('data-permiso');
-            if (permiso && permiso !== 'admin' && !adminActual.permisos.includes(permiso)) {
+            if (permiso && !adminActual.permisos.includes(permiso)) {
                 mostrarToast('🔒 Sin autorización para acceder a esta sección', true);
                 return;
             }
@@ -3513,12 +3561,335 @@ async function cargarLogs() {
     } catch(e) {}
 }
     
-async function cargarPerfiles(){ try{ const d=await safeFetch('/admin/perfiles',{method:'POST'}); document.getElementById('lista-perfiles').innerHTML=d.lista.map(p=>`<div class="perfil-card"><h5>${p.nombre}</h5></div>`).join(''); }catch(e){} }
+async function cargarPerfiles(){ 
+    try{ 
+        const d=await safeFetch('/admin/perfiles',{method:'POST'}); 
+        window._perfilesCache = d.lista || [];
+        const cont = document.getElementById('lista-perfiles');
+        if (!cont) return;
+        if (!d.lista?.length) { cont.innerHTML = `<div style="text-align:center;padding:40px;color:#8C7E74"><i class="fas fa-users-slash" style="font-size:32px;opacity:0.3;display:block;margin-bottom:10px"></i>No hay perfiles cargados</div>`; return; }
+        cont.innerHTML = d.lista.map(p => {
+            const esAdmin = p.rol === 'admin';
+            const badgesPermisos = esAdmin
+                ? `<span style="background:#3D312A;color:#C5A880;font-size:10px;font-weight:700;padding:3px 10px;border-radius:50px">TODAS LAS SECCIONES</span>`
+                : (p.permisos?.length
+                    ? p.permisos.map(perm => {
+                        const s = SECCIONES_PERMISOS.find(x => x.key === perm);
+                        return `<span style="background:#F6F3EA;color:#3D312A;font-size:10px;font-weight:600;padding:3px 10px;border-radius:50px"><i class="fas ${s?.icon||'fa-circle'}" style="color:#C5A880;margin-right:3px"></i>${s?.label||perm}</span>`;
+                    }).join('')
+                    : `<span style="background:#F2DEDE;color:#A94442;font-size:10px;font-weight:700;padding:3px 10px;border-radius:50px">SIN SECCIONES ASIGNADAS</span>`);
+            return `<div class="perfil-card" style="flex-direction:column;align-items:stretch;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                    <div>
+                        <h5 style="margin:0">${escapeHtml(p.nombre)}</h5>
+                        <p style="margin:2px 0 0">@${escapeHtml(p.usuario)} ${esAdmin?'— Administrador Principal':''}</p>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:50px;${p.activo?'background:#E4EDE1;color:#3C763D':'background:#F2DEDE;color:#A94442'}">${p.activo?'ACTIVO':'INACTIVO'}</span>
+                        ${!esAdmin?`
+                        <button type="button" onclick="abrirModalEditarPerfil('${p.id}')" style="background:#F6F3EA;color:#3D312A;border:none;padding:6px 12px;border-radius:50px;cursor:pointer;font-size:11px;font-weight:600;display:flex;align-items:center;gap:5px"><i class="fas fa-edit"></i> Editar</button>
+                        <button type="button" onclick="abrirModalEliminarPerfil('${p.id}','${escapeHtml(p.nombre)}')" style="background:#FFF0F0;color:#D96B6B;border:none;padding:6px 12px;border-radius:50px;cursor:pointer;font-size:11px;font-weight:600;display:flex;align-items:center;gap:5px"><i class="fas fa-trash-alt"></i> Eliminar</button>
+                        `:''}
+                    </div>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px">${badgesPermisos}</div>
+            </div>`;
+        }).join('');
+    }catch(e){} 
+}
+    
+function abrirModalCrearPerfil(){
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:560px">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus" style="color:#C5A880"></i> Nuevo Perfil</h3>
+                <button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div class="form-row">
+                    <div><label class="form-label required">Nombre</label><input type="text" id="np-nombre" placeholder="Nombre"></div>
+                    <div><label class="form-label required">Apellido</label><input type="text" id="np-apellido" placeholder="Apellido"></div>
+                </div>
+                <div>
+                    <label class="form-label required">Usuario (para iniciar sesión)</label>
+                    <input type="text" id="np-usuario" placeholder="Ej: juan.perez" autocomplete="off">
+                </div>
+                <div>
+                    <label class="form-label required">Contraseña del nuevo perfil</label>
+                    <input type="password" id="np-password" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+                </div>
 
-function abrirModalCrearPerfil(){}
-function abrirModalCambiarPassword(){}
-async function cambiarPassword(){}
-function abrirBuscadorClientes(){}
+                <div>
+                    <label class="form-label" style="margin-bottom:10px;display:block">Secciones a las que tendrá acceso</label>
+                    <div id="np-permisos-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#F6F3EA;border-radius:16px;padding:14px">
+                        ${SECCIONES_PERMISOS.map(s => `
+                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#3D312A;cursor:pointer;padding:6px 8px;border-radius:10px;">
+                                <input type="checkbox" class="np-permiso-check" value="${s.key}" style="width:16px;height:16px;accent-color:#3D312A;flex-shrink:0">
+                                <i class="fas ${s.icon}" style="color:#C5A880;width:16px;text-align:center"></i> ${s.label}
+                            </label>
+                        `).join('')}
+                    </div>
+                    <p style="font-size:11px;color:#8C7E74;margin-top:8px"><i class="fas fa-info-circle"></i> El perfil solo verá las secciones marcadas.</p>
+                </div>
+
+                <hr style="border:none;border-top:1px solid #E6E1DA;margin:4px 0">
+
+                <div>
+                    <label class="form-label required">Tu contraseña de administrador (para confirmar)</label>
+                    <input type="password" id="np-admin-password" placeholder="Contraseña admin" autocomplete="off">
+                </div>
+
+                <button type="button" class="btn-confirm" onclick="confirmarCrearPerfil()"><i class="fas fa-check-circle"></i> Crear Perfil</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    setTimeout(()=>document.getElementById('np-nombre')?.focus(),100);
+}
+
+async function confirmarCrearPerfil(){
+    const nombre = document.getElementById('np-nombre')?.value.trim();
+    const apellido = document.getElementById('np-apellido')?.value.trim();
+    const usuario = document.getElementById('np-usuario')?.value.trim();
+    const password = document.getElementById('np-password')?.value;
+    const adminPassword = document.getElementById('np-admin-password')?.value;
+    const permisos = Array.from(document.querySelectorAll('.np-permiso-check:checked')).map(c => c.value);
+
+    if (!nombre || !apellido) { mostrarToast('Completá nombre y apellido', true); return; }
+    if (!usuario) { mostrarToast('Ingresá un usuario para iniciar sesión', true); return; }
+    if (!password || password.length < 4) { mostrarToast('La contraseña debe tener al menos 4 caracteres', true); return; }
+    if (!permisos.length) { mostrarToast('Marcá al menos una sección a la que tendrá acceso', true); return; }
+    if (!adminPassword) { mostrarToast('Ingresá tu contraseña de administrador para confirmar', true); return; }
+
+    try {
+        await safeFetch('/admin/crear-perfil', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminPassword, usuario, password, nombre: `${nombre} ${apellido}`, permisos })
+        });
+        mostrarToast('✅ Perfil creado con éxito');
+        document.querySelector('.modal.active')?.remove();
+        cargarPerfiles();
+    } catch(e) {}
+}
+
+function abrirModalEditarPerfil(id){
+    const p = (window._perfilesCache||[]).find(x => x.id === id);
+    if (!p) return;
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:560px">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-edit" style="color:#C5A880"></i> Editar Perfil</h3>
+                <button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div>
+                    <label class="form-label required">Nombre completo</label>
+                    <input type="text" id="ep-nombre" value="${escapeHtml(p.nombre)}" placeholder="Nombre y apellido">
+                </div>
+                <div>
+                    <label class="form-label">Nueva contraseña (opcional)</label>
+                    <input type="password" id="ep-password" placeholder="Dejar vacío para no cambiarla" autocomplete="new-password">
+                </div>
+
+                <div>
+                    <label class="form-label" style="margin-bottom:10px;display:block">Secciones a las que tendrá acceso</label>
+                    <div id="ep-permisos-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#F6F3EA;border-radius:16px;padding:14px">
+                        ${SECCIONES_PERMISOS.map(s => `
+                            <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#3D312A;cursor:pointer;padding:6px 8px;border-radius:10px;">
+                                <input type="checkbox" class="ep-permiso-check" value="${s.key}" ${p.permisos?.includes(s.key)?'checked':''} style="width:16px;height:16px;accent-color:#3D312A;flex-shrink:0">
+                                <i class="fas ${s.icon}" style="color:#C5A880;width:16px;text-align:center"></i> ${s.label}
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#3D312A;cursor:pointer">
+                        <input type="checkbox" id="ep-activo" ${p.activo?'checked':''} style="width:16px;height:16px;accent-color:#3D312A">
+                        Perfil activo (permite iniciar sesión)
+                    </label>
+                </div>
+
+                <button type="button" class="btn-confirm" onclick="confirmarEditarPerfil('${p.id}')"><i class="fas fa-check-circle"></i> Guardar Cambios</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+async function confirmarEditarPerfil(id){
+    const nombre = document.getElementById('ep-nombre')?.value.trim();
+    const password = document.getElementById('ep-password')?.value;
+    const activo = document.getElementById('ep-activo')?.checked ? 1 : 0;
+    const permisos = Array.from(document.querySelectorAll('.ep-permiso-check:checked')).map(c => c.value);
+
+    if (!nombre) { mostrarToast('El nombre no puede estar vacío', true); return; }
+    if (!permisos.length) { mostrarToast('Marcá al menos una sección', true); return; }
+    if (password && password.length < 4) { mostrarToast('La nueva contraseña debe tener al menos 4 caracteres', true); return; }
+
+    try {
+        const body = { id, nombre, permisos, activo };
+        if (password) body.password = password;
+        await safeFetch('/admin/editar-perfil', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        mostrarToast('✅ Perfil actualizado con éxito');
+        document.querySelector('.modal.active')?.remove();
+        cargarPerfiles();
+    } catch(e) {}
+}
+
+function abrirModalEliminarPerfil(id, nombre){
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:420px">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle" style="color:#D96B6B"></i> Eliminar Perfil</h3>
+                <button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+                <p style="font-size:13px;color:#3D312A">¿Eliminar el perfil <strong>${escapeHtml(nombre)}</strong>? Esta acción no se puede deshacer.</p>
+                <div>
+                    <label class="form-label required">Tu contraseña de administrador</label>
+                    <input type="password" id="del-admin-password" placeholder="Contraseña admin" autocomplete="off">
+                </div>
+                <button type="button" onclick="confirmarEliminarPerfil('${id}')" style="width:100%;background:#D96B6B;color:white;border:none;padding:14px;border-radius:50px;font-weight:700;cursor:pointer;font-size:14px"><i class="fas fa-trash-alt"></i> Eliminar Definitivamente</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    setTimeout(()=>document.getElementById('del-admin-password')?.focus(),100);
+}
+
+async function confirmarEliminarPerfil(id){
+    const adminPassword = document.getElementById('del-admin-password')?.value;
+    if (!adminPassword) { mostrarToast('Ingresá tu contraseña de administrador', true); return; }
+    try {
+        await safeFetch('/admin/eliminar-perfil', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, adminPassword })
+        });
+        mostrarToast('✅ Perfil eliminado');
+        document.querySelector('.modal.active')?.remove();
+        cargarPerfiles();
+    } catch(e) {}
+}
+    
+function abrirModalCambiarPassword(){
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:420px">
+            <div class="modal-header">
+                <h3><i class="fas fa-key" style="color:#C5A880"></i> Cambiar mi Contraseña</h3>
+                <button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div>
+                    <label class="form-label required">Contraseña actual</label>
+                    <input type="password" id="cp-actual" placeholder="Tu contraseña actual" autocomplete="current-password">
+                </div>
+                <div>
+                    <label class="form-label required">Nueva contraseña</label>
+                    <input type="password" id="cp-nueva" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                </div>
+                <div>
+                    <label class="form-label required">Repetir nueva contraseña</label>
+                    <input type="password" id="cp-nueva2" placeholder="Repetí la nueva contraseña" autocomplete="new-password">
+                </div>
+                <button type="button" class="btn-confirm" onclick="cambiarPassword()"><i class="fas fa-check-circle"></i> Cambiar Contraseña</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    setTimeout(()=>document.getElementById('cp-actual')?.focus(),100);
+}
+
+async function cambiarPassword(){
+    const passwordActual = document.getElementById('cp-actual')?.value;
+    const passwordNueva = document.getElementById('cp-nueva')?.value;
+    const passwordNueva2 = document.getElementById('cp-nueva2')?.value;
+
+    if (!passwordActual) { mostrarToast('Ingresá tu contraseña actual', true); return; }
+    if (!passwordNueva || passwordNueva.length < 6) { mostrarToast('La nueva contraseña debe tener al menos 6 caracteres', true); return; }
+    if (passwordNueva !== passwordNueva2) { mostrarToast('Las contraseñas nuevas no coinciden', true); return; }
+
+    try {
+        await safeFetch('/admin/cambiar-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ passwordActual, passwordNueva })
+        });
+        mostrarToast('✅ Contraseña actualizada con éxito');
+        document.querySelector('.modal.active')?.remove();
+    } catch(e) {}
+}
+    
+function abrirBuscadorClientes(){
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:560px">
+            <div class="modal-header">
+                <h3><i class="fas fa-search" style="color:#C5A880"></i> Buscar Cliente</h3>
+                <button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div style="padding:20px">
+                <input type="text" id="bc-input" placeholder="Buscar por nombre, DNI, email o teléfono..." style="width:100%;padding:12px 16px;border-radius:50px;border:1px solid #E6E1DA;font-size:14px" oninput="buscarClientesModal()">
+                <div id="bc-resultados" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto"></div>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    setTimeout(()=>document.getElementById('bc-input')?.focus(),100);
+}
+
+let bcTimeout = null;
+function buscarClientesModal() {
+    clearTimeout(bcTimeout);
+    const q = document.getElementById('bc-input')?.value.trim();
+    const cont = document.getElementById('bc-resultados');
+    if (!q) { if(cont) cont.innerHTML = ''; return; }
+    if (cont) cont.innerHTML = `<div style="text-align:center;padding:16px;color:#8C7E74"><i class="fas fa-spinner fa-spin"></i></div>`;
+    bcTimeout = setTimeout(async () => {
+        try {
+            const d = await safeFetch('/admin/buscar-clientes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: q })
+            });
+            const lista = d.lista || [];
+            if (!cont) return;
+            if (!lista.length) { cont.innerHTML = `<div style="text-align:center;padding:16px;color:#8C7E74;font-size:13px">Sin resultados</div>`; return; }
+            cont.innerHTML = lista.map(c => `
+                <div onclick="seleccionarClienteEnVenta('${c.id}','${escapeHtml(c.nombre||'')}','${escapeHtml(c.apellido||'')}','${escapeHtml(c.dni||'')}','${escapeHtml(c.telefono||'')}')" style="background:#F6F3EA;border-radius:14px;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px" onmouseover="this.style.background='#EDE8E1'" onmouseout="this.style.background='#F6F3EA'">
+                    <div>
+                        <div style="font-weight:700;font-size:13px;color:#3D312A">${escapeHtml(c.nombre||'')} ${escapeHtml(c.apellido||'')}</div>
+                        <div style="font-size:11px;color:#8C7E74;margin-top:2px">${escapeHtml(c.dni||'—')} ${c.telefono?'• '+escapeHtml(c.telefono):''}</div>
+                    </div>
+                    <i class="fas fa-arrow-right" style="color:#C5A880"></i>
+                </div>
+            `).join('');
+        } catch(e) {}
+    }, 350);
+}
+
+function seleccionarClienteEnVenta(id, nombre, apellido, dni, telefono) {
+    if (logistica !== 'envio') { setLog('envio'); }
+    setTimeout(() => {
+        const nombreCompleto = `${nombre} ${apellido}`.trim();
+        if (document.getElementById('env-nombre')) document.getElementById('env-nombre').value = nombreCompleto;
+        if (document.getElementById('env-dni')) document.getElementById('env-dni').value = dni;
+        if (document.getElementById('env-celular')) document.getElementById('env-celular').value = telefono;
+    }, 50);
+    document.querySelector('.modal.active')?.remove();
+    mostrarToast(`✅ Cliente ${nombre} seleccionado`);
+}
+    
 async function exportarVentasCSV(){ const r=await fetch('/admin/exportar-ventas',{method:'POST',headers:{'Authorization':`Bearer ${adminToken}`}}); }
 
 async function verEstadoCaja(){ 
@@ -4093,9 +4464,20 @@ function actualizarEstadisticasRapidas(){
 
 document.addEventListener("DOMContentLoaded", () => {
     if (adminToken) {
+        let perfilGuardado = null;
+        try { perfilGuardado = JSON.parse(localStorage.getItem('adminPerfil') || 'null'); } catch(e) { perfilGuardado = null; }
+        if (!perfilGuardado) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminPerfil');
+            adminToken = null;
+            return;
+        }
+        adminActual = perfilGuardado;
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-screen').style.display = 'block';
-        tab('v');
+        aplicarPermisosNavbar();
+        const primeraTab = primeraTabDisponible();
+        if (primeraTab) { tab(primeraTab); } else { mostrarToast('🔒 Tu perfil no tiene acceso a ninguna sección. Contactá al administrador.', true); }
         setTimeout(verEstadoCaja, 200);
     }
 });
