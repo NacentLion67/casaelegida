@@ -257,10 +257,16 @@ async function initMetodosEnvio() {
         }
     }
 }
+
 async function initAdmin() {
     const existe = await pool.query("SELECT id FROM perfiles WHERE usuario = 'admin'");
     if (existe.rows.length === 0) {
-        const hp = bcrypt.hashSync('NacentLion03-04-04', 10);
+        const passwordInicial = process.env.ADMIN_INITIAL_PASSWORD;
+        if (!passwordInicial) {
+            console.error('❌ No se creó el perfil admin: falta definir la variable de entorno ADMIN_INITIAL_PASSWORD');
+            return;
+        }
+        const hp = bcrypt.hashSync(passwordInicial, 10);
         await pool.query('INSERT INTO perfiles (id, usuario, password, nombre, rol, permisos) VALUES ($1, $2, $3, $4, $5, $6)',
             ['PERF-' + Date.now(), 'admin', hp, 'Administrador Principal', 'admin', '[]']);
         console.log('✅ Admin creado');
