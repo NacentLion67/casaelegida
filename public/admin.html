@@ -526,7 +526,8 @@ body.dark-mode .config-section h3 { color: #C5A880; }
 <div id="login-screen" class="login-wrapper">
     <div class="login-card">
         <div class="login-logo-container">
-            <img src="" id="login-logo-img" alt="Casa Elegida" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22 fill=%22%23FAEDCD%22><rect width=%22200%22 height=%22100%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%233D312A%22 font-size=%2216%22 font-weight=%22bold%22>CASA ELEGIDA</text></svg>'">
+            <img src="" id="login-logo-img" alt="Casa Elegida" style="display:none" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22100%22 fill=%22%23FAEDCD%22><rect width=%22200%22 height=%22100%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%233D312A%22 font-size=%2216%22 font-weight=%22bold%22>CASA ELEGIDA</text></svg>'">
+            <div id="login-logo-placeholder" style="font-family:'Playfair Display',serif;font-size:22px;font-weight:800;color:#3D312A;letter-spacing:1px;text-align:center;padding:0 10px">CASA<br>ELEGIDA</div>
         </div>
         <h2>CASA ELEGIDA</h2>
         <p class="login-subtitle">Panel de Gestión Interna</p>
@@ -4462,7 +4463,24 @@ function actualizarEstadisticasRapidas(){
     verEstadoCaja(); 
 }
 
+async function cargarLogoLogin() {
+    try {
+        const res = await fetch('/get-config', { method: 'POST' });
+        const d = await res.json();
+        const c = d.configuracion || d.config || d;
+        const img = document.getElementById('login-logo-img');
+        const placeholder = document.getElementById('login-logo-placeholder');
+        if (c.logo && c.logo.trim() !== '') {
+            img.src = c.logo;
+            img.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+        }
+    } catch(e) {}
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    cargarLogoLogin();
+    document.getElementById('v-cart')?.classList.add('hidden');
     if (adminToken) {
         let perfilGuardado = null;
         try { perfilGuardado = JSON.parse(localStorage.getItem('adminPerfil') || 'null'); } catch(e) { perfilGuardado = null; }
