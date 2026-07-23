@@ -1947,7 +1947,7 @@ async function checkout(){
     }
     let data=await safeFetch('/confirmar-venta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({carrito,pago:pagoData,logistica,cliente:cd,metodoEnvio:metodoEnvioSeleccionado,canalVenta:canalVentaAdmin,mayoristaConfig:{habilitado:mayoristaHabilitado}})});
     if(data.success){
-        if (data.pedidoId) { mostrarToast(`✅ Venta ${data.ventaId} — Pedido ${data.pedidoId} creado en Pedidos`); }
+        if (data.pedidoId && !data.ventaId) { mostrarToast(`📦 Pedido ${data.pedidoId} creado — stock reservado, pendiente de abonar en Pedidos`); }
         else { mostrarToast(`✅ Venta ${data.ventaId}`); }
         carrito=[];forzarMayoristaActivo=false;actualizarBotonForzarMayorista();renderCart();localStorage.removeItem('pos_carrito');cargar();cargarVentas();
     }
