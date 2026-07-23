@@ -2005,8 +2005,23 @@ async function checkout(){
     if(data.success){
         if (data.pedidoId && !data.ventaId) { mostrarToast(`📦 Pedido ${data.pedidoId} creado — stock reservado, pendiente de abonar en Pedidos`); }
         else { mostrarToast(`✅ Venta ${data.ventaId}`); }
-        carrito=[];forzarMayoristaActivo=false;actualizarBotonForzarMayorista();renderCart();localStorage.removeItem('pos_carrito');cargar();cargarVentas();
+        carrito=[];forzarMayoristaActivo=false;actualizarBotonForzarMayorista();renderCart();localStorage.removeItem('pos_carrito');
+        limpiarFormularioVentaCompleto();
+        cargar();cargarVentas();
     }
+}
+
+function limpiarFormularioVentaCompleto(){
+    ['env-nombre','env-dni','env-celular','env-email','env-cp','env-localidad','env-domicilio','env-notas'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.value='';
+    });
+    const provSel=document.getElementById('env-provincia'); if(provSel) provSel.value='';
+    const envioSel=document.getElementById('env-metodo-envio'); if(envioSel) envioSel.value='';
+    const mixEf=document.getElementById('mixto-efectivo'); if(mixEf) mixEf.value='';
+    const mixTr=document.getElementById('mixto-transferencia'); if(mixTr) mixTr.value='';
+    setLog('local');
+    setMetodo('efectivo');
+    setCanalVenta('mostrador');
 }
     
 function buscarProductos(){ let b=document.getElementById('buscador').value.toLowerCase(); document.querySelectorAll('#grid-prods .card').forEach(c=>c.style.display=c.getAttribute('data-nombre').includes(b)?'':'none'); }
