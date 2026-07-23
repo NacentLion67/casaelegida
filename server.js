@@ -1739,6 +1739,7 @@ async function start() {
         try {
             await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS "timestampAbono" BIGINT');
             await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comprobante TEXT DEFAULT \'\'');
+            await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS "comprobanteFecha" TEXT DEFAULT \'\'');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "canceladaPor" TEXT DEFAULT \'\'');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "fechaCancelacion" TEXT DEFAULT \'\'');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoEfectivo" REAL DEFAULT 0');
