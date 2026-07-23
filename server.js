@@ -1022,7 +1022,7 @@ app.post('/dashboard/stats', async (req, res) => {
 
 app.post('/admin/estadisticas-avanzadas', adminMiddleware('dashboard'), async (req, res) => {
     const mes = new Date().toLocaleDateString('es-AR').substring(3);
-    const ventasMes = (await pool.query("SELECT * FROM ventas WHERE fecha LIKE $1", [`%${mes}%`])).rows;
+    const ventasMes = (await pool.query("SELECT * FROM ventas WHERE fecha LIKE $1 AND estado != 'cancelada'", [`%${mes}%`])).rows;
     let efAdmin = 0, trAdmin = 0, efWeb = 0, trWeb = 0;
     ventasMes.forEach(v => {
         if (v.origen === 'admin') {
@@ -1082,6 +1082,44 @@ app.post('/admin/historial-cliente', adminMiddleware(), async (req, res) => {
         const pedidos = (await pool.query('SELECT id, fecha, total, estado FROM pedidos WHERE "usuarioId" = $1 ORDER BY "fechaTimestamp" DESC LIMIT 50', [userId])).rows;
         res.json({ ventas, pedidos });
     } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/admin/cancelar-venta', adminMiddleware('ventas'), async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { ventaId } = req.body;
+        const v = (await client.query('SELECT * FROM ventas WHERE id=$1', [ventaId])).rows[0];
+        if (!v) { client.release(); return res.status(404).json({ error: 'Venta no encontrada' }); }
+        if (v.estado === 'cancelada') { client.release(); return res.status(400).json({ error: 'Esta venta ya está cancelada' }); }
+
+        await client.query('BEGIN');
+
+        const items = JSON.parse(v.items || '[]');
+        for (const it of items) {
+            if (it.esManual) continue;
+            await client.query('UPDATE variantes SET stock=stock+$1 WHERE "productoId"=$2 AND nombre=$3', [it.cant, it.pId, it.vNom]);
+        }
+
+        const fechaLocal = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+        await client.query('UPDATE ventas SET estado=$1, "canceladaPor"=$2, "fechaCancelacion"=$3 WHERE id=$4',
+            ['cancelada', req.admin.nombre, fechaLocal, ventaId]);
+
+        if (v.pedidoId) {
+            const p = (await client.query('SELECT estado FROM pedidos WHERE id=$1', [v.pedidoId])).rows[0];
+            if (p && p.estado !== 'cancelado' && p.estado !== 'entregado') {
+                await client.query("UPDATE pedidos SET estado='cancelado' WHERE id=$1", [v.pedidoId]);
+            }
+        }
+
+        await client.query('COMMIT');
+        await logActividad(req.admin.nombre, 'CANCELAR_VENTA', `Venta ${ventaId} cancelada — stock restaurado`, req);
+        res.json({ success: true });
+    } catch(e) {
+        await client.query('ROLLBACK').catch(()=>{});
+        res.status(500).json({ error: e.message });
+    } finally {
+        client.release();
+    }
 });
 
 app.post('/admin/exportar-ventas', adminMiddleware(), async (req, res) => {
@@ -1413,7 +1451,7 @@ app.post('/admin/costos/obtener-todos', adminMiddleware(), async (req, res) => {
 app.post('/admin/ganancias/historial', adminMiddleware(), async (req, res) => {
     try {
         const { desde, hasta } = req.body;
-        let query = 'SELECT * FROM ventas WHERE 1=1';
+        let query = "SELECT * FROM ventas WHERE estado != 'cancelada'";
         let params = [];
         if (desde) { 
             const desdeDate = desde.split('-').reverse().join('/');
@@ -1473,7 +1511,7 @@ app.post('/admin/sincronizar-ventas-web', adminMiddleware(), async (req, res) =>
 app.post('/admin/rendimiento-productos', adminMiddleware(), async (req, res) => {
     try {
         const { desde, hasta } = req.body;
-        let query = 'SELECT * FROM ventas WHERE 1=1';
+        let query = "SELECT * FROM ventas WHERE estado != 'cancelada'";
         let params = [];
         if (desde) { query += ` AND "fechaTimestamp" >= $${params.length+1}`; params.push(new Date(desde + 'T00:00:00').getTime()); }
         if (hasta) { query += ` AND "fechaTimestamp" <= $${params.length+1}`; params.push(new Date(hasta + 'T23:59:59').getTime()); }
@@ -1498,7 +1536,7 @@ app.post('/admin/rendimiento-productos', adminMiddleware(), async (req, res) => 
 app.post('/admin/rendimiento-total', adminMiddleware(), async (req, res) => {
     try {
         const { desde, hasta } = req.body;
-        let query = 'SELECT * FROM ventas WHERE 1=1';
+        let query = "SELECT * FROM ventas WHERE estado != 'cancelada'";
         let params = [];
         if (desde) { query += ` AND "fechaTimestamp" >= $${params.length+1}`; params.push(new Date(desde + 'T00:00:00').getTime()); }
         if (hasta) { query += ` AND "fechaTimestamp" <= $${params.length+1}`; params.push(new Date(hasta + 'T23:59:59').getTime()); }
@@ -1695,7 +1733,8 @@ async function start() {
         try {
             await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS "timestampAbono" BIGINT');
             await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comprobante TEXT DEFAULT \'\'');
-            await pool.query('ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS "comprobanteFecha" TEXT DEFAULT \'\'');
+            await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "canceladaPor" TEXT DEFAULT \'\'');
+            await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "fechaCancelacion" TEXT DEFAULT \'\'');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoEfectivo" REAL DEFAULT 0');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS "montoTransferencia" REAL DEFAULT 0');
             await pool.query('ALTER TABLE ventas ADD COLUMN IF NOT EXISTS vendedor TEXT DEFAULT \'\'');
